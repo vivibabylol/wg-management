@@ -843,6 +843,13 @@ select option { background: var(--surface2); }
           </select>
         </div>
         <div class="form-group"><label>配送日期</label><input type="date" id="d-delivDate"></div>
+        <div class="form-group"><label>成品來源</label>
+          <select id="d-source">
+            <option value="">— 選擇來源 —</option>
+            <option value="進口">🚢 進口 Imported</option>
+            <option value="自產">🏭 自產 Self-produced</option>
+          </select>
+        </div>
         <div class="form-group full"><label>配送內容</label><div id="d-items-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div></div>
         <div class="form-group full"><label>備註</label><textarea id="d-notes"></textarea></div>
       </div>
@@ -931,6 +938,7 @@ async function loadAll() {
     invoices   = results[1].data || [];
     deliveries = (results[2].data || []).map(d => {
       if (d.bolNum !== undefined) d.bolNum = String(d.bolNum).trim();
+      if (!d.source) d.source = '進口';
       ['delivDate'].forEach(f => { d[f] = normalizeDate(d[f]); });
       return d;
     });
@@ -1364,7 +1372,7 @@ function openDeliveryModal(d) {
         unique.map(co => '<option value="'+co+'"'+(d.business===co?' selected':'')+'>'+co+'</option>').join('');
     }
   }
-  ['addr','city','zip','contact','phone','status','delivDate','wraps','parts','notes'].forEach(k => {
+  ['addr','city','zip','contact','phone','status','delivDate','source','wraps','parts','notes'].forEach(k => {
     const el = document.getElementById('d-'+k);
     if (el) el.value = d ? (d[k]||'') : (k==='status'?'待配送':'');
   });
@@ -1378,7 +1386,7 @@ function openDeliveryEdit(id) { openDeliveryModal(deliveries.find(x => x.id === 
 
 async function saveDelivery() {
   const data = {};
-  ['dist','business','addr','city','zip','contact','phone','status','delivDate','wraps','parts','notes'].forEach(k => {
+  ['dist','business','addr','city','zip','contact','phone','status','delivDate','source','wraps','parts','notes'].forEach(k => {
     data[k] = document.getElementById('d-'+k)?.value || '';
   });
   // BOL and container from their special selects
@@ -1532,6 +1540,7 @@ function renderDeliveries() {
 
     html += '</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">';
     html += '<span class="badge ' + (DEL_STATUS[d.status]||'badge-muted') + '">' + d.status + '</span>';
+    if (d.source) html += '<span style="font-size:0.68rem;padding:2px 7px;border-radius:10px;background:' + (d.source==='自產'?'var(--purple-dim,#3a2d4a)':'var(--blue-dim,#1a2d3d)') + ';color:' + (d.source==='自產'?'var(--purple)':'var(--blue)') + '">' + (d.source==='自產'?'🏭':'🚢') + ' ' + d.source + '</span>';
     html += '<button onclick="event.stopPropagation();toggleDelivered(\'' + d.id + '\')" class="delivery-check ' + (d.status==='已配送'?'delivered':'') + '" title="標記已配送">' + (d.status==='已配送'?'✓':'') + '</button>';
     html += '</div></div>';
     html += '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px">📍 ' + (d.addr||'') + (d.city?', '+d.city:'') + ' ' + (d.zip||'') + '</div>';
@@ -1544,8 +1553,22 @@ function renderDeliveries() {
     if (d.delivItems) {
       try {
         const items = JSON.parse(d.delivItems);
+        const prodMap = {}; getProducts().forEach(p => prodMap[p.name] = p);
         Object.entries(items).forEach(([k,v]) => {
-          if (v > 0) html += '<div class="card-field"><div class="card-field-lbl">' + k + '</div><div class="card-field-val">' + v + '</div></div>';
+          if (v <= 0) return;
+          const pp = prodMap[k];
+          const rpp = pp?.rollsPerPallet||0;
+          const ppc = pp?.palletsPerContainer||0;
+          let displayStr = v + ' ' + (pp?.unit||'');
+          if (rpp > 0) {
+            const pallets = (v/rpp).toFixed(1).replace(/\.0$/,'');
+            displayStr = v + ' ' + (pp?.unit||'') + ' (' + pallets + ' pallets)';
+            if (ppc > 0) {
+              const ctrs = (v/rpp/ppc).toFixed(2).replace(/\.?0+$/,'');
+              displayStr = v + ' ' + (pp?.unit||'') + ' (' + pallets + ' pal / ' + ctrs + ' ctr)';
+            }
+          }
+          html += '<div class="card-field"><div class="card-field-lbl">' + k + '</div><div class="card-field-val">' + displayStr + '</div></div>';
         });
       } catch(e) {
         if (d.wraps) html += '<div class="card-field"><div class="card-field-lbl">包膜</div><div class="card-field-val">' + d.wraps + ' 卷</div></div>';
@@ -1818,10 +1841,10 @@ async function deleteCustomer() {
 // Default lists (fallback if nothing saved)
 // Products: [{name, unit, category}]
 const DEFAULT_PRODUCTS = [
-  { name: 'Cotton Wrap',              unit: 'Rolls',  category: '包膜' },
-  { name: 'Cotton Picker Spindle',    unit: 'Pieces', category: '零件' },
-  { name: 'Raw Films',                unit: 'Rolls',  category: '原料' },
-  { name: 'Forklift',                 unit: 'Units',  category: '其他' },
+  { name: 'Cotton Wrap',           unit: 'Rolls',  category: '成品', rollsPerPallet: 9,  palletsPerContainer: 21 },
+  { name: 'Cotton Picker Spindle', unit: 'Pieces', category: '零件', rollsPerPallet: 0,  palletsPerContainer: 0  },
+  { name: 'Raw Films',             unit: 'Rolls',  category: '原料', rollsPerPallet: 0,  palletsPerContainer: 0  },
+  { name: 'Forklift',              unit: 'Units',  category: '其他', rollsPerPallet: 0,  palletsPerContainer: 0  },
 ];
 
 const DEFAULT_LISTS = {
@@ -1902,7 +1925,11 @@ function renderSettings() {
   html += '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">';
   prods.forEach((p,i) => {
     html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">';
-    html += '<div><div style="font-size:0.88rem;font-weight:600">' + p.name + '</div><div style="font-size:0.72rem;color:var(--text-muted)">' + p.unit + ' &middot; ' + p.category + '</div></div>';
+    html += '<div><div style="font-size:0.88rem;font-weight:600">' + p.name + '</div>';
+    html += '<div style="font-size:0.72rem;color:var(--text-muted)">' + p.unit + ' &middot; ' + p.category;
+    if (p.rollsPerPallet > 0)      html += ' &middot; ' + p.rollsPerPallet + '/pallet';
+    if (p.palletsPerContainer > 0) html += ' &middot; ' + p.palletsPerContainer + 'p/ctr';
+    html += '</div></div>';
     html += '<button onclick="editProduct(' + i + ')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:4px 8px">✎ 編輯</button>';
     html += '<button onclick="deleteProduct(' + i + ')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.8rem;padding:4px 8px">×</button>';
     html += '</div>';
@@ -1934,10 +1961,14 @@ function addProduct() {
   if (!name || !name.trim()) return;
   const unit = prompt('單位 (e.g. Rolls, Pieces, Units):', 'Units');
   if (unit === null) return;
-  const cat  = prompt('類別 (e.g. 包膜, 零件, 原料, 其他):', '其他');
+  const cat  = prompt('類別 (成品/原料/零件/其他):', '其他');
   if (cat === null) return;
+  const rpp  = prompt('每 pallet 幾個 ' + (unit||'').trim() + '? (0 = 不適用)', '0');
+  if (rpp === null) return;
+  const ppc  = prompt('每 Container 幾個 Pallets? (0 = 不適用)', '0');
+  if (ppc === null) return;
   const prods = getProducts();
-  prods.push({ name: name.trim(), unit: (unit||'Units').trim(), category: (cat||'其他').trim() });
+  prods.push({ name: name.trim(), unit: (unit||'Units').trim(), category: (cat||'其他').trim(), rollsPerPallet: Number(rpp)||0, palletsPerContainer: Number(ppc)||0 });
   saveProducts(prods);
   renderSettings();
 }
@@ -1952,7 +1983,11 @@ function editProduct(idx) {
   if (unit === null) return;
   const cat  = prompt('類別:', p.category);
   if (cat === null) return;
-  prods[idx] = { name: name.trim()||p.name, unit: unit.trim()||p.unit, category: cat.trim()||p.category };
+  const rpp  = prompt('每 pallet 幾個 ' + (unit||'').trim() + '? (0=不適用)', String(p.rollsPerPallet||0));
+  if (rpp === null) return;
+  const ppc  = prompt('每 Container 幾個 Pallets? (0=不適用)', String(p.palletsPerContainer||0));
+  if (ppc === null) return;
+  prods[idx] = { name: name.trim()||p.name, unit: unit.trim()||p.unit, category: cat.trim()||p.category, rollsPerPallet: Number(rpp)||0, palletsPerContainer: Number(ppc)||0 };
   saveProducts(prods);
   renderSettings();
 }
@@ -2108,6 +2143,43 @@ function onDistChange() {
   });
 }
 
+function calcRolls(p, containers, pallets, rolls) {
+  const rpp = p.rollsPerPallet||0;
+  const ppc = p.palletsPerContainer||0;
+  if (rolls > 0) return rolls;
+  if (pallets > 0 && rpp > 0) return pallets * rpp;
+  if (containers > 0 && ppc > 0 && rpp > 0) return containers * ppc * rpp;
+  return 0;
+}
+
+function onDelivUnitChange(prodName) {
+  const prods = getProducts();
+  const p = prods.find(x => x.name === prodName);
+  if (!p || !p.rollsPerPallet) return;
+  const sid = 'ditem-' + prodName.replace(/[^a-zA-Z0-9]/g,'_');
+  const ctrEl = document.getElementById(sid + '_ctr');
+  const palEl = document.getElementById(sid + '_pal');
+  const rolEl = document.getElementById(sid + '_rol');
+  if (!ctrEl || !palEl || !rolEl) return;
+  const ctrs = Number(ctrEl.value)||0;
+  const pals = Number(palEl.value)||0;
+  const rols = Number(rolEl.value)||0;
+  const rpp = p.rollsPerPallet||0;
+  const ppc = p.palletsPerContainer||0;
+  // Determine which field was last changed by checking which is non-zero
+  // Priority: containers > pallets > rolls
+  if (ctrs > 0 && ppc > 0 && rpp > 0) {
+    palEl.value = ctrs * ppc;
+    rolEl.value = ctrs * ppc * rpp;
+  } else if (pals > 0 && rpp > 0) {
+    ctrEl.value = ppc > 0 ? (pals/ppc).toFixed(2) : 0;
+    rolEl.value = pals * rpp;
+  } else if (rols > 0 && rpp > 0) {
+    palEl.value = (rols/rpp).toFixed(2);
+    ctrEl.value = ppc > 0 ? (rols/rpp/ppc).toFixed(2) : 0;
+  }
+}
+
 function populateDelivItemsGrid(d) {
   const grid = document.getElementById('d-items-grid');
   if (!grid) return;
@@ -2117,13 +2189,38 @@ function populateDelivItemsGrid(d) {
     try { saved = JSON.parse(d.delivItems); } catch(e) { saved = {}; }
   }
   if (d && d.wraps && !saved['Cotton Wrap']) saved['Cotton Wrap'] = d.wraps;
+  grid.style.gridTemplateColumns = '1fr';
   grid.innerHTML = prods.map(p => {
-    const safeId = 'ditem-' + p.name.replace(/[^a-zA-Z0-9]/g,'_');
-    const val = saved[p.name] || '';
-    return '<div style="display:flex;flex-direction:column;gap:4px">' +
-      '<label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">' + p.name + ' <span style="font-weight:400;color:var(--text-dim)">(' + p.unit + ')</span></label>' +
-      '<input type="number" id="' + safeId + '" value="' + val + '" placeholder="0" min="0" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:var(--sans);font-size:0.875rem;color:var(--text);outline:none">' +
-      '</div>';
+    const sid   = 'ditem-' + p.name.replace(/[^a-zA-Z0-9]/g,'_');
+    const rpp   = p.rollsPerPallet||0;
+    const ppc   = p.palletsPerContainer||0;
+    const rolls = Number(saved[p.name])||0;
+    const pals  = rpp > 0 ? rolls / rpp : 0;
+    const ctrs  = (rpp > 0 && ppc > 0) ? rolls / rpp / ppc : 0;
+    if (rpp > 0) {
+      // Show containers / pallets / rolls with auto-convert
+      const pname = p.name.replace(/'/g,"\\'");
+      return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:4px">' +
+        '<div style="font-size:0.78rem;font-weight:600;color:var(--text);margin-bottom:8px">' + p.name + '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+          (ppc > 0 ? '<div><label style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase">Containers</label>' +
+          '<input type="number" id="' + sid + '_ctr" value="' + (ctrs > 0 ? ctrs.toFixed(1).replace(/\.0$/,'') : '') + '" placeholder="0" min="0" step="0.5" oninput="onDelivUnitChange(\'' + pname + '\')" style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:0.85rem;color:var(--text);outline:none;box-sizing:border-box">' +
+          '</div>' : '') +
+          '<div><label style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase">Pallets</label>' +
+          '<input type="number" id="' + sid + '_pal" value="' + (pals > 0 ? pals.toFixed(1).replace(/\.0$/,'') : '') + '" placeholder="0" min="0" step="0.5" oninput="onDelivUnitChange(\'' + pname + '\')" style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:0.85rem;color:var(--text);outline:none;box-sizing:border-box">' +
+          '</div>' +
+          '<div><label style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase">' + p.unit + '</label>' +
+          '<input type="number" id="' + sid + '_rol" value="' + (rolls || '') + '" placeholder="0" min="0" oninput="onDelivUnitChange(\'' + pname + '\')" style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:0.85rem;color:var(--text);outline:none;box-sizing:border-box">' +
+          '</div>' +
+        '</div>' +
+        '<div style="font-size:0.7rem;color:var(--text-dim);margin-top:6px">' + rpp + ' ' + p.unit + '/pallet' + (ppc ? ' &middot; ' + ppc + ' pallets/ctr' : '') + '</div>' +
+        '</div>';
+    } else {
+      return '<div style="display:flex;flex-direction:column;gap:4px">' +
+        '<label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">' + p.name + ' <span style="font-weight:400;color:var(--text-dim)">(' + p.unit + ')</span></label>' +
+        '<input type="number" id="' + sid + '" value="' + (saved[p.name]||'') + '" placeholder="0" min="0" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.875rem;color:var(--text);outline:none">' +
+        '</div>';
+    }
   }).join('');
 }
 
@@ -2131,10 +2228,24 @@ function getDelivItemsData() {
   const prods = getProducts();
   const result = {};
   prods.forEach(p => {
-    const safeId = 'ditem-' + p.name.replace(/[^a-zA-Z0-9]/g,'_');
-    const el = document.getElementById(safeId);
-    const val = Number(el?.value)||0;
-    if (val > 0) result[p.name] = val;
+    const sid = 'ditem-' + p.name.replace(/[^a-zA-Z0-9]/g,'_');
+    const rpp = p.rollsPerPallet||0;
+    const ppc = p.palletsPerContainer||0;
+    if (rpp > 0) {
+      // Read rolls from the _rol field (already synced by onDelivUnitChange)
+      const rolEl = document.getElementById(sid + '_rol');
+      const palEl = document.getElementById(sid + '_pal');
+      const ctrEl = document.getElementById(sid + '_ctr');
+      const rols = Number(rolEl?.value)||0;
+      const pals = Number(palEl?.value)||0;
+      const ctrs = Number(ctrEl?.value)||0;
+      const total = calcRolls(p, ctrs, pals, rols);
+      if (total > 0) result[p.name] = total;
+    } else {
+      const el = document.getElementById(sid);
+      const val = Number(el?.value)||0;
+      if (val > 0) result[p.name] = val;
+    }
   });
   return result;
 }
@@ -2193,21 +2304,23 @@ function renderInventory() {
     const inQty = cargoQty + prodOutputQty; // total available = imported + produced
     const consumedQty = prodInputQty;        // consumed as raw material in production
 
-    // Delivered: from delivItems JSON or legacy wraps
-    let delivQty = 0;
+    // Delivered: split by source
+    let delivImportedQty = 0, delivSelfQty = 0;
     deliveries.forEach(d => {
+      let qty = 0;
       if (d.delivItems) {
         try {
           const it = JSON.parse(d.delivItems);
-          Object.entries(it).forEach(([k,v]) => {
-            if (k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) delivQty += Number(v)||0;
-          });
+          Object.entries(it).forEach(([k,v]) => { if (k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) qty += Number(v)||0; });
         } catch(e) {}
-      } else if (pnl.includes('cotton') && d.wraps) {
-        delivQty += Number(d.wraps)||0;
-      }
+      } else if (pnl.includes('cotton') && d.wraps) { qty += Number(d.wraps)||0; }
+      if (d.source === '自產') delivSelfQty += qty;
+      else delivImportedQty += qty;
     });
+    const delivQty = delivImportedQty + delivSelfQty;
 
+    const remainImported = importedQty   - delivImportedQty;
+    const remainSelf     = prodOutputQty - delivSelfQty;
     const totalOut = delivQty + consumedQty;
     const remaining = inQty - totalOut;
     const pct = inQty > 0 ? Math.min(100, Math.round(totalOut/inQty*100)) : 0;
@@ -2220,16 +2333,20 @@ function renderInventory() {
 
     html += '<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">';
     html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid var(--blue);border-radius:10px;padding:10px 12px">';
-    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">進口成品</div>';
-    html += '<div style="font-size:1.1rem;font-weight:700;color:var(--blue)">' + importedQty.toLocaleString() + ' ' + prod.unit + '</div>';
-    if (inTransitQty>0) html += '<div style="font-size:0.72rem;color:var(--amber)">週途中: ' + inTransitQty.toLocaleString() + '</div>';
+    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">🚢 進口</div>';
+    html += '<div style="font-size:1rem;font-weight:700;color:var(--blue)">' + importedQty.toLocaleString() + ' ' + prod.unit + '</div>';
+    if (inTransitQty>0) html += '<div style="font-size:0.7rem;color:var(--amber)">週途: '+inTransitQty.toLocaleString()+'</div>';
+    html += '<div style="font-size:0.7rem;color:var(--text-dim);border-top:1px solid var(--border);padding-top:3px;margin-top:4px">配送: '+delivImportedQty.toLocaleString()+'</div>';
+    html += '<div style="font-size:0.85rem;font-weight:700;color:' + (remainImported>=0?'var(--teal)':'var(--red)') + '">剰: '+remainImported.toLocaleString()+'</div>';
     html += '</div>';
     html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid var(--purple);border-radius:10px;padding:10px 12px">';
-    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">自產成品</div>';
-    html += '<div style="font-size:1.1rem;font-weight:700;color:var(--purple)">' + prodOutputQty.toLocaleString() + ' ' + prod.unit + '</div>';
+    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">🏭 自產</div>';
+    html += '<div style="font-size:1rem;font-weight:700;color:var(--purple)">' + prodOutputQty.toLocaleString() + ' ' + prod.unit + '</div>';
+    html += '<div style="font-size:0.7rem;color:var(--text-dim);border-top:1px solid var(--border);padding-top:3px;margin-top:4px">配送: '+delivSelfQty.toLocaleString()+'</div>';
+    html += '<div style="font-size:0.85rem;font-weight:700;color:' + (remainSelf>=0?'var(--teal)':'var(--red)') + '">剰: '+remainSelf.toLocaleString()+'</div>';
     html += '</div>';
     html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid ' + (remaining>0?'var(--teal)':remaining===0?'var(--border)':'var(--red)') + ';border-radius:10px;padding:10px 12px">';
-    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">剰餘庫存</div>';
+    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">總剰餘</div>';
     html += '<div style="font-size:1.3rem;font-weight:800;color:' + (remaining>0?'var(--teal)':remaining===0?'var(--text-muted)':'var(--red)') + '">' + remaining.toLocaleString() + ' ' + prod.unit + '</div>';
     html += '</div>';
     html += '</div>';
@@ -2237,6 +2354,12 @@ function renderInventory() {
     html += '<div class="card-field"><div class="card-field-lbl">已配送</div><div class="card-field-val" style="color:var(--green)">' + delivQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
     if (consumedQty > 0) html += '<div class="card-field"><div class="card-field-lbl">生產消耗</div><div class="card-field-val" style="color:var(--amber)">' + consumedQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
     html += '<div class="card-field"><div class="card-field-lbl">總可用</div><div class="card-field-val">' + inQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
+    if (prod.rollsPerPallet > 0) {
+      const rpp2 = prod.rollsPerPallet;
+      const ppc2 = prod.palletsPerContainer||0;
+      html += '<div class="card-field"><div class="card-field-lbl">= Pallets</div><div class="card-field-val" style="color:var(--text-muted)">' + (inQty/rpp2).toFixed(1).replace(/\.0$/,'') + ' pal</div></div>';
+      if (ppc2>0) html += '<div class="card-field"><div class="card-field-lbl">= Containers</div><div class="card-field-val" style="color:var(--text-muted)">' + (inQty/rpp2/ppc2).toFixed(2).replace(/\.?0+$/,'') + ' ctr</div></div>';
+    }
     html += '</div>';
 
     // Progress bar
