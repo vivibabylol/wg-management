@@ -399,6 +399,42 @@ select option { background: var(--surface2); }
 </head>
 <body>
 
+<div id="auth-overlay" style="position:fixed;inset:0;background:#0d1117;z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:16px;padding:40px;width:100%;max-width:360px;text-align:center">
+    <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:#3fb950;margin-bottom:6px">WG LLC</div>
+    <div style="font-size:0.82rem;color:#7d8590;margin-bottom:28px">Operations Management</div>
+    <input type="password" id="auth-input" placeholder="輸入密碼" onkeydown="if(event.key==='Enter')checkAuth()"
+      style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;padding:11px 14px;font-size:0.95rem;color:#e6edf3;outline:none;text-align:center;margin-bottom:12px;box-sizing:border-box">
+    <button onclick="checkAuth()"
+      style="width:100%;background:#3fb950;color:#000;border:none;border-radius:8px;padding:11px;font-size:0.9rem;font-weight:700;cursor:pointer">
+      登入
+    </button>
+    <div id="auth-error" style="color:#f85149;font-size:0.8rem;margin-top:10px;display:none">密碼錯誤，請再試一次</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const KEY = 'wg_auth_ok';
+  const PWD = 'WGwraps168';
+  if (localStorage.getItem(KEY) === '1') {
+    document.getElementById('auth-overlay').style.display = 'none';
+  }
+  window.checkAuth = function() {
+    const val = document.getElementById('auth-input').value;
+    if (val === PWD) {
+      localStorage.setItem(KEY, '1');
+      document.getElementById('auth-overlay').style.display = 'none';
+    } else {
+      document.getElementById('auth-error').style.display = 'block';
+      document.getElementById('auth-input').value = '';
+      document.getElementById('auth-input').focus();
+    }
+  };
+})();
+</script>
+
+
 <nav>
   <div class="nav-logo">WG <span>LLC</span></div>
   <div class="nav-tabs">
