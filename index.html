@@ -1,0 +1,2004 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Western Green LLC — Operations</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2128;
+  --surface3: #21262d;
+  --border: #30363d;
+  --border2: #3d444d;
+  --text: #e6edf3;
+  --text-muted: #7d8590;
+  --text-dim: #484f58;
+  --green: #3fb950;
+  --green-dim: #1a3a22;
+  --green-glow: rgba(63,185,80,0.15);
+  --blue: #58a6ff;
+  --blue-dim: #1a2a40;
+  --amber: #d29922;
+  --amber-dim: #2d2208;
+  --red: #f85149;
+  --red-dim: #3a1a1a;
+  --purple: #a371f7;
+  --purple-dim: #1e1530;
+  --teal: #39d3c3;
+  --teal-dim: #0d2825;
+  --orange: #f0883e;
+  --orange-dim: #2d1a08;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Noto Sans TC', sans-serif;
+  --display: 'Syne', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(13,17,23,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  height: 56px; padding: 0 20px; gap: 4px;
+}
+
+.nav-logo {
+  font-family: var(--display);
+  font-size: 0.95rem; font-weight: 800;
+  color: var(--green);
+  letter-spacing: -0.02em;
+  margin-right: 20px;
+  white-space: nowrap;
+}
+
+.nav-logo span { color: var(--text-muted); font-weight: 400; }
+
+.nav-tabs { display: flex; gap: 2px; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.nav-tabs::-webkit-scrollbar { display: none; }
+
+.nav-tab {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-family: var(--sans);
+  font-size: 0.8rem; font-weight: 500;
+  color: var(--text-muted);
+  background: none; border: none;
+  cursor: pointer; white-space: nowrap;
+  transition: all 0.15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.nav-tab:hover { background: var(--surface3); color: var(--text); }
+.nav-tab.active { background: var(--surface2); color: var(--text); }
+.nav-tab .tab-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+}
+
+/* ── MAIN ── */
+main { padding-top: 56px; }
+.page { display: none; padding: 24px 20px; max-width: 1200px; margin: 0 auto; }
+.page.active { display: block; }
+
+/* ── PAGE HEADER ── */
+.page-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 24px; gap: 16px; flex-wrap: wrap;
+}
+.page-title {
+  font-family: var(--display);
+  font-size: 1.6rem; font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.page-title span { color: var(--text-muted); font-weight: 400; font-size: 0.9rem; display: block; margin-top: 4px; }
+
+.btn-add {
+  background: var(--green);
+  color: #000;
+  border: none; border-radius: 8px;
+  padding: 9px 18px;
+  font-family: var(--sans); font-size: 0.85rem; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+  transition: all 0.15s;
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+}
+.btn-add:hover { background: #4cc95e; transform: translateY(-1px); }
+
+/* ── STAT CARDS ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px; margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.stat-card-val {
+  font-family: var(--mono);
+  font-size: 1.4rem; font-weight: 500;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-card-lbl {
+  font-size: 0.72rem; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.07em;
+}
+
+/* ── CARDS LIST ── */
+.cards-list { display: flex; flex-direction: column; gap: 10px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; border-radius: 0 2px 2px 0;
+}
+.card:hover { border-color: var(--border2); background: var(--surface2); transform: translateX(2px); }
+
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+.card-id {
+  font-family: var(--mono); font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.card-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 2px; }
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+.card-field { display: flex; flex-direction: column; gap: 2px; }
+.card-field-lbl { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.card-field-val { font-size: 0.82rem; font-family: var(--mono); }
+
+/* ── BADGES ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 12px;
+  font-size: 0.72rem; font-weight: 600; white-space: nowrap;
+}
+.badge-green { background: var(--green-dim); color: var(--green); }
+.badge-blue { background: var(--blue-dim); color: var(--blue); }
+.badge-amber { background: var(--amber-dim); color: var(--amber); }
+.badge-red { background: var(--red-dim); color: var(--red); }
+.badge-purple { background: var(--purple-dim); color: var(--purple); }
+.badge-teal { background: var(--teal-dim); color: var(--teal); }
+.badge-muted { background: var(--surface3); color: var(--text-muted); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); z-index: 200;
+  align-items: flex-end; justify-content: center;
+  padding: 0;
+}
+@media (min-width: 640px) {
+  .modal-overlay { align-items: center; padding: 20px; }
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  width: 100%; max-height: 92vh; overflow-y: auto;
+  animation: slideUp 0.2s ease;
+}
+@media (min-width: 640px) {
+  .modal { border-radius: 16px; max-width: 560px; }
+}
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border2); margin: 12px auto 0;
+}
+@media (min-width: 640px) { .modal-handle { display: none; } }
+
+.modal-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-title { font-family: var(--display); font-size: 1.1rem; font-weight: 700; }
+.modal-close {
+  background: none; border: none; color: var(--text-muted);
+  font-size: 1.1rem; cursor: pointer; padding: 4px;
+  border-radius: 6px; transition: color 0.15s;
+}
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 20px; }
+.modal-footer {
+  padding: 16px 20px; border-top: 1px solid var(--border);
+  display: flex; gap: 10px; justify-content: flex-end;
+}
+
+/* ── FORMS ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+input, select, textarea {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 12px;
+  font-family: var(--sans); font-size: 0.875rem; color: var(--text);
+  outline: none; transition: border-color 0.15s; width: 100%;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--green); }
+textarea { resize: vertical; min-height: 70px; }
+select option { background: var(--surface2); }
+
+.btn-save {
+  background: var(--green); color: #000; border: none;
+  padding: 9px 22px; border-radius: 8px;
+  font-family: var(--sans); font-size: 0.875rem; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-save:hover { background: #4cc95e; }
+.btn-cancel {
+  background: none; border: 1px solid var(--border); color: var(--text-muted);
+  padding: 9px 18px; border-radius: 8px;
+  font-family: var(--sans); font-size: 0.875rem; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-cancel:hover { border-color: var(--text-muted); color: var(--text); }
+.btn-delete {
+  background: none; border: 1px solid var(--red); color: var(--red);
+  padding: 9px 18px; border-radius: 8px;
+  font-family: var(--sans); font-size: 0.875rem; cursor: pointer;
+  margin-right: auto; transition: all 0.15s;
+}
+.btn-delete:hover { background: var(--red-dim); }
+
+/* ── SECTION DIVIDER ── */
+.section-label {
+  font-size: 0.7rem; font-weight: 700; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 16px 0 8px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-label::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ── TASK SPECIFIC ── */
+.task-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  transition: all 0.15s;
+}
+.task-item:hover { border-color: var(--border2); }
+.task-item.done { opacity: 0.5; }
+.task-check {
+  width: 18px; height: 18px; border-radius: 5px;
+  border: 2px solid var(--border2);
+  background: none; cursor: pointer;
+  flex-shrink: 0; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.task-check.checked { background: var(--green); border-color: var(--green); }
+.task-check.checked::after { content: '✓'; font-size: 0.7rem; color: #000; font-weight: 700; }
+.task-content { flex: 1; }
+.task-text { font-size: 0.9rem; margin-bottom: 3px; }
+.task-item.done .task-text { text-decoration: line-through; color: var(--text-muted); }
+.task-meta { font-size: 0.75rem; color: var(--text-muted); }
+.task-del { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; padding: 2px 6px; border-radius: 4px; }
+.task-del:hover { color: var(--red); background: var(--red-dim); }
+
+.week-header {
+  font-family: var(--display); font-size: 1rem; font-weight: 700;
+  color: var(--text); margin: 20px 0 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.week-badge {
+  font-size: 0.7rem; font-weight: 500; font-family: var(--sans);
+  padding: 2px 8px; border-radius: 8px;
+  background: var(--surface3); color: var(--text-muted);
+}
+
+/* ── EMPTY STATE ── */
+.empty {
+  text-align: center; padding: 48px 20px;
+  color: var(--text-muted);
+}
+.empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+.empty-text { font-size: 0.9rem; margin-bottom: 6px; }
+.empty-sub { font-size: 0.8rem; color: var(--text-dim); }
+
+/* ── DASHBOARD ── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px; margin-bottom: 24px;
+}
+.dash-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px;
+}
+.dash-card-title {
+  font-family: var(--display); font-size: 0.85rem; font-weight: 700;
+  color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.dash-list-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+.dash-list-item:last-child { border-bottom: none; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── INVOICE SPECIFIC ── */
+.invoice-card::before { background: var(--teal); }
+.container-card::before { background: var(--blue); }
+.delivery-card::before { background: var(--purple); }
+
+.progress-bar {
+  height: 4px; background: var(--surface3); border-radius: 2px;
+  margin-top: 10px; overflow: hidden;
+}
+.progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+
+/* ── CHECKBOX DELIVERY ── */
+.delivery-check {
+  width: 22px; height: 22px; border-radius: 6px;
+  border: 2px solid var(--border2);
+  background: none; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; font-size: 0.8rem;
+}
+.delivery-check.delivered { background: var(--green); border-color: var(--green); color: #000; }
+
+/* mobile grid fix */
+@media (max-width: 480px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .form-group.full { grid-column: 1; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .card-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">WG <span>LLC</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('dashboard')" id="tab-dashboard">
+      <span class="tab-dot" style="background:#3fb950"></span>總覽
+    </button>
+    <button class="nav-tab" onclick="showPage('cargo')" id="tab-cargo">
+      <span class="tab-dot" style="background:#58a6ff"></span>貨批
+    </button>
+    <button class="nav-tab" onclick="showPage('invoice')" id="tab-invoice">
+      <span class="tab-dot" style="background:#39d3c3"></span>發票
+    </button>
+    <button class="nav-tab" onclick="showPage('delivery')" id="tab-delivery">
+      <span class="tab-dot" style="background:#a371f7"></span>配送
+    </button>
+    <button class="nav-tab" onclick="showPage('tasks')" id="tab-tasks">
+      <span class="tab-dot" style="background:#d29922"></span>任務
+    </button>
+    <button class="nav-tab" onclick="showPage('customers')" id="tab-customers">
+      <span class="tab-dot" style="background:#f0883e"></span>客戶
+    </button>
+    <button class="nav-tab" onclick="showPage('settings')" id="tab-settings">
+      <span class="tab-dot" style="background:#8b949e"></span>設定
+    </button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ══ DASHBOARD ══ -->
+<div class="page active" id="page-dashboard">
+  <div class="page-header">
+    <div class="page-title">營運總覽 <span id="dash-date"></span></div>
+  </div>
+  <div class="stats-row" id="dash-stats"></div>
+  <div class="dash-grid" id="dash-grid"></div>
+</div>
+
+<!-- ══ CARGO ══ -->
+<div class="page" id="page-cargo">
+  <div class="page-header">
+    <div class="page-title">貨批管理 <span>Shipment Tracker</span></div>
+    <button class="btn-add" onclick="openCargoModal()">＋ 新增貨批</button>
+  </div>
+  <div class="stats-row" id="cargo-stats"></div>
+  <div class="cards-list" id="cargo-list"></div>
+</div>
+
+<!-- ══ INVOICE ══ -->
+<div class="page" id="page-invoice">
+  <div class="page-header">
+    <div class="page-title">發票管理 <span>Invoice &amp; Payments</span></div>
+    <button class="btn-add" onclick="openInvoiceModal()">＋ 新增發票</button>
+  </div>
+  <div class="stats-row" id="invoice-stats"></div>
+  <div class="cards-list" id="invoice-list"></div>
+</div>
+
+<!-- ══ DELIVERY ══ -->
+<div class="page" id="page-delivery">
+  <div class="page-header">
+    <div class="page-title">配送管理 <span>Delivery Tracking</span></div>
+    <button class="btn-add" onclick="openDeliveryModal()">＋ 新增地址</button>
+  </div>
+  <div class="stats-row" id="delivery-stats"></div>
+  <div class="cards-list" id="delivery-list"></div>
+</div>
+
+<!-- ══ TASKS ══ -->
+<div class="page" id="page-tasks">
+  <div class="page-header">
+    <div class="page-title">每週任務 <span>Weekly Tasks</span></div>
+    <button class="btn-add" onclick="openTaskModal()">＋ 新增任務</button>
+  </div>
+  <div id="tasks-content"></div>
+</div>
+
+<div class="page" id="page-customers">
+  <div class="page-header">
+    <div class="page-title">客戶管理 <span>Customer Directory</span></div>
+    <button class="btn-add" onclick="openCustomerModal()">＋ 新增客戶</button>
+  </div>
+  <div class="stats-row" id="customer-stats"></div>
+  <div style="margin-bottom:12px">
+    <input id="customer-search" placeholder="搜尋客戶、公司、城市..." oninput="renderCustomers()"
+      style="width:100%;max-width:360px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-family:var(--sans);font-size:0.875rem;color:var(--text);outline:none;">
+  </div>
+  <div class="cards-list" id="customer-list"></div>
+</div>
+
+<div class="page" id="page-settings">
+  <div class="page-header">
+    <div class="page-title">設定 <span>Settings</span></div>
+  </div>
+  <div id="settings-content"></div>
+</div>
+
+</main>
+
+<div class="modal-overlay" id="customerModal" onclick="closeIfOutside(event,'customerModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="customerModalTitle">新增客戶</div>
+      <button class="modal-close" onclick="closeModal('customerModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>公司名稱</label><input id="cu-company" placeholder="AG Pro Companies"></div>
+        <div class="form-group"><label>聯絡人</label><input id="cu-contact" placeholder="John Smith"></div>
+        <div class="form-group"><label>客戶類型</label>
+          <select id="cu-type">
+            <option value="AG Pro">AG Pro</option>
+            <option value="Tom">Tom</option>
+            <option value="經銷商">經銷商</option>
+            <option value="其他">其他</option>
+          </select></div>
+        <div class="form-group"><label>電話</label><input type="tel" id="cu-phone" placeholder="(404) 555-0000"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="cu-email" placeholder="email@example.com"></div>
+        <div class="form-group full"><label>地址</label><input id="cu-addr" placeholder="903 N Tennille Ave"></div>
+        <div class="form-group"><label>城市, 州</label><input id="cu-city" placeholder="Donaldsonville, GA"></div>
+        <div class="form-group"><label>郵遞區號</label><input id="cu-zip" placeholder="39845"></div>
+        <div class="form-group"><label>付款條件</label>
+          <select id="cu-terms">
+            <option value="Wire">Wire Transfer</option>
+            <option value="Net 30">Net 30</option>
+            <option value="Net 60">Net 60</option>
+            <option value="預付">預付</option>
+            <option value="其他">其他</option>
+          </select></div>
+        <div class="form-group"><label>狀態</label>
+          <select id="cu-status">
+            <option value="活躍">活躍</option>
+            <option value="暫停">暫停</option>
+            <option value="潛在">潛在</option>
+          </select></div>
+        <div class="form-group full"><label>備註</label><textarea id="cu-notes" placeholder="特殊需求、信用額度、注意事項..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" id="customerDeleteBtn" style="display:none" onclick="deleteCustomer()">刪除</button>
+      <button class="btn-cancel" onclick="closeModal('customerModal')">取消</button>
+      <button class="btn-save" onclick="saveCustomer()">儲存</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ══ MODALS ══ -->
+
+<!-- Cargo Modal -->
+<div class="modal-overlay" id="cargoModal" onclick="closeIfOutside(event,'cargoModal')">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="cargoModalTitle">新增貨批</div>
+      <button class="modal-close" onclick="closeModal('cargoModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>House B/L 號碼</label><input id="c-bolNum" placeholder="SELTSN250078" style="font-family:var(--mono)"></div>
+        <div class="form-group"><label>運輸公司 Carrier</label><select id="c-carrier"></select></div>
+        <div class="form-group"><label>客戶 Customer</label><select id="c-customer"></select></div>
+        <div class="form-group"><label>狀態</label>
+          <select id="c-status">
+            <option value="待出港">待出港</option>
+            <option value="海運中">海運中</option>
+            <option value="到港待清關">到港待清關</option>
+            <option value="清關中">清關中</option>
+            <option value="待配送">待配送</option>
+            <option value="已完成">已完成</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>貨櫃號碼（每行一個，可先空白之後註屎）</label>
+          <textarea id="c-containers-ta" placeholder="MRSU4783132&#10;MRSU6977775&#10;EGHU8506277" style="font-family:var(--mono);min-height:80px;font-size:0.85rem"></textarea>
+        </div>
+        <div class="form-group"><label>裝載港 Port of Loading</label><select id="c-pol"></select></div>
+        <div class="form-group"><label>卸貨港 Port of Discharge</label><select id="c-pod"></select></div>
+        <div class="form-group"><label>ETD 出港日</label><input type="date" id="c-etd"></div>
+        <div class="form-group"><label>ETA 到港日</label><input type="date" id="c-eta"></div>
+        <div class="form-group"><label>最終交付日</label><input type="date" id="c-etaFinal"></div>
+        <div class="form-group"><label>貨物類型 Disc.</label><select id="c-disc"></select></div>
+        <div class="form-group"><label>數量 QTY</label><input id="c-qty" placeholder="21 PKGS x 3 貨櫃"></div>
+        <div class="form-group"><label>售價 Selling Price (USD)</label><input type="number" id="c-sellPrice" placeholder="0"></div>
+        <div class="form-group"><label>製造成本 Mfg (USD)</label><input type="number" id="c-mfgCost" placeholder="0"></div>
+        <div class="form-group"><label>海運費 Freight (USD)</label><input type="number" id="c-freight" placeholder="0"></div>
+        <div class="form-group"><label>陸運費 Trucking (USD)</label><input type="number" id="c-trucking" placeholder="0"></div>
+        <div class="form-group"><label>報關費 Customs (USD)</label><input type="number" id="c-customs" placeholder="0"></div>
+        <div class="form-group"><label>ISF (USD)</label><input type="number" id="c-isf" placeholder="0"></div>
+        <div class="form-group"><label>Courier + Handling (USD)</label><input type="number" id="c-courier" placeholder="0"></div>
+        <div class="form-group"><label>Chassis + Tarp (USD)</label><input type="number" id="c-chassis" placeholder="0"></div>
+        <div class="form-group"><label>Bank Charge (USD)</label><input type="number" id="c-bankCharge" placeholder="0"></div>
+        <div class="form-group full"><label>最終目的地</label><input id="c-dest" placeholder="903 N Tennille Ave, Donaldsonville GA 39845"></div>
+        <div class="form-group full"><label>備註</label><textarea id="c-notes" placeholder="特殊事項…"></textarea></div>
+      </div>
+
+      <!-- Document Checklist -->
+      <div id="cargoDocSection" style="display:none;margin-top:16px">
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);padding:12px 0 8px;border-top:1px solid var(--border)">文件追蹤 Document Checklist</div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_debitNote" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_debitNote" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Debit Note 收到</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input id="doc-ref-doc_debitNote" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
+              <input type="date" id="doc-date-doc_debitNote" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_arrivalNotice" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_arrivalNotice" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Arrival Notice 收到</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input id="doc-ref-doc_arrivalNotice" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
+              <input type="date" id="doc-date-doc_arrivalNotice" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_carrierFeePaid" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_carrierFeePaid" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Carrier Fee 已付</label>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_packingList" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_packingList" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Packing List 已提供</label>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_commercialInv" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_commercialInv" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Commercial Invoice 已提供</label>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_entrySummary" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_entrySummary" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Entry Summary 收到</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input id="doc-ref-doc_entrySummary" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
+              <input type="date" id="doc-date-doc_entrySummary" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_finalAddress" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_finalAddress" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">最終地址已提供</label>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_inlandBOL" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_inlandBOL" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Inland BOL 收到</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input id="doc-ref-doc_inlandBOL" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
+              <input type="date" id="doc-date-doc_inlandBOL" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_customerNotified" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_customerNotified" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">已通知客戶 Enroute</label>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_forwarderInv" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_forwarderInv" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Forwarder Invoice 收到</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input id="doc-ref-doc_forwarderInv" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
+              <input type="date" id="doc-date-doc_forwarderInv" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_forwarderPaid" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_forwarderPaid" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">貨代費用已付款</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input type="date" id="doc-date-doc_forwarderPaid" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_customerPaid" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_customerPaid" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">客戶貨款已收</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input type="date" id="doc-date-doc_customerPaid" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" id="cargoDeleteBtn" style="display:none" onclick="deleteCargo()">刪除</button>
+      <button class="btn-cancel" onclick="closeModal('cargoModal')">取消</button>
+      <button class="btn-save" onclick="saveCargo()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="invoiceModal" onclick="closeIfOutside(event,'invoiceModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="invoiceModalTitle">新增發票</div>
+      <button class="modal-close" onclick="closeModal('invoiceModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>發票號碼</label><input id="i-num" placeholder="10097"></div>
+        <div class="form-group"><label>日期</label><input type="date" id="i-date"></div>
+        <div class="form-group full"><label>客戶 Bill To</label><select id="i-billTo"></select></div>
+        <div class="form-group full"><label>項目說明</label><select id="i-item"></select></div>
+        <div class="form-group"><label>數量 QTY</label><input type="number" id="i-qty" placeholder="1323"></div>
+        <div class="form-group"><label>單位</label><input id="i-unit" placeholder="Rolls"></div>
+        <div class="form-group"><label>單價 Unit Price (USD)</label><input type="number" id="i-unitPrice" placeholder="485"></div>
+        <div class="form-group"><label>狀態</label>
+          <select id="i-status">
+            <option value="未付款">未付款</option>
+            <option value="部分付款">部分付款</option>
+            <option value="已付清">已付清</option>
+          </select>
+        </div>
+        <div class="form-group"><label>已收金額 Paid (USD)</label><input type="number" id="i-paid" placeholder="0"></div>
+        <div class="form-group"><label>付款日期</label><input type="date" id="i-paidDate"></div>
+        <div class="form-group full"><label>相關貨櫃號碼（用逗號分隔）</label><input id="i-containers" placeholder="MRSU4783132, MRSU6977775"></div>
+        <div class="form-group full"><label>備註</label><textarea id="i-notes"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" id="invoiceDeleteBtn" style="display:none" onclick="deleteInvoice()">🗑 刪除</button>
+      <button class="btn-cancel" onclick="closeModal('invoiceModal')">取消</button>
+      <button class="btn-save" onclick="saveInvoice()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delivery Modal -->
+<div class="modal-overlay" id="deliveryModal" onclick="closeIfOutside(event,'deliveryModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="deliveryModalTitle">新增配送地址</div>
+      <button class="modal-close" onclick="closeModal('deliveryModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>House B/L 選擇（從現有貨批）</label>
+          <select id="d-bolNum" onchange="onBolSelect()" style="font-family:var(--mono)"></select>
+        </div>
+        <div class="form-group full"><label>貨櫃號碼（選擇 BOL 後自動帶入，可多選）</label>
+          <div id="d-container-checks" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px 0;min-height:32px">
+            <span style="font-size:0.8rem;color:var(--text-dim)">先選擇 BOL</span>
+          </div>
+        </div>
+        <div class="form-group"><label>經銷商類型 Distributor</label><select id="d-dist" onchange="onDistChange()"></select></div>
+        <div class="form-group"><label>公司名稱 Company</label><select id="d-business" onchange="onCompanyChange()"></select></div>
+        <div class="form-group full"><label>地址（從現有地址選擇，或手動輸入）</label>
+          <select id="d-addr-select" onchange="onAddrSelect()"><option value="">— 選擇已有地址 —</option></select>
+          <input id="d-addr" placeholder="262 Country Road 12" style="margin-top:6px">
+        </div>
+        <div class="form-group"><label>城市, 州</label><input id="d-city" placeholder="Headland, AL"></div>
+        <div class="form-group"><label>郵遞區號</label><input id="d-zip" placeholder="36345"></div>
+        <div class="form-group"><label>聯絡人</label><input id="d-contact" placeholder="Michael DeShazo"></div>
+        <div class="form-group"><label>電話</label><input type="tel" id="d-phone" placeholder="(334)714-4555"></div>
+        <div class="form-group"><label>配送狀態</label>
+          <select id="d-status">
+            <option value="待配送">待配送</option>
+            <option value="已排程">已排程</option>
+            <option value="已配送">已配送</option>
+          </select>
+        </div>
+        <div class="form-group"><label>配送日期</label><input type="date" id="d-delivDate"></div>
+        <div class="form-group full"><label>配送內容</label><div id="d-items-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div></div>
+        <div class="form-group full"><label>備註</label><textarea id="d-notes"></textarea></div>
+      </div>
+    </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" id="deliveryDeleteBtn" style="display:none" onclick="deleteDelivery()">🗑 刪除</button>
+      <button class="btn-cancel" onclick="closeModal('deliveryModal')">取消</button>
+      <button class="btn-save" onclick="saveDelivery()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Task Modal -->
+<div class="modal-overlay" id="taskModal" onclick="closeIfOutside(event,'taskModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">新增任務</div>
+      <button class="modal-close" onclick="closeModal('taskModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>任務說明</label><input id="t-text" placeholder="例：確認 Container MRSU4783132 清關狀態"></div>
+        <div class="form-group"><label>週次（週一日期）</label><input type="date" id="t-week"></div>
+        <div class="form-group"><label>優先度</label>
+          <select id="t-priority">
+            <option value="一般">一般</option>
+            <option value="重要">重要</option>
+            <option value="緊急">緊急</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>備註</label><textarea id="t-notes" placeholder="細節說明…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('taskModal')">取消</button>
+      <button class="btn-save" onclick="saveTask()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════
+// DATA LAYER — Google Sheets Sync
+// ══════════════════════════════
+const API = 'https://script.google.com/macros/s/AKfycbyt6jYEDSeesF1chOR1oQhRYRZx_1GTNFB79mZpJY2qF7CDu2iDow4A80S8b6Mefpd8/exec';
+
+let cargo      = [];
+let invoices   = [];
+let deliveries = [];
+let tasks      = [];
+let customers  = [];
+let _syncing   = false;
+
+// ── Sync indicator ──
+function showSync(msg, color) {
+  let el = document.getElementById('sync-indicator');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sync-indicator';
+    el.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:999;padding:8px 16px;border-radius:8px;font-size:0.78rem;font-family:var(--mono);transition:all 0.3s;pointer-events:none;';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.background = color || 'var(--surface2)';
+  el.style.color = 'var(--text)';
+  el.style.border = '1px solid var(--border)';
+  el.style.opacity = '1';
+}
+function hideSync() {
+  const el = document.getElementById('sync-indicator');
+  if (el) { el.style.opacity = '0'; }
+}
+
+// ── Fetch all data from Google Sheets ──
+async function loadAll() {
+  showSync('⟳ 載入中…');
+  try {
+    const sheets = ['Shipments','Invoices','Deliveries','Tasks','Customers','Settings'];
+    const results = await Promise.all(sheets.map(s =>
+      fetch(`${API}?sheet=${s}`).then(r => r.json())
+    ));
+    cargo      = results[0].data || [];
+    invoices   = results[1].data || [];
+    deliveries = results[2].data || [];
+    tasks      = results[3].data || [];
+    customers  = results[4].data || [];
+    // Load settings from Sheets
+    const rawSets = results[5]?.data || [];
+    if (rawSets.length) {
+      const merged = {};
+      rawSets.forEach(r => { try { merged[r.key] = JSON.parse(r.value); } catch{} });
+      Object.keys(DEFAULT_LISTS).forEach(k => { if (!merged[k]) merged[k] = DEFAULT_LISTS[k]; });
+    }
+
+    // normalize booleans for tasks
+    tasks = tasks.map(t => ({ ...t, done: t.done === true || t.done === 'TRUE' || t.done === 'true' }));
+
+    showSync('✓ 已同步', 'var(--green-dim)');
+    setTimeout(hideSync, 2000);
+    renderAll();
+  } catch(e) {
+    showSync('⚠ 無法連線', 'var(--red-dim)');
+    console.error(e);
+  }
+}
+
+// ── Save single record to Google Sheets ──
+async function saveToSheet(sheet, record) {
+  showSync('⟳ 儲存中…');
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      body: JSON.stringify({ sheet, action: 'save', record }),
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+    showSync('✓ 已儲存', 'var(--green-dim)');
+    setTimeout(hideSync, 1500);
+    return true;
+  } catch(e) {
+    showSync('⚠ 儲存失敗', 'var(--red-dim)');
+    console.error(e);
+    return false;
+  }
+}
+
+// ── Delete record from Google Sheets ──
+async function deleteFromSheet(sheet, id) {
+  showSync('⟳ 刪除中…');
+  try {
+    await fetch(API, {
+      method: 'POST',
+      body: JSON.stringify({ sheet, action: 'delete', record: { id } }),
+    });
+    showSync('✓ 已刪除', 'var(--green-dim)');
+    setTimeout(hideSync, 1500);
+    return true;
+  } catch(e) {
+    showSync('⚠ 刪除失敗', 'var(--red-dim)');
+    return false;
+  }
+}
+
+// legacy save() shim — not used anymore but keeps references safe
+function save() {}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+function fmt$(n) { if (!n) return '—'; return '$' + Number(n).toLocaleString('en-US'); }
+function fmtPhone(p) {
+  if (!p) return '';
+  const d = String(p).replace(/\D/g,'');
+  if (d.length === 10) return '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
+  if (d.length === 11 && d[0]==='1') return '+1 (' + d.slice(1,4) + ') ' + d.slice(4,7) + '-' + d.slice(7);
+  return String(p); // return as-is if can't parse
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  const s = String(d).trim();
+  if (!s || s === 'Invalid Date' || s === '0') return '—';
+  try {
+    const dt = new Date(s + (s.includes('T') ? '' : 'T12:00:00'));
+    if (isNaN(dt.getTime())) return '—';
+    return dt.toLocaleDateString('zh-TW', {month:'short', day:'numeric'});
+  } catch(e) { return '—'; }
+}
+function daysFromNow(d) {
+  if (!d) return null;
+  const diff = Math.round((new Date(d+'T12:00:00') - new Date()) / 86400000);
+  return diff;
+}
+
+// ══════════════════════════════
+// NAVIGATION
+// ══════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  renderAll();
+}
+
+// ══════════════════════════════
+// ==============================
+// SHIPMENT (BOL) TRACKER
+// ==============================
+const SHIP_STATUS = {
+  '\u5f85\u51fa\u6e2f':    { cls:'badge-muted',  step:0 },
+  '\u6d77\u904b\u4e2d':    { cls:'badge-blue',   step:1 },
+  '\u5230\u6e2f\u5f85\u6e05\u95dc': { cls:'badge-amber',  step:2 },
+  '\u6e05\u95dc\u4e2d':    { cls:'badge-amber',  step:3 },
+  '\u5f85\u914d\u9001':    { cls:'badge-purple', step:4 },
+  '\u5df2\u5b8c\u6210':    { cls:'badge-green',  step:5 },
+};
+
+const DOC_STEPS = [
+  { key:'doc_debitNote',       label:'Debit Note \u6536\u5230',           ref:'ref_debitNote',     date:'date_debitNote' },
+  { key:'doc_arrivalNotice',   label:'Arrival Notice \u6536\u5230',       ref:'ref_arrivalNotice', date:'date_arrivalNotice' },
+  { key:'doc_carrierFeePaid',  label:'Carrier Fee \u5df2\u4ed8',          ref:'',                  date:'' },
+  { key:'doc_packingList',     label:'Packing List \u5df2\u63d0\u4f9b',   ref:'',                  date:'' },
+  { key:'doc_commercialInv',   label:'Commercial Invoice \u5df2\u63d0\u4f9b', ref:'',              date:'' },
+  { key:'doc_entrySummary',    label:'Entry Summary \u6536\u5230',        ref:'ref_entrySummary',  date:'date_entrySummary' },
+  { key:'doc_finalAddress',    label:'\u6700\u7d42\u5730\u5740\u5df2\u63d0\u4f9b',               ref:'',                  date:'' },
+  { key:'doc_inlandBOL',       label:'Inland BOL \u6536\u5230',           ref:'ref_inlandBOL',     date:'date_inlandBOL' },
+  { key:'doc_customerNotified',label:'\u5df2\u901a\u77e5\u5ba2\u6236 Enroute',                    ref:'',                  date:'' },
+  { key:'doc_forwarderInv',    label:'Forwarder Invoice \u6536\u5230',    ref:'ref_forwarderInv',  date:'date_forwarderInv' },
+  { key:'doc_forwarderPaid',   label:'\u8ca8\u4ee3\u8cbb\u7528\u5df2\u4ed8\u6b3e',               ref:'',                  date:'date_forwarderPaid' },
+  { key:'doc_customerPaid',    label:'\u5ba2\u6236\u8ca8\u6b3e\u5df2\u6536',                      ref:'',                  date:'date_customerPaid' },
+];
+
+function isTrue(v) { return v===true||v==='TRUE'||v==='true'||v===1||v==='1'; }
+
+// Normalize date values from Google Sheets
+function normalizeDate(v) {
+  if (!v) return '';
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return '';
+    return v.getFullYear() + '-' + String(v.getMonth()+1).padStart(2,'0') + '-' + String(v.getDate()).padStart(2,'0');
+  }
+  const s = String(v).trim();
+  if (!s || s === '0' || s === 'Invalid Date' || s === 'NaN') return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // Google Sheets serial number (days since Dec 30 1899)
+  if (/^\d{5}$/.test(s)) {
+    const epoch = new Date(1899, 11, 30);
+    epoch.setDate(epoch.getDate() + parseInt(s));
+    if (!isNaN(epoch.getTime())) return epoch.getFullYear() + '-' + String(epoch.getMonth()+1).padStart(2,'0') + '-' + String(epoch.getDate()).padStart(2,'0');
+  }
+  try {
+    const d = new Date(s);
+    if (!isNaN(d.getTime()) && d.getFullYear() > 1970) {
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+  } catch(e) {}
+  return '';
+}
+
+
+function renderCargoStats() {
+  const active = cargo.filter(s => s.status !== '\u5df2\u5b8c\u6210').length;
+  const atPort = cargo.filter(s => ['\u5230\u6e2f\u5f85\u6e05\u95dc','\u6e05\u95dc\u4e2d'].includes(s.status)).length;
+  const done   = cargo.filter(s => s.status === '\u5df2\u5b8c\u6210').length;
+  const ctrs   = cargo.reduce((s,sh) => s + (sh.containers||'').split(',').map(x=>x.trim()).filter(Boolean).length, 0);
+  const el = document.getElementById('cargo-stats');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + cargo.length + '</div><div class="stat-card-lbl">\u7e3d\u8ca8\u6279</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + ctrs + '</div><div class="stat-card-lbl">\u7e3d\u8ca8\u6ac3</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + atPort + '</div><div class="stat-card-lbl">\u5230\u6e2f/\u6e05\u95dc\u4e2d</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + done + '</div><div class="stat-card-lbl">\u5df2\u5b8c\u6210</div></div>';
+}
+
+function renderCargo() {
+  renderCargoStats();
+  const el = document.getElementById('cargo-list');
+  if (!cargo.length) { el.innerHTML = emptyState('\U0001f6a2','\u5c1a\u7121\u8ca8\u6279\u8cc7\u6599','\u9ede\u64ca\u65b0\u589e\u8ca8\u6279\u958b\u59cb\u8ffd\u8e64'); return; }
+  const sorted = [...cargo].sort((a,b) => (SHIP_STATUS[a.status]?.step??0)-(SHIP_STATUS[b.status]?.step??0));
+  let html = '';
+  sorted.forEach(s => {
+    const st      = SHIP_STATUS[s.status]||{cls:'badge-muted'};
+    const ctrs    = (s.containers||'').split(',').map(x=>x.trim()).filter(Boolean);
+    const doneN   = DOC_STEPS.filter(d=>isTrue(s[d.key])).length;
+    const pct     = Math.round(doneN/DOC_STEPS.length*100);
+    const etaDays = daysFromNow(s.eta);
+    const profit  = (Number(s.sellPrice)||0)-(Number(s.mfgCost)||0)-(Number(s.freight)||0)
+                   -(Number(s.trucking)||0)-(Number(s.customs)||0)-(Number(s.isf)||0)
+                   -(Number(s.courier)||0)-(Number(s.chassis)||0)-(Number(s.bankCharge)||0);
+    const nextDoc = DOC_STEPS.find(d=>!isTrue(s[d.key]));
+
+    let etaTag = '';
+    if (etaDays!==null && s.status!=='\u5df2\u5b8c\u6210') {
+      if (etaDays<0)      etaTag = '<span class="badge badge-red"   style="font-size:0.68rem">\u9065\u671f '+Math.abs(etaDays)+'\u5929</span>';
+      else if (etaDays<=5) etaTag = '<span class="badge badge-amber" style="font-size:0.68rem">'+etaDays+'\u5929\u5f8c\u5230\u6e2f</span>';
+    }
+
+    // ── Card open ──
+    html += '<div class="card container-card" onclick="openCargoEdit(\''+s.id+'\')">'; // [1]
+
+    // ── Top row ──
+    html += '<div class="card-top">'; // [2]
+      // Left
+      html += '<div style="flex:1">'; // [3]
+        html += '<div class="card-id">'+(s.carrier||'')+' '+(s.customer?'&middot; '+s.customer:'')+'</div>';
+        html += '<div class="card-title" style="font-family:var(--mono)">'+(s.bolNum||'\u2014 BOL \u5f85\u8f38\u5165')+'</div>';
+        // Containers with delivery status dots
+        if (ctrs.length) {
+          html += '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">';
+          ctrs.forEach(ct => {
+            const dr = deliveries.find(dd =>
+              dd.bolNum && String(dd.bolNum).trim()===String(s.bolNum||'').trim() &&
+              dd.containerNum && dd.containerNum.split(',').map(x=>x.trim()).includes(ct)
+            );
+            const ds = dr ? dr.status : null;
+            const dc = ds==='\u5df2\u914d\u9001'?'var(--green)':ds==='\u5df2\u6392\u7a0b'?'var(--blue)':ds?'var(--amber)':'var(--border2)';
+            const tip = ds ? ds+(dr.city?' \xb7 '+dr.city:'') : '\u5c1a\u672a\u5206\u914d';
+            html += '<span title="'+tip+'" style="font-family:var(--mono);font-size:0.7rem;background:var(--surface2);border:1px solid '+dc+';border-radius:4px;padding:2px 6px;color:'+(ds?'var(--text)':'var(--text-muted)')+'">' +
+              '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+dc+';margin-right:4px;vertical-align:middle"></span>'+ct+'</span>';
+          });
+          html += '</div>';
+          const delvd = ctrs.filter(ct => {
+            const dr = deliveries.find(dd => dd.bolNum && String(dd.bolNum).trim()===String(s.bolNum||'').trim() && dd.containerNum && dd.containerNum.split(',').map(x=>x.trim()).includes(ct));
+            return dr && dr.status==='\u5df2\u914d\u9001';
+          }).length;
+          html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">\u914d\u9001: '+delvd+' / '+ctrs.length+'</div>';
+        } else {
+          html += '<div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px">\u8ca8\u6ac3\u865f\u78bc\u5f85\u8f38\u5165</div>';
+        }
+      html += '</div>'; // [3] close left
+      // Right: badge + eta tag
+      html += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'; // [4]
+        html += '<span class="badge '+st.cls+'">'+s.status+'</span>';
+        if (etaTag) html += etaTag;
+      html += '</div>'; // [4] close right
+    html += '</div>'; // [2] close card-top
+
+    // ── Doc progress ──
+    html += '<div style="margin-top:10px">'; // [5]
+      html += '<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px"><span>\u6587\u4ef6\u9032\u5ea6</span><span>'+doneN+' / '+DOC_STEPS.length+'</span></div>';
+      html += '<div style="height:4px;background:var(--surface3);border-radius:2px;overflow:hidden"><div style="height:100%;border-radius:2px;background:'+(pct===100?'var(--green)':'var(--blue)')+';width:'+pct+'%"></div></div>';
+      if (nextDoc && pct<100) html += '<div style="font-size:0.72rem;color:var(--amber);margin-top:4px">\u25b6 '+nextDoc.label+'</div>';
+    html += '</div>'; // [5] close doc progress
+
+    // ── Key numbers ──
+    html += '<div class="card-grid" style="margin-top:10px">'; // [6]
+      if (s.eta)       html += '<div class="card-field"><div class="card-field-lbl">ETA \u5230\u6e2f</div><div class="card-field-val">'+fmtDate(s.eta)+'</div></div>';
+      if (s.etaFinal)  html += '<div class="card-field"><div class="card-field-lbl">\u6700\u7d42\u4ea4\u4ed8</div><div class="card-field-val">'+fmtDate(s.etaFinal)+'</div></div>';
+      if (s.sellPrice) html += '<div class="card-field"><div class="card-field-lbl">\u552e\u50f9</div><div class="card-field-val" style="color:var(--teal)">'+fmt$(s.sellPrice)+'</div></div>';
+      html += '<div class="card-field"><div class="card-field-lbl">\u5229\u6f64</div><div class="card-field-val" style="color:'+(profit>=0?'var(--green)':'var(--red)')+'">'+fmt$(profit)+'</div></div>';
+    html += '</div>'; // [6] close card-grid
+
+    if (s.dest) html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:8px">\U0001f4cd '+s.dest+'</div>';
+
+    html += '</div>'; // [1] close card
+  });
+  el.innerHTML = html;
+}
+
+let editingCargo = null;
+
+function openCargoModal(s) {
+  editingCargo = s || null;
+  document.getElementById('cargoModalTitle').textContent = s ? '\u7de8\u8f2f\u8ca8\u6279' : '\u65b0\u589e\u8ca8\u6279';
+  document.getElementById('cargoDeleteBtn').style.display = s ? 'block' : 'none';
+  const docSec = document.getElementById('cargoDocSection');
+  if (docSec) docSec.style.display = s ? 'block' : 'none';
+  populateCargoDropdowns(s);
+  ['bolNum','status','etd','eta','etaFinal','disc','qty','sellPrice','mfgCost','freight','trucking','customs','isf','courier','chassis','bankCharge','dest','notes'].forEach(k => {
+    const el = document.getElementById('c-'+k);
+    if (el) el.value = s ? (s[k]||'') : (k==='status'?'\u5f85\u51fa\u6e2f':'');
+  });
+  const cta = document.getElementById('c-containers-ta');
+  if (cta) cta.value = s ? (s.containers||'').replace(/,\s*/g,'\n') : '';
+  if (s) {
+    DOC_STEPS.forEach(d => {
+      const cb = document.getElementById('doc-cb-'+d.key);
+      if (cb) cb.checked = isTrue(s[d.key]);
+      if (d.ref)  { const ri = document.getElementById('doc-ref-'+d.key);  if (ri) ri.value = s[d.ref]||''; }
+      if (d.date) { const di = document.getElementById('doc-date-'+d.key); if (di) di.value = s[d.date]||''; }
+    });
+  }
+  document.getElementById('cargoModal').classList.add('open');
+}
+function openCargoEdit(id) { openCargoModal(cargo.find(x => x.id === id)); }
+
+async function saveCargo() {
+  const data = {};
+  ['bolNum','status','etd','eta','etaFinal','disc','qty','sellPrice','mfgCost','freight','trucking','customs','isf','courier','chassis','bankCharge','dest','notes'].forEach(k => {
+    const el = document.getElementById('c-'+k);
+    data[k] = el ? el.value : '';
+  });
+  ['customer','carrier','pol','pod'].forEach(k => {
+    const el = document.getElementById('c-'+k);
+    data[k] = el ? el.value : '';
+  });
+  const cta = document.getElementById('c-containers-ta');
+  data.containers = cta ? cta.value.split(/[\n,]/).map(x=>x.trim()).filter(Boolean).join(', ') : '';
+  if (!data.bolNum && !data.containers) { alert('\u8acb\u8f38\u5165 BOL \u865f\u78bc\u6216\u8ca8\u6ac3\u865f\u78bc'); return; }
+  DOC_STEPS.forEach(d => {
+    const cb = document.getElementById('doc-cb-'+d.key);
+    data[d.key] = cb ? cb.checked : false;
+    if (d.ref)  { const ri = document.getElementById('doc-ref-'+d.key);  data[d.ref]  = ri ? ri.value : ''; }
+    if (d.date) { const di = document.getElementById('doc-date-'+d.key); data[d.date] = di ? di.value : ''; }
+  });
+  const record = editingCargo ? {...editingCargo,...data} : {id:uid(),...data};
+  closeModal('cargoModal');
+  const ok = await saveToSheet('Shipments', record);
+  if (ok) await loadAll();
+}
+
+async function deleteCargo() {
+  if (!editingCargo || !confirm('\u78ba\u5b9a\u522a\u9664\u6b64\u8ca8\u6279\uff1f')) return;
+  closeModal('cargoModal');
+  const ok = await deleteFromSheet('Shipments', editingCargo.id);
+  if (ok) await loadAll();
+}
+
+
+// MODAL HELPERS
+// ══════════════════════════════
+let editingInvoice = null, editingDelivery = null;
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeIfOutside(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+
+
+
+function openInvoiceModal(inv) {
+  editingInvoice = inv || null;
+  document.getElementById('invoiceModalTitle').textContent = inv ? '編輯發票' : '新增發票';
+  document.getElementById('invoiceDeleteBtn').style.display = inv ? 'block' : 'none';
+  populateInvoiceDropdowns(inv);
+  ['num','date','qty','unit','unitPrice','status','paid','paidDate','containers','notes'].forEach(k => {
+    const el = document.getElementById('i-'+k);
+    if (el) el.value = inv ? (inv[k] || '') : (k === 'status' ? '未付款' : '');
+  });
+  document.getElementById('invoiceModal').classList.add('open');
+}
+function openInvoiceEdit(id) { openInvoiceModal(invoices.find(x => x.id === id)); }
+
+async function saveInvoice() {
+  const data = {};
+  ['num','date','billTo','item','qty','unit','unitPrice','status','paid','paidDate','containers','notes'].forEach(k => {
+    data[k] = document.getElementById('i-'+k)?.value || '';
+  });
+  if (!data.billTo) { alert('請輸入客戶名稱'); return; }
+  const record = editingInvoice ? { ...editingInvoice, ...data } : { id: uid(), ...data };
+  closeModal('invoiceModal');
+  const ok = await saveToSheet('Invoices', record);
+  if (ok) await loadAll();
+}
+async function deleteInvoice() {
+  if (!editingInvoice || !confirm('確定刪除此發票？')) return;
+  closeModal('invoiceModal');
+  const ok = await deleteFromSheet('Invoices', editingInvoice.id);
+  if (ok) await loadAll();
+}
+
+function onBolSelect() {
+  const bolVal = (document.getElementById('d-bolNum')?.value || '').trim();
+  const box = document.getElementById('d-container-checks');
+  if (!box) return;
+  if (!bolVal) { box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">先選擇 BOL</span>'; return; }
+  const shipment = cargo.find(s => String(s.bolNum||'').trim() === bolVal);
+  const ctrs = shipment ? (shipment.containers||'').split(/[,\n]/).map(x=>x.trim()).filter(Boolean) : [];
+  if (!ctrs.length) { box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">此 BOL 尚無貨櫃號碼（請先在貨批頁面填入）</span>'; return; }
+  const currentId = editingDelivery ? editingDelivery.id : null;
+  const usedByOthers = new Set(
+    deliveries
+      .filter(del => del.id !== currentId && String(del.bolNum||'').trim() === bolVal && del.containerNum)
+      .flatMap(del => del.containerNum.split(',').map(x=>x.trim()).filter(Boolean))
+  );
+  box.innerHTML = ctrs.map(ct => {
+    const isUsed = usedByOthers.has(ct);
+    return '<label style="display:inline-flex;align-items:center;gap:6px;background:'+(isUsed?'var(--surface3)':'var(--surface2)')+';border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:'+(isUsed?'default':'pointer')+';font-size:0.82rem;font-family:var(--mono);opacity:'+(isUsed?'0.45':'1')+'">' +
+      '<input type="checkbox" name="d-ctr" value="'+ct+'"'+(isUsed?' disabled':'')+' style="accent-color:var(--green);width:14px;height:14px"> ' +
+      ct + (isUsed?' <span style="font-size:0.65rem;color:var(--text-muted)">已配送</span>':'') + '</label>';
+  }).join('');
+}
+
+function openDeliveryModal(d) {
+  editingDelivery = d || null;
+  document.getElementById('deliveryModalTitle').textContent = d ? '編輯配送' : '新增配送';
+  document.getElementById('deliveryDeleteBtn').style.display = d ? 'block' : 'none';
+
+  // BOL dropdown
+  const bolSel = document.getElementById('d-bolNum');
+  if (bolSel) {
+    const bols = [...new Set(cargo.filter(s=>s.bolNum).map(s=>String(s.bolNum).trim()))].filter(Boolean).sort();
+    bolSel.innerHTML = '<option value="">— 選擇 BOL —</option>' +
+      bols.map(b => '<option value="'+b+'"'+(d&&d.bolNum===b?' selected':'')+'>'+b+'</option>').join('');
+  }
+
+  // Container checkboxes
+  const box = document.getElementById('d-container-checks');
+  if (box) {
+    if (d && d.bolNum) {
+      const shipment = cargo.find(s => s.bolNum === d.bolNum);
+      const ctrs = shipment ? (shipment.containers||'').split(',').map(x=>x.trim()).filter(Boolean) : [];
+      const selected = (d.containerNum||'').split(',').map(x=>x.trim()).filter(Boolean);
+      box.innerHTML = ctrs.length ? ctrs.map(ct =>
+        '<label style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:0.82rem;font-family:var(--mono)">' +
+        '<input type="checkbox" name="d-ctr" value="'+ct+'"'+(selected.includes(ct)?' checked':'')+' style="accent-color:var(--green);width:14px;height:14px"> '+ct+'</label>'
+      ).join('') : '<span style="font-size:0.8rem;color:var(--text-dim)">此 BOL 尚無貨櫃號碼</span>';
+    } else {
+      box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">先選擇 BOL</span>';
+    }
+  }
+
+  populateDeliveryDropdowns(d);
+  // Re-populate company dropdown after type is set
+  if (d && d.dist) {
+    const bizSel = document.getElementById('d-business');
+    if (bizSel) {
+      const companies = customers.filter(x => !d.dist || x.type === d.dist).map(x => x.company||x.contact).filter(Boolean).sort();
+      const unique = [...new Set(companies)];
+      bizSel.innerHTML = '<option value="">— 選擇公司 —</option>' +
+        unique.map(co => '<option value="'+co+'"'+(d.business===co?' selected':'')+'>'+co+'</option>').join('');
+    }
+  }
+  ['addr','city','zip','contact','phone','status','delivDate','wraps','parts','notes'].forEach(k => {
+    const el = document.getElementById('d-'+k);
+    if (el) el.value = d ? (d[k]||'') : (k==='status'?'待配送':'');
+  });
+  const addrSel = document.getElementById('d-addr-select');
+  if (addrSel) addrSel.value = '';
+  // Populate delivery items grid
+  populateDelivItemsGrid(d);
+  document.getElementById('deliveryModal').classList.add('open');
+}
+function openDeliveryEdit(id) { openDeliveryModal(deliveries.find(x => x.id === id)); }
+
+async function saveDelivery() {
+  const data = {};
+  ['dist','business','addr','city','zip','contact','phone','status','delivDate','wraps','parts','notes'].forEach(k => {
+    data[k] = document.getElementById('d-'+k)?.value || '';
+  });
+  // BOL and container from their special selects
+  data.bolNum = document.getElementById('d-bolNum')?.value || '';
+  // Collect checked containers
+  const checked = [...document.querySelectorAll('input[name="d-ctr"]:checked')].map(x=>x.value);
+  data.containerNum = checked.join(', ');
+  data.delivItems = JSON.stringify(getDelivItemsData());
+  if (!data.addr && !data.city) { alert('請輸入地址或城市'); return; }
+  const record = editingDelivery ? { ...editingDelivery, ...data } : { id: uid(), ...data };
+  closeModal('deliveryModal');
+  const ok = await saveToSheet('Deliveries', record);
+  if (ok) await loadAll();
+}
+async function deleteDelivery() {
+  if (!editingDelivery || !confirm('確定刪除此地址？')) return;
+  closeModal('deliveryModal');
+  const ok = await deleteFromSheet('Deliveries', editingDelivery.id);
+  if (ok) await loadAll();
+}
+
+function openTaskModal() {
+  document.getElementById('t-text').value = '';
+  document.getElementById('t-week').value = getWeekMonday(new Date());
+  document.getElementById('t-priority').value = '一般';
+  document.getElementById('t-notes').value = '';
+  document.getElementById('taskModal').classList.add('open');
+}
+
+async function saveTask() {
+  const text = document.getElementById('t-text').value.trim();
+  if (!text) { alert('請輸入任務說明'); return; }
+  const record = {
+    id: uid(),
+    text,
+    week: document.getElementById('t-week').value || getWeekMonday(new Date()),
+    priority: document.getElementById('t-priority').value,
+    notes: document.getElementById('t-notes').value.trim(),
+    done: false,
+  };
+  closeModal('taskModal');
+  const ok = await saveToSheet('Tasks', record);
+  if (ok) await loadAll();
+}
+
+// ══════════════════════════════
+// HELPERS
+// ══════════════════════════════
+function emptyState(icon, text, sub) {
+  return `<div class="empty"><div class="empty-icon">${icon}</div><div class="empty-text">${text}</div><div class="empty-sub">${sub}</div></div>`;
+}
+
+
+// ==============================
+// INVOICE
+// ==============================
+const INV_STATUS = {
+  '未付款':   'badge-red',
+  '部分付款': 'badge-amber',
+  '已付清':   'badge-green',
+};
+
+function renderInvoiceStats() {
+  const total  = invoices.reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)), 0);
+  const paid   = invoices.reduce((s,i) => s + (Number(i.paid)||0), 0);
+  const unpaid = invoices.filter(i => i.status !== '已付清').length;
+  const el = document.getElementById('invoice-stats');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + fmt$(total) + '</div><div class="stat-card-lbl">總發票金額</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + fmt$(paid) + '</div><div class="stat-card-lbl">已收款</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--red)">' + fmt$(total - paid) + '</div><div class="stat-card-lbl">未收款</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + unpaid + '</div><div class="stat-card-lbl">待收發票</div></div>';
+}
+
+function renderInvoices() {
+  renderInvoiceStats();
+  const el = document.getElementById('invoice-list');
+  if (!el) return;
+  if (!invoices.length) { el.innerHTML = emptyState('🧾','尚無發票資料','點擊新增發票開始記錄'); return; }
+  const sorted = [...invoices].sort((a,b) => {
+    const o = {'未付款':0,'部分付款':1,'已付清':2};
+    return (o[a.status]||0)-(o[b.status]||0);
+  });
+  let html = '';
+  sorted.forEach(inv => {
+    const total = (Number(inv.qty)||0)*(Number(inv.unitPrice)||0);
+    const balance = total - (Number(inv.paid)||0);
+    const pct = total > 0 ? Math.round((Number(inv.paid)||0)/total*100) : 0;
+    html += '<div class="card invoice-card" onclick="openInvoiceEdit(\'' + inv.id + '\')">';
+    html += '<div class="card-top"><div><div class="card-id">INV #' + (inv.num||'—') + ' · ' + fmtDate(inv.date) + '</div>';
+    html += '<div class="card-title">' + (inv.billTo||'—') + '</div></div>';
+    html += '<span class="badge ' + (INV_STATUS[inv.status]||'badge-muted') + '">' + (inv.status||'—') + '</span></div>';
+    html += '<div class="card-grid">';
+    if (inv.item)    html += '<div class="card-field"><div class="card-field-lbl">項目</div><div class="card-field-val">' + inv.item + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">數量</div><div class="card-field-val">' + (inv.qty||'—') + ' ' + (inv.unit||'') + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">總金額</div><div class="card-field-val" style="color:var(--teal)">' + fmt$(total) + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">未收餘額</div><div class="card-field-val" style="color:' + (balance>0?'var(--red)':'var(--green)') + '">' + fmt$(balance) + '</div></div>';
+    html += '</div>';
+    if (total > 0) html += '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%;background:' + (pct===100?'var(--green)':'var(--teal)') + '"></div></div>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+// ==============================
+// DELIVERY
+// ==============================
+const DEL_STATUS = {
+  '待配送':  'badge-amber',
+  '已排程':  'badge-blue',
+  '已配送':  'badge-green',
+};
+
+function renderDeliveryStats() {
+  const pending   = deliveries.filter(d => d.status === '待配送').length;
+  const scheduled = deliveries.filter(d => d.status === '已排程').length;
+  const done      = deliveries.filter(d => d.status === '已配送').length;
+  const totalWraps= deliveries.filter(d => d.status !== '已配送').reduce((s,d) => s+(Number(d.wraps)||0), 0);
+  const el = document.getElementById('delivery-stats');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + pending + '</div><div class="stat-card-lbl">待配送</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + scheduled + '</div><div class="stat-card-lbl">已排程</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + done + '</div><div class="stat-card-lbl">已完成</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + totalWraps + '</div><div class="stat-card-lbl">待送包膜卷</div></div>';
+}
+
+function renderDeliveries() {
+  renderDeliveryStats();
+  const el = document.getElementById('delivery-list');
+  if (!el) return;
+  if (!deliveries.length) { el.innerHTML = emptyState('🚛','尚無配送地址','點擊新增地址開始管理'); return; }
+  const sorted = [...deliveries].sort((a,b) => {
+    const o = {'待配送':0,'已排程':1,'已配送':2};
+    return (o[a.status]||0)-(o[b.status]||0);
+  });
+  let html = '';
+  sorted.forEach(d => {
+    html += '<div class="card delivery-card" onclick="openDeliveryEdit(\'' + d.id + '\')">';
+    html += '<div class="card-top"><div>';
+    html += '<div class="card-id">' + (d.dist||'') + (d.business&&d.business!==d.dist?' &middot; '+d.business:'') + '</div>';
+    html += '<div class="card-title">' + (d.city||d.addr||'—') + '</div>';
+    if (d.containerNum || d.bolNum) {
+      const ctrs = (d.containerNum||'').split(',').map(x=>x.trim()).filter(Boolean);
+      html += '<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;align-items:center">';
+      ctrs.forEach(ct => { html += '<span style="font-family:var(--mono);font-size:0.7rem;background:var(--teal-dim);border:1px solid var(--teal);border-radius:4px;padding:2px 6px;color:var(--teal)">'+ct+'</span>'; });
+      if (d.bolNum) html += '<span style="font-size:0.7rem;color:var(--text-dim);padding:2px 4px;font-family:var(--mono)">BOL: '+d.bolNum+'</span>';
+      html += '</div>';
+    }
+
+    html += '</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">';
+    html += '<span class="badge ' + (DEL_STATUS[d.status]||'badge-muted') + '">' + d.status + '</span>';
+    html += '<button onclick="event.stopPropagation();toggleDelivered(\'' + d.id + '\')" class="delivery-check ' + (d.status==='已配送'?'delivered':'') + '" title="標記已配送">' + (d.status==='已配送'?'✓':'') + '</button>';
+    html += '</div></div>';
+    html += '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px">📍 ' + (d.addr||'') + (d.city?', '+d.city:'') + ' ' + (d.zip||'') + '</div>';
+    const shipRefD = d.bolNum ? cargo.find(s => String(s.bolNum||'').trim() === String(d.bolNum||'').trim()) : null;
+    const inlandBol = shipRefD ? (shipRefD.ref_inlandBOL||'') : '';
+    if (inlandBol) html += '<div style="font-size:0.75rem;color:var(--amber);margin-bottom:6px;font-family:var(--mono)">📄 Inland BOL: ' + inlandBol + '</div>';
+    html += '<div class="card-grid">';
+    if (d.contact)   html += '<div class="card-field"><div class="card-field-lbl">聯絡人</div><div class="card-field-val">' + d.contact + '</div></div>';
+    if (d.phone)     html += '<div class="card-field"><div class="card-field-lbl">電話</div><div class="card-field-val">' + fmtPhone(d.phone) + '</div></div>';
+    if (d.delivItems) {
+      try {
+        const items = JSON.parse(d.delivItems);
+        Object.entries(items).forEach(([k,v]) => {
+          if (v > 0) html += '<div class="card-field"><div class="card-field-lbl">' + k + '</div><div class="card-field-val">' + v + '</div></div>';
+        });
+      } catch(e) {
+        if (d.wraps) html += '<div class="card-field"><div class="card-field-lbl">包膜</div><div class="card-field-val">' + d.wraps + ' 卷</div></div>';
+        if (d.parts) html += '<div class="card-field"><div class="card-field-lbl">零件</div><div class="card-field-val">' + d.parts + ' 件</div></div>';
+      }
+    } else {
+      if (d.wraps) html += '<div class="card-field"><div class="card-field-lbl">包膜</div><div class="card-field-val">' + d.wraps + ' 卷</div></div>';
+      if (d.parts) html += '<div class="card-field"><div class="card-field-lbl">零件</div><div class="card-field-val">' + d.parts + ' 件</div></div>';
+    }
+    if (d.delivDate) html += '<div class="card-field"><div class="card-field-lbl">配送日期</div><div class="card-field-val">' + fmtDate(d.delivDate) + '</div></div>';
+    html += '</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+async function toggleDelivered(id) {
+  const d = deliveries.find(x => x.id === id);
+  if (!d) return;
+  d.status = d.status === '已配送' ? '待配送' : '已配送';
+  if (d.status === '已配送' && !d.delivDate) d.delivDate = new Date().toISOString().split('T')[0];
+  renderDeliveries();
+  await saveToSheet('Deliveries', d);
+}
+
+// ==============================
+// TASKS
+// ==============================
+function getWeekMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
+  return d.toISOString().split('T')[0];
+}
+
+function renderTasks() {
+  const el = document.getElementById('tasks-content');
+  if (!el) return;
+  if (!tasks.length) { el.innerHTML = emptyState('✅','尚無任務','點擊新增任務開始規劃'); return; }
+  const weeks = {};
+  tasks.forEach(t => {
+    const w = t.week || getWeekMonday(new Date());
+    if (!weeks[w]) weeks[w] = [];
+    weeks[w].push(t);
+  });
+  const thisWeek = getWeekMonday(new Date());
+  let html = '';
+  Object.keys(weeks).sort().reverse().forEach(w => {
+    const wDate = new Date(w+'T12:00:00');
+    const wEnd  = new Date(wDate); wEnd.setDate(wEnd.getDate()+6);
+    const label = wDate.toLocaleDateString('zh-TW',{month:'long',day:'numeric'}) + ' – ' + wEnd.toLocaleDateString('zh-TW',{month:'long',day:'numeric'});
+    const wTasks = weeks[w].sort((a,b) => {const po={'緊急':0,'重要':1,'一般':2};return (po[a.priority]||2)-(po[b.priority]||2);});
+    const done = wTasks.filter(t=>t.done).length;
+    html += '<div style="font-family:var(--display);font-size:1rem;font-weight:700;color:var(--text);margin:20px 0 10px;display:flex;align-items:center;gap:8px">' + label;
+    if (w === thisWeek) html += '<span style="font-size:0.7rem;font-weight:500;font-family:var(--sans);padding:2px 8px;border-radius:8px;background:var(--green-dim);color:var(--green)">本週</span>';
+    html += '<span style="font-size:0.7rem;font-weight:500;font-family:var(--sans);padding:2px 8px;border-radius:8px;background:var(--surface3);color:var(--text-muted)">' + done + '/' + wTasks.length + '</span></div>';
+    wTasks.forEach(t => {
+      const pc = {'一般':'var(--text-muted)','重要':'var(--amber)','緊急':'var(--red)'};
+      html += '<div class="task-item ' + (t.done?'done':'') + '">';
+      html += '<div class="task-check ' + (t.done?'checked':'') + '" onclick="toggleTask(\'' + t.id + '\')"></div>';
+      html += '<div class="task-content"><div class="task-text">' + t.text + '</div>';
+      if (t.notes) html += '<div class="task-meta">' + t.notes + '</div>';
+      html += '<div class="task-meta" style="color:' + (pc[t.priority]||'var(--text-muted)') + '">● ' + (t.priority||'一般') + '</div>';
+      html += '</div><button class="task-del" onclick="deleteTask(\'' + t.id + '\')">✕</button></div>';
+    });
+  });
+  el.innerHTML = html;
+}
+
+async function toggleTask(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  renderTasks();
+  await saveToSheet('Tasks', t);
+}
+
+async function deleteTask(id) {
+  tasks = tasks.filter(x => x.id !== id);
+  renderTasks();
+  await deleteFromSheet('Tasks', id);
+}
+
+function openTaskModal() {
+  document.getElementById('t-text').value = '';
+  document.getElementById('t-week').value = getWeekMonday(new Date());
+  document.getElementById('t-priority').value = '一般';
+  document.getElementById('t-notes').value = '';
+  document.getElementById('taskModal').classList.add('open');
+}
+
+async function saveTask() {
+  const text = document.getElementById('t-text').value.trim();
+  if (!text) { alert('請輸入任務說明'); return; }
+  const record = {
+    id: uid(), text,
+    week: document.getElementById('t-week').value || getWeekMonday(new Date()),
+    priority: document.getElementById('t-priority').value,
+    notes: document.getElementById('t-notes').value.trim(),
+    done: false,
+  };
+  closeModal('taskModal');
+  const ok = await saveToSheet('Tasks', record);
+  if (ok) await loadAll();
+}
+
+// ==============================
+// DASHBOARD
+// ==============================
+function renderDashboard() {
+  const today = new Date().toLocaleDateString('zh-TW', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+  const dateEl = document.getElementById('dash-date');
+  if (dateEl) dateEl.textContent = today;
+  const unpaidAmt = invoices.filter(i => i.status !== '已付清')
+    .reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)) - (Number(i.paid)||0), 0);
+  const activeCargo  = cargo.filter(c => c.status !== '已完成').length;
+  const pendingDel   = deliveries.filter(d => d.status !== '已配送').length;
+  const pendingTasks = tasks.filter(t => !t.done).length;
+  const statsEl = document.getElementById('dash-stats');
+  if (statsEl) statsEl.innerHTML =
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + activeCargo + '</div><div class="stat-card-lbl">進行中貨批</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--red)">' + fmt$(unpaidAmt) + '</div><div class="stat-card-lbl">未收款</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + pendingDel + '</div><div class="stat-card-lbl">待配送地點</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + pendingTasks + '</div><div class="stat-card-lbl">未完成任務</div></div>';
+  const urgentCargo    = cargo.filter(c => { const d = daysFromNow(c.eta); return d!==null && d<=5 && c.status!=='已完成'; });
+  const unpaidInv      = invoices.filter(i => i.status !== '已付清');
+  const urgentTasks    = tasks.filter(t => !t.done && t.priority === '緊急');
+  const pendingDelList = deliveries.filter(d => d.status !== '已配送');
+  const gridEl = document.getElementById('dash-grid');
+  if (!gridEl) return;
+  let grid = '';
+  grid += '<div class="dash-card"><div class="dash-card-title">🚢 近期到港貨批</div>';
+  if (urgentCargo.length) urgentCargo.forEach(c => { grid += '<div class="dash-list-item"><span style="font-family:var(--mono);font-size:0.8rem">' + (c.bolNum||'BOL?') + '</span><span class="badge badge-blue" style="font-size:0.68rem">' + daysFromNow(c.eta) + '天後</span></div>'; });
+  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">近期無到港貨批</div>';
+  grid += '</div>';
+  grid += '<div class="dash-card"><div class="dash-card-title">🧾 待收款發票</div>';
+  if (unpaidInv.length) unpaidInv.slice(0,5).forEach(i => {
+    const bal = ((Number(i.qty)||0)*(Number(i.unitPrice)||0))-(Number(i.paid)||0);
+    grid += '<div class="dash-list-item"><span>' + (i.billTo||'—') + ' #' + (i.num||'?') + '</span><span style="color:var(--red);font-family:var(--mono);font-size:0.8rem">' + fmt$(bal) + '</span></div>';
+  });
+  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">所有發票已收款 ✓</div>';
+  grid += '</div>';
+  grid += '<div class="dash-card"><div class="dash-card-title">⚡ 緊急任務</div>';
+  if (urgentTasks.length) urgentTasks.slice(0,5).forEach(t => { grid += '<div class="dash-list-item"><span style="font-size:0.82rem">' + t.text + '</span><span class="badge badge-red" style="font-size:0.65rem">緊急</span></div>'; });
+  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">無緊急任務</div>';
+  grid += '</div>';
+  grid += '<div class="dash-card"><div class="dash-card-title">🚛 待配送地點</div>';
+  if (pendingDelList.length) pendingDelList.slice(0,5).forEach(d => { grid += '<div class="dash-list-item"><span style="font-size:0.82rem">' + (d.city||d.addr||'—') + (d.bolNum?' <span style="font-size:0.7rem;color:var(--blue)">'+d.bolNum+'</span>':'') + '</span><span class="badge ' + (DEL_STATUS[d.status]||'badge-muted') + '" style="font-size:0.65rem">' + d.status + '</span></div>'; });
+  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">無待配送地點</div>';
+  grid += '</div>';
+  gridEl.innerHTML = grid;
+}
+
+
+function renderAll() {
+  const active = document.querySelector('.page.active')?.id?.replace('page-','');
+  if (active === 'dashboard') renderDashboard();
+  else if (active === 'cargo') renderCargo();
+  else if (active === 'invoice') renderInvoices();
+  else if (active === 'delivery') renderDeliveries();
+  else if (active === 'tasks') renderTasks();
+  else if (active === 'customers') renderCustomers();
+  else if (active === 'settings') renderSettings();
+}
+
+
+// ==============================
+// CUSTOMERS
+// ==============================
+const CUST_CLS = {"活躍":"badge-green","暫停":"badge-muted","潛在":"badge-amber"};
+
+function renderCustomerStats() {
+  const el = document.getElementById("customer-stats");
+  if (!el) return;
+  const active = customers.filter(c => c.status === "活躍").length;
+  const agpro  = customers.filter(c => c.type === "AG Pro").length;
+  const tom    = customers.filter(c => c.type === "Tom").length;
+  el.innerHTML =
+    "<div class=\"stat-card\"><div class=\"stat-card-val\" style=\"color:var(--orange)\">" + customers.length + "</div><div class=\"stat-card-lbl\">總客戶數</div></div>" +
+    "<div class=\"stat-card\"><div class=\"stat-card-val\" style=\"color:var(--green)\">" + active + "</div><div class=\"stat-card-lbl\">活躍中</div></div>" +
+    "<div class=\"stat-card\"><div class=\"stat-card-val\" style=\"color:var(--teal)\">" + agpro + "</div><div class=\"stat-card-lbl\">AG Pro</div></div>" +
+    "<div class=\"stat-card\"><div class=\"stat-card-val\" style=\"color:var(--blue)\">" + tom + "</div><div class=\"stat-card-lbl\">Tom</div></div>";
+}
+
+function renderCustomers() {
+  renderCustomerStats();
+  const el = document.getElementById("customer-list");
+  if (!el) return;
+  const q = (document.getElementById("customer-search")?.value || "").toLowerCase();
+  const filtered = customers.filter(cu =>
+    !q || [cu.company,cu.contact,cu.city,cu.type,cu.email,cu.phone].some(v => v && String(v).toLowerCase().includes(q))
+  );
+  if (!filtered.length) {
+    el.innerHTML = customers.length
+      ? emptyState("?","找不到符合的客戶","試試其他搜尋悡語")
+      : emptyState("?","尚無客戶資料","點擊新增客戶開始建立清單");
+    return;
+  }
+  const types = ["AG Pro","Tom","經銷商","其他"];
+  let html = "";
+  types.forEach(type => {
+    const group = filtered.filter(cu => (cu.type||"其他") === type);
+    if (!group.length) return;
+    html += "<div class=\"section-label\">" + type + " (" + group.length + ")</div>";
+    group.forEach(cu => {
+      const relInv   = invoices.filter(i => i.billTo && cu.company && i.billTo.toLowerCase().includes(cu.company.toLowerCase()));
+      const lastInv  = [...relInv].sort((a,b) => (b.date||"") > (a.date||"") ? 1 : -1)[0];
+      const activeCg = cargo.filter(g => g.customer && cu.company && g.customer.toLowerCase().includes(cu.company.toLowerCase()) && g.status !== "已完成").length;
+      html += "<div class=\"card\" style=\"border-left:3px solid var(--orange)\" onclick=\"openCustomerEdit('" + cu.id + "')\">";
+      html += "<div class=\"card-top\"><div>";
+      html += "<div class=\"card-id\">" + (cu.type||"") + (cu.terms ? " &middot; " + cu.terms : "") + "</div>";
+      html += "<div class=\"card-title\">" + (cu.company||cu.contact||"&mdash;") + "</div>";
+      if (cu.contact && cu.company) html += "<div style=\"font-size:0.8rem;color:var(--text-muted);margin-top:2px\">" + cu.contact + "</div>";
+      html += "</div><span class=\"badge " + (CUST_CLS[cu.status]||"badge-green") + "\">" + (cu.status||"活躍") + "</span></div>";
+      html += "<div class=\"card-grid\">";
+      if (cu.phone)      html += "<div class=\"card-field\"><div class=\"card-field-lbl\">電話</div><div class=\"card-field-val\">" + cu.phone + "</div></div>";
+      if (cu.email)      html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Email</div><div class=\"card-field-val\" style=\"font-size:0.75rem\">" + cu.email + "</div></div>";
+      if (cu.city)       html += "<div class=\"card-field\"><div class=\"card-field-lbl\">城市</div><div class=\"card-field-val\">" + cu.city + "</div></div>";
+      if (relInv.length) html += "<div class=\"card-field\"><div class=\"card-field-lbl\">發票數</div><div class=\"card-field-val\" style=\"color:var(--teal)\">" + relInv.length + " 張</div></div>";
+      if (activeCg)      html += "<div class=\"card-field\"><div class=\"card-field-lbl\">進行中貨櫃</div><div class=\"card-field-val\" style=\"color:var(--blue)\">" + activeCg + " 個</div></div>";
+      if (lastInv)       html += "<div class=\"card-field\"><div class=\"card-field-lbl\">上次訂貨</div><div class=\"card-field-val\">" + fmtDate(lastInv.date) + "</div></div>";
+      html += "</div>";
+      if (cu.notes) html += "<div style=\"font-size:0.75rem;color:var(--text-muted);margin-top:8px;line-height:1.4\">" + cu.notes + "</div>";
+      html += "</div>";
+    });
+  });
+  el.innerHTML = html;
+}
+
+let editingCustomer = null;
+
+function openCustomerModal(cu) {
+  editingCustomer = cu || null;
+  document.getElementById("customerModalTitle").textContent = cu ? "編輯客戶" : "新增客戶";
+  document.getElementById("customerDeleteBtn").style.display = cu ? "block" : "none";
+  const defs = {company:"",contact:"",type:"AG Pro",phone:"",email:"",addr:"",city:"",zip:"",terms:"Wire",status:"活躍",notes:""};
+  Object.keys(defs).forEach(k => {
+    const el = document.getElementById("cu-"+k);
+    if (el) el.value = cu ? (cu[k]||"") : defs[k];
+  });
+  document.getElementById("customerModal").classList.add("open");
+}
+function openCustomerEdit(id) { openCustomerModal(customers.find(x => x.id === id)); }
+
+async function saveCustomer() {
+  const data = {};
+  ["company","contact","type","phone","email","addr","city","zip","terms","status","notes"].forEach(k => {
+    data[k] = document.getElementById("cu-"+k)?.value || "";
+  });
+  if (!data.company && !data.contact) { alert("請輸入公司名稱或聯絡人"); return; }
+  const record = editingCustomer ? {...editingCustomer,...data} : {id:uid(),...data};
+  closeModal("customerModal");
+  const ok = await saveToSheet("Customers", record);
+  if (ok) await loadAll();
+}
+
+async function deleteCustomer() {
+  if (!editingCustomer || !confirm("確定刪除此客戶？")) return;
+  closeModal("customerModal");
+  const ok = await deleteFromSheet("Customers", editingCustomer.id);
+  if (ok) await loadAll();
+}
+
+
+// ==============================
+// SETTINGS & LISTS
+// ==============================
+
+// Default lists (fallback if nothing saved)
+const DEFAULT_LISTS = {
+  carriers:   ['Zen Con', 'RTW', 'Evergreen', 'COSCO', 'ONE'],
+  ports:      ['SAV', 'LAX', 'SEA', 'HOU', 'TXG', 'TWTXG', 'XINGANG'],
+  discTypes:  ['Cotton Wrap', 'Cotton Picker Spindle Assembly', 'Raw Films', 'Forklift'],
+  itemTypes:  ['Cotton Wrap (1 con.)', 'Cotton Wrap (4 con.)', 'Cotton Wrap (6 con.)', 'Cotton Wrap (7 con.)', 'Cotton Picker Spindle Assembly'],
+  sizes:      ["40'HQ", "40'RD", "20'GP"],
+  delivItems: ['Cotton Wrap (包膜)', 'Spindle Assembly (紡饅)', 'Raw Films (原料膜)', 'Forklift (叉車)'],
+};
+
+function getLists() {
+  try {
+    const saved = localStorage.getItem('wg_lists');
+    return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_LISTS));
+  } catch { return JSON.parse(JSON.stringify(DEFAULT_LISTS)); }
+}
+function saveLists(lists) {
+  localStorage.setItem('wg_lists', JSON.stringify(lists));
+  // Sync each key to Google Sheets Settings tab
+  Object.keys(lists).forEach(k => {
+    saveToSheet('Settings', {id:'list_'+k, key:k, value:JSON.stringify(lists[k])});
+  });
+}
+
+// ── Settings page ──
+function renderSettings() {
+  const lists = getLists();
+  const CONFIGS = [
+    { key: 'carriers',  label: '運輸公司 Carrier',   desc: '貨櫃新增時的運輸公司選項' },
+    { key: 'ports',     label: '港口 Ports',              desc: '裝載港和卸貨港選項' },
+    { key: 'discTypes', label: '貨物類型 Disc.',       desc: '貨櫃中的貨物類型' },
+    { key: 'itemTypes', label: '商品類型 Item',        desc: '發票中的商品選項' },
+    { key: 'sizes',     label: '貨櫃尺寸 Size',       desc: '貨櫃尺寸選項' },
+    { key: 'delivItems', label: '配送飲件類型',          desc: '配送清單中的飲件項目' },
+  ];
+  const el = document.getElementById('settings-content');
+  if (!el) return;
+
+  let html = '<div style="max-width:600px">';
+  html += '<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:20px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px">這裡管理所有下拉選單的選項清單。選項存在這台裝置上，下次開啟会保留。</div>';
+
+  CONFIGS.forEach(function(cfg) {
+    const items = lists[cfg.key] || [];
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px">';
+    html += '<div style="font-family:var(--display);font-size:0.95rem;font-weight:700;margin-bottom:4px">' + cfg.label + '</div>';
+    html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">' + cfg.desc + '</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
+    items.forEach(function(item) {
+      // Use single quotes inside onclick to avoid breaking HTML attributes
+      const safeKey = cfg.key;
+      const safeItem = item.replace(/'/g, "\\'");
+      html += '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:0.82rem">';
+      html += '<span id="lbl-' + safeKey + '-' + safeItem.replace(/\W/g,'_') + '">' + item + '</span>';
+      html += " <button onclick=\"editListItem('" + safeKey + "','" + safeItem + "')\" style=\"background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.72rem;padding:0 2px;line-height:1\" title=\"Edit\">✎</button>";
+      html += " <button onclick=\"removeListItem('" + safeKey + "','" + safeItem + "')\" style=\"background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.9rem;padding:0 2px;line-height:1\" title=\"Delete\">×</button>";
+      html += '</span>';
+    });
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px">';
+    html += "<input id=\"new-" + cfg.key + "\" placeholder=\"輸入新選項後按 Enter 或新增\" style=\"flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:0.875rem;color:var(--text);outline:none\" onkeydown=\"if(event.key==='Enter')addListItem('" + cfg.key + "')\">";
+    html += "<button onclick=\"addListItem('" + cfg.key + "')\" style=\"background:var(--green);color:#000;border:none;border-radius:8px;padding:8px 16px;font-family:var(--sans);font-size:0.82rem;font-weight:700;cursor:pointer\">新增</button>";
+    html += '</div></div>';
+  });
+
+  html += '<button onclick="resetLists()" style="margin-top:4px;background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:8px;padding:8px 16px;font-family:var(--sans);font-size:0.8rem;cursor:pointer">還原預設選項</button>';
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function addListItem(key) {
+  const input = document.getElementById('new-' + key);
+  const val = (input?.value || '').trim();
+  if (!val) { if (input) input.focus(); return; }
+  const lists = getLists();
+  if (!lists[key]) lists[key] = [];
+  if (!lists[key].includes(val)) {
+    lists[key].push(val);
+    lists[key].sort();
+    saveLists(lists);
+  }
+  input.value = '';
+  renderSettings();
+}
+
+function editListItem(key, oldVal) {
+  const newVal = prompt('編輯選項:', oldVal);
+  if (!newVal || newVal.trim() === oldVal) return;
+  const lists = getLists();
+  const idx = lists[key].indexOf(oldVal);
+  if (idx !== -1) {
+    lists[key][idx] = newVal.trim();
+    saveLists(lists);
+    renderSettings();
+  }
+}
+
+function removeListItem(key, val) {
+  const lists = getLists();
+  lists[key] = lists[key].filter(x => x !== val);
+  saveLists(lists);
+  renderSettings();
+}
+
+function resetLists() {
+  if (!confirm('確定還原所有預設選項？自訂義的選項會被刪除。')) return;
+  localStorage.removeItem('wg_lists');
+  renderSettings();
+}
+
+// ==============================
+// DYNAMIC DROPDOWNS
+// ==============================
+
+function uniqVals(arr, key) {
+  return [...new Set(arr.map(x => x[key]).filter(Boolean))].sort();
+}
+
+function buildOptions(values, current, placeholder) {
+  let html = placeholder ? '<option value="">' + placeholder + '</option>' : '';
+  values.forEach(v => {
+    html += '<option value="' + v + '"' + (v === current ? ' selected' : '') + '>' + v + '</option>';
+  });
+  return html;
+}
+
+function populateSelect(id, values, current, placeholder) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (current && !values.includes(current)) values = [current, ...values];
+  el.innerHTML = buildOptions(values, current, placeholder);
+}
+
+// ── Cargo modal dropdowns ──
+function populateCargoDropdowns(c) {
+  const cur = c || {};
+  const lists = getLists();
+
+  const custNames = customers.length
+    ? customers.map(x => x.company || x.contact).filter(Boolean)
+    : uniqVals(cargo, 'customer');
+  populateSelect('c-customer', [...new Set(custNames)].sort(), cur.customer, '— 選擇客戶 —');
+  populateSelect('c-carrier',  lists.carriers, cur.carrier, '— 選擇運輸公司 —');
+  populateSelect('c-pol',      lists.ports,    cur.pol,     '— 裝載港 —');
+  populateSelect('c-pod',      lists.ports,    cur.pod,     '— 卸貨港 —');
+
+  // disc and size use lists too
+  const discEl = document.getElementById('c-disc');
+  if (discEl && discEl.tagName === 'SELECT') populateSelect('c-disc', lists.discTypes, cur.disc, '— 貨物類型 —');
+  const sizeEl = document.getElementById('c-size');
+  if (sizeEl) populateSelect('c-size', lists.sizes, cur.size, '');
+}
+
+// ── Invoice modal dropdowns ──
+function populateInvoiceDropdowns(inv) {
+  const cur = inv || {};
+  const lists = getLists();
+
+  const custNames = customers.length
+    ? customers.map(x => x.company || x.contact).filter(Boolean)
+    : uniqVals(invoices, 'billTo');
+  populateSelect('i-billTo', [...new Set(custNames)].sort(), cur.billTo, '— 選擇客戶 —');
+  populateSelect('i-item',   lists.itemTypes, cur.item, '— 選擇商品 —');
+}
+
+// ── Delivery modal dropdowns ──
+function populateDeliveryDropdowns(d) {
+  const cur = d || {};
+
+  // Distributor type: from unique customer types
+  const distTypes = customers.length
+    ? [...new Set(customers.map(x => x.type).filter(Boolean))].sort()
+    : ['AG Pro', 'Tom', '其他'];
+  populateSelect('d-dist', distTypes, cur.dist, '— 選擇類型 —');
+
+  // Company: filter by selected type
+  const selectedType = cur.dist || '';
+  const companies = customers
+    .filter(x => !selectedType || x.type === selectedType)
+    .map(x => x.company || x.contact).filter(Boolean).sort();
+  populateSelect('d-business', [...new Set(companies)], cur.business || cur.dist, '— 選擇公司 —');
+
+  // Address select: from existing deliveries
+  const addrSelect = document.getElementById('d-addr-select');
+  if (addrSelect) {
+    const addrs = deliveries
+      .filter(x => x.addr)
+      .map(x => ({ label: (x.addr + (x.city ? ', ' + x.city : '')), addr: x.addr, city: x.city, zip: x.zip, contact: x.contact, phone: x.phone, dist: x.dist, business: x.business }));
+    const seen = new Set();
+    const unique = addrs.filter(a => { if (seen.has(a.addr)) return false; seen.add(a.addr); return true; });
+    addrSelect.innerHTML = '<option value="">— 從現有地址選擇 —</option>' +
+      unique.map(a => '<option value="' + a.addr + '" data-city="' + (a.city||'') + '" data-zip="' + (a.zip||'') + '" data-contact="' + (a.contact||'') + '" data-phone="' + (a.phone||'') + '" data-dist="' + (a.dist||'') + '" data-business="' + (a.business||'') + '">' + a.label + '</option>').join('');
+  }
+}
+
+// Auto-fill fields when an address is selected from the dropdown
+function onAddrSelect() {
+  const sel = document.getElementById('d-addr-select');
+  const opt = sel?.options[sel.selectedIndex];
+  if (!opt || !opt.value) return;
+  document.getElementById('d-addr').value   = opt.value;
+  document.getElementById('d-city').value   = opt.dataset.city    || '';
+  document.getElementById('d-zip').value    = opt.dataset.zip     || '';
+  document.getElementById('d-contact').value= opt.dataset.contact || '';
+  document.getElementById('d-phone').value  = opt.dataset.phone   || '';
+  if (opt.dataset.dist)     document.getElementById('d-dist').value     = opt.dataset.dist;
+  if (opt.dataset.business) document.getElementById('d-business').value = opt.dataset.business;
+}
+
+function onDistChange() {
+  const distType = (document.getElementById('d-dist')?.value || '').trim();
+  // Update company dropdown to show only companies of this type
+  const bizSel = document.getElementById('d-business');
+  if (bizSel) {
+    const companies = customers
+      .filter(x => !distType || x.type === distType)
+      .map(x => x.company || x.contact).filter(Boolean).sort();
+    const unique = [...new Set(companies)];
+    bizSel.innerHTML = '<option value="">— 選擇公司 —</option>' +
+      unique.map(co => '<option value="'+co+'">'+co+'</option>').join('');
+  }
+  // Clear address fields when type changes
+  ['d-addr','d-city','d-zip','d-contact','d-phone'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+function populateDelivItemsGrid(d) {
+  const grid = document.getElementById('d-items-grid');
+  if (!grid) return;
+  const lists = getLists();
+  const items = lists.delivItems || [];
+  // Parse existing items from saved record (stored as JSON in d.delivItems)
+  let saved = {};
+  if (d && d.delivItems) {
+    try { saved = JSON.parse(d.delivItems); } catch(e) { saved = {}; }
+  }
+  // Also read legacy wraps/parts
+  if (d && d.wraps && !saved['包膜數量']) saved['包膜數量'] = d.wraps;
+  grid.innerHTML = items.map(item => {
+    const safeId = 'ditem-' + item.replace(/[^a-zA-Z0-9]/g,'_');
+    const val = saved[item] || '';
+    return '<div style="display:flex;flex-direction:column;gap:4px">' +
+      '<label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">' + item + '</label>' +
+      '<input type="number" id="' + safeId + '" value="' + val + '" placeholder="0" min="0" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:var(--sans);font-size:0.875rem;color:var(--text);outline:none">' +
+      '</div>';
+  }).join('');
+}
+
+function getDelivItemsData() {
+  const grid = document.getElementById('d-items-grid');
+  if (!grid) return {};
+  const lists = getLists();
+  const items = lists.delivItems || [];
+  const result = {};
+  items.forEach(item => {
+    const safeId = 'ditem-' + item.replace(/[^a-zA-Z0-9]/g,'_');
+    const el = document.getElementById(safeId);
+    const val = el ? (Number(el.value)||0) : 0;
+    if (val > 0) result[item] = val;
+  });
+  return result;
+}
+
+function onCompanyChange() {
+  const companyVal = (document.getElementById('d-business')?.value || '').trim().toLowerCase();
+  if (!companyVal) return;
+  const cust = customers.find(x => (x.company||x.contact||'').trim().toLowerCase() === companyVal);
+  if (!cust) return;
+  const fset = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  fset('d-addr',    cust.addr);
+  fset('d-city',    cust.city);
+  fset('d-zip',     cust.zip);
+  fset('d-contact', cust.contact);
+  fset('d-phone',   cust.phone);
+}
+
+// ── INIT ──
+renderDashboard(); // show empty dashboard immediately
+loadAll();        // then load data and re-render
+</script>
+</body>
+</html>
