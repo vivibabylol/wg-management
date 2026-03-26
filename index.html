@@ -2291,6 +2291,7 @@ function renderInventory() {
     // Incoming: cargo QTY where disc contains product name (fuzzy)
     const relCargo = cargo.filter(s => s.disc && s.disc.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,'')));
     const cargoQty = relCargo.reduce((s,sh) => s + (Number(sh.qty)||0), 0);
+    const importedQty = cargoQty;
     const inTransitQty = relCargo.filter(s=>s.status!=='已完成').reduce((s,sh)=>s+(Number(sh.qty)||0),0);
     const arrivedQty   = relCargo.filter(s=>s.status==='已完成').reduce((s,sh)=>s+(Number(sh.qty)||0),0);
     // Production outputs (this product was produced)
