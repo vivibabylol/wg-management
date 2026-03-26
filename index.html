@@ -2123,65 +2123,93 @@ function onCompanyChange() {
 // INVENTORY
 // ==============================
 function renderInventory() {
-  console.log('renderInventory called, prods:', getProducts().length);
   const prods = getProducts();
   const sEl = document.getElementById('inventory-stats');
   const cEl = document.getElementById('inventory-content');
   if (!sEl || !cEl) return;
+
+  // Stats
+  const totalIn  = cargo.reduce((s,sh) => s + (Number(sh.qty)||0), 0);
   const inTransit = cargo.filter(s => s.status !== '已完成').length;
-  const doneShip  = cargo.filter(s => s.status === '已完成').length;
-  const doneDeliv = deliveries.filter(d => d.status === '已配送').length;
-  const totalAmt  = invoices.reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)), 0);
+  const totalSoldAmt = invoices.reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)), 0);
+  const totalPaidAmt = invoices.reduce((s,i) => s + (Number(i.paid)||0), 0);
   sEl.innerHTML =
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + totalIn.toLocaleString() + '</div><div class="stat-card-lbl">總進貨量</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + inTransit + '</div><div class="stat-card-lbl">週途中貨批</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + doneShip + '</div><div class="stat-card-lbl">已到貨批</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + doneDeliv + '</div><div class="stat-card-lbl">已配送次</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + fmt$(totalAmt) + '</div><div class="stat-card-lbl">總銷售額</div></div>';
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + fmt$(totalSoldAmt) + '</div><div class="stat-card-lbl">總銷售額</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--red)">' + fmt$(totalSoldAmt-totalPaidAmt) + '</div><div class="stat-card-lbl">待收款</div></div>';
 
   let html = '';
   prods.forEach(prod => {
-    const relInv = invoices.filter(i => i.item && i.item.toLowerCase().includes(prod.name.toLowerCase()));
-    const soldQty = relInv.reduce((s,i) => s + (Number(i.qty)||0), 0);
-    const soldAmt = relInv.reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)), 0);
-    const paidAmt = relInv.reduce((s,i) => s + (Number(i.paid)||0), 0);
+    const pnl = prod.name.toLowerCase();
+
+    // Incoming: from cargo QTY where disc matches product
+    const inQty = cargo
+      .filter(s => s.disc && s.disc.toLowerCase().includes(pnl))
+      .reduce((s,sh) => s + (Number(sh.qty)||0), 0);
+
+    // Delivered: from delivItems JSON
     let delivQty = 0;
     deliveries.forEach(d => {
       if (d.delivItems) {
         try {
           const it = JSON.parse(d.delivItems);
-          Object.entries(it).forEach(([k,v]) => { if (k.toLowerCase().includes(prod.name.toLowerCase())) delivQty += Number(v)||0; });
+          Object.entries(it).forEach(([k,v]) => { if (k.toLowerCase().includes(pnl)) delivQty += Number(v)||0; });
         } catch(e) {}
       }
-      if (prod.name === 'Cotton Wrap' && d.wraps) delivQty += Number(d.wraps)||0;
+      if (prod.name === 'Cotton Wrap' && d.wraps && !d.delivItems) delivQty += Number(d.wraps)||0;
     });
-    const custSales = {};
+
+    const remaining = inQty - delivQty;
+
+    // Sales from invoices
+    const relInv = invoices.filter(i => i.item && i.item.toLowerCase().includes(pnl));
+    const soldAmt = relInv.reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)), 0);
+    const paidAmt = relInv.reduce((s,i) => s + (Number(i.paid)||0), 0);
+
+    // Per-customer
+    const custMap = {};
     relInv.forEach(i => {
       const k = i.billTo || '未知';
-      if (!custSales[k]) custSales[k] = {qty:0, amt:0, paid:0};
-      custSales[k].qty += Number(i.qty)||0;
-      custSales[k].amt += (Number(i.qty)||0)*(Number(i.unitPrice)||0);
-      custSales[k].paid += Number(i.paid)||0;
+      if (!custMap[k]) custMap[k] = {qty:0, amt:0};
+      custMap[k].qty += Number(i.qty)||0;
+      custMap[k].amt += (Number(i.qty)||0)*(Number(i.unitPrice)||0);
     });
+
     html += '<div class="card" style="margin-bottom:12px">';
     html += '<div class="card-top"><div>';
     html += '<div class="card-title">' + prod.name + '</div>';
     html += '<div class="card-id">' + prod.unit + ' &middot; ' + prod.category + '</div>';
     html += '</div></div>';
+
+    // Main stats grid
     html += '<div class="card-grid" style="margin-top:10px">';
-    html += '<div class="card-field"><div class="card-field-lbl">總銷售數量</div><div class="card-field-val" style="color:var(--teal)">' + soldQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
-    html += '<div class="card-field"><div class="card-field-lbl">總金額</div><div class="card-field-val" style="color:var(--teal)">' + fmt$(soldAmt) + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">進貨量</div><div class="card-field-val" style="color:var(--blue)">' + inQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
     html += '<div class="card-field"><div class="card-field-lbl">已配送</div><div class="card-field-val" style="color:var(--green)">' + delivQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">剰餘庫存</div><div class="card-field-val" style="color:' + (remaining>0?'var(--teal)':remaining<0?'var(--red)':'var(--text-muted)') + ';font-weight:700">' + remaining.toLocaleString() + ' ' + prod.unit + '</div></div>';
     html += '<div class="card-field"><div class="card-field-lbl">待收款</div><div class="card-field-val" style="color:' + (soldAmt-paidAmt>0?'var(--red)':'var(--green)') + '">' + fmt$(soldAmt-paidAmt) + '</div></div>';
     html += '</div>';
-    if (Object.keys(custSales).length) {
+
+    // Stock bar
+    if (inQty > 0) {
+      const pct = Math.min(100, Math.round(delivQty/inQty*100));
+      html += '<div style="margin-top:10px">';
+      html += '<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px"><span>配送進度</span><span>' + pct + '%</span></div>';
+      html += '<div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden"><div style="height:100%;border-radius:3px;background:' + (pct>=100?'var(--green)':'var(--teal)') + ';width:' + pct + '%"></div></div>';
+      html += '</div>';
+    }
+
+    // Per-customer breakdown
+    if (Object.keys(custMap).length) {
+      const totalCustQty = Object.values(custMap).reduce((s,v)=>s+v.qty,0);
       html += '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">';
       html += '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">客戶分析</div>';
-      Object.entries(custSales).sort((a,b)=>b[1].qty-a[1].qty).forEach(([cust,data]) => {
-        const pct = soldQty > 0 ? Math.round(data.qty/soldQty*100) : 0;
+      Object.entries(custMap).sort((a,b)=>b[1].qty-a[1].qty).forEach(([cust,data]) => {
+        const pct = totalCustQty > 0 ? Math.round(data.qty/totalCustQty*100) : 0;
         html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
         html += '<div style="font-size:0.82rem;min-width:140px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + cust + '</div>';
         html += '<div style="flex:1;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden"><div style="height:100%;background:var(--teal);border-radius:3px;width:'+pct+'%"></div></div>';
-        html += '<div style="font-size:0.75rem;font-family:var(--mono);color:var(--text-muted);min-width:90px;text-align:right">' + data.qty.toLocaleString() + ' ' + prod.unit + '</div>';
+        html += '<div style="font-size:0.75rem;font-family:var(--mono);color:var(--text-muted);min-width:70px;text-align:right">' + data.qty.toLocaleString() + ' ' + prod.unit + '</div>';
         html += '<div style="font-size:0.75rem;font-family:var(--mono);color:var(--teal);min-width:80px;text-align:right">' + fmt$(data.amt) + '</div>';
         html += '</div>';
       });
@@ -2189,12 +2217,10 @@ function renderInventory() {
     }
     html += '</div>';
   });
-  if (!prods.length || !html) {
-    cEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">請先在『設定』建立產品清單，再從發票引入資料</div>';
-  } else {
-    cEl.innerHTML = html;
-  }
+
+  cEl.innerHTML = html || '<div style="text-align:center;padding:40px;color:var(--text-muted)">請先在『設定』建立產品清單，再從貨批引入資料</div>';
 }
+
 
 // ── INIT ──
 renderDashboard(); // show empty dashboard immediately
