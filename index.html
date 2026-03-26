@@ -897,7 +897,11 @@ async function loadAll() {
     ));
     cargo      = results[0].data || [];
     invoices   = results[1].data || [];
-    deliveries = results[2].data || [];
+    deliveries = (results[2].data || []).map(d => {
+      if (d.bolNum !== undefined) d.bolNum = String(d.bolNum).trim();
+      ['delivDate'].forEach(f => { d[f] = normalizeDate(d[f]); });
+      return d;
+    });
     tasks      = results[3].data || [];
     customers  = results[4].data || [];
     // Load settings from Sheets
@@ -991,8 +995,10 @@ function daysFromNow(d) {
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  document.getElementById('tab-'+id).classList.add('active');
+  const pg = document.getElementById('page-'+id);
+  const tb = document.getElementById('tab-'+id);
+  if (pg) pg.classList.add('active');
+  if (tb) tb.classList.add('active');
   renderAll();
 }
 
@@ -2117,6 +2123,7 @@ function onCompanyChange() {
 // INVENTORY
 // ==============================
 function renderInventory() {
+  console.log('renderInventory called, prods:', getProducts().length);
   const prods = getProducts();
   const sEl = document.getElementById('inventory-stats');
   const cEl = document.getElementById('inventory-content');
