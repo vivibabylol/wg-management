@@ -1221,6 +1221,18 @@ function openInvoiceModal(inv) {
     const el = document.getElementById('i-'+k);
     if (el) el.value = inv ? (inv[k] || '') : (k === 'status' ? '未付款' : '');
   });
+  // Auto-fill unit when item already set
+  const itemSel = document.getElementById('i-item');
+  const unitEl  = document.getElementById('i-unit');
+  if (itemSel && unitEl && itemSel.value && !unitEl.value) {
+    unitEl.value = productUnit(itemSel.value);
+  }
+  if (itemSel) {
+    itemSel.onchange = function() {
+      const u = document.getElementById('i-unit');
+      if (u) u.value = productUnit(this.value);
+    };
+  }
   document.getElementById('invoiceModal').classList.add('open');
 }
 function openInvoiceEdit(id) { openInvoiceModal(invoices.find(x => x.id === id)); }
@@ -1756,14 +1768,31 @@ async function deleteCustomer() {
 // ==============================
 
 // Default lists (fallback if nothing saved)
+// Products: [{name, unit, category}]
+const DEFAULT_PRODUCTS = [
+  { name: 'Cotton Wrap',              unit: 'Rolls',  category: '包膜' },
+  { name: 'Cotton Picker Spindle',    unit: 'Pieces', category: '零件' },
+  { name: 'Raw Films',                unit: 'Rolls',  category: '原料' },
+  { name: 'Forklift',                 unit: 'Units',  category: '其他' },
+];
+
 const DEFAULT_LISTS = {
-  carriers:   ['Zen Con', 'RTW', 'Evergreen', 'COSCO', 'ONE'],
-  ports:      ['SAV', 'LAX', 'SEA', 'HOU', 'TXG', 'TWTXG', 'XINGANG'],
-  discTypes:  ['Cotton Wrap', 'Cotton Picker Spindle Assembly', 'Raw Films', 'Forklift'],
-  itemTypes:  ['Cotton Wrap (1 con.)', 'Cotton Wrap (4 con.)', 'Cotton Wrap (6 con.)', 'Cotton Wrap (7 con.)', 'Cotton Picker Spindle Assembly'],
-  sizes:      ["40'HQ", "40'RD", "20'GP"],
-  delivItems: ['Cotton Wrap (包膜)', 'Spindle Assembly (紡饅)', 'Raw Films (原料膜)', 'Forklift (叉車)'],
+  carriers:  ['Zen Con', 'RTW', 'Evergreen', 'COSCO', 'ONE'],
+  ports:     ['SAV', 'LAX', 'SEA', 'HOU', 'TXG', 'TWTXG', 'XINGANG'],
+  sizes:     ["40'HQ", "40'RD", "20'GP"],
 };
+
+function getProducts() {
+  try {
+    const saved = localStorage.getItem('wg_products');
+    return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+  } catch { return JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)); }
+}
+function saveProducts(products) {
+  localStorage.setItem('wg_products', JSON.stringify(products));
+}
+function productNames() { return getProducts().map(p => p.name); }
+function productUnit(name) { const p = getProducts().find(x=>x.name===name); return p ? p.unit : ''; }
 
 function getLists() {
   try {
@@ -1785,10 +1814,7 @@ function renderSettings() {
   const CONFIGS = [
     { key: 'carriers',  label: '運輸公司 Carrier',   desc: '貨櫃新增時的運輸公司選項' },
     { key: 'ports',     label: '港口 Ports',              desc: '裝載港和卸貨港選項' },
-    { key: 'discTypes', label: '貨物類型 Disc.',       desc: '貨櫃中的貨物類型' },
-    { key: 'itemTypes', label: '商品類型 Item',        desc: '發票中的商品選項' },
-    { key: 'sizes',     label: '貨櫃尺寸 Size',       desc: '貨櫃尺寸選項' },
-    { key: 'delivItems', label: '配送飲件類型',          desc: '配送清單中的飲件項目' },
+    { key: 'sizes', label: '貨櫃尺寸 Size', desc: '貨櫃尺寸選項' },
   ];
   const el = document.getElementById('settings-content');
   if (!el) return;
@@ -1820,6 +1846,22 @@ function renderSettings() {
   });
 
   html += '<button onclick="resetLists()" style="margin-top:4px;background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:8px;padding:8px 16px;font-family:var(--sans);font-size:0.8rem;cursor:pointer">還原預設選項</button>';
+
+  // Products section
+  const prods = getProducts();
+  html += '<div style="margin-top:24px"><div style="font-family:var(--display);font-size:0.95rem;font-weight:700;margin-bottom:4px">產品清單 Products</div>';
+  html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">統一管理貨物名稱、單位、類別，貨批、發票、配送都從這裡選取</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">';
+  prods.forEach((p,i) => {
+    html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">';
+    html += '<div><div style="font-size:0.88rem;font-weight:600">' + p.name + '</div><div style="font-size:0.72rem;color:var(--text-muted)">' + p.unit + ' &middot; ' + p.category + '</div></div>';
+    html += '<button onclick="editProduct(' + i + ')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:4px 8px">✎ 編輯</button>';
+    html += '<button onclick="deleteProduct(' + i + ')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.8rem;padding:4px 8px">×</button>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<button onclick="addProduct()" style="background:var(--green);color:#000;border:none;border-radius:8px;padding:8px 18px;font-family:var(--sans);font-size:0.82rem;font-weight:700;cursor:pointer">＋ 新增產品</button>';
+  html += '</div>';
   html += '</div>';
   el.innerHTML = html;
 }
@@ -1836,6 +1878,42 @@ function addListItem(key) {
     saveLists(lists);
   }
   input.value = '';
+  renderSettings();
+}
+
+function addProduct() {
+  const name = prompt('產品名稱:');
+  if (!name || !name.trim()) return;
+  const unit = prompt('單位 (e.g. Rolls, Pieces, Units):', 'Units');
+  if (unit === null) return;
+  const cat  = prompt('類別 (e.g. 包膜, 零件, 原料, 其他):', '其他');
+  if (cat === null) return;
+  const prods = getProducts();
+  prods.push({ name: name.trim(), unit: (unit||'Units').trim(), category: (cat||'其他').trim() });
+  saveProducts(prods);
+  renderSettings();
+}
+
+function editProduct(idx) {
+  const prods = getProducts();
+  const p = prods[idx];
+  if (!p) return;
+  const name = prompt('產品名稱:', p.name);
+  if (name === null) return;
+  const unit = prompt('單位:', p.unit);
+  if (unit === null) return;
+  const cat  = prompt('類別:', p.category);
+  if (cat === null) return;
+  prods[idx] = { name: name.trim()||p.name, unit: unit.trim()||p.unit, category: cat.trim()||p.category };
+  saveProducts(prods);
+  renderSettings();
+}
+
+function deleteProduct(idx) {
+  const prods = getProducts();
+  if (!confirm('確定刪除「' + prods[idx]?.name + '」？')) return;
+  prods.splice(idx, 1);
+  saveProducts(prods);
   renderSettings();
 }
 
@@ -1902,7 +1980,7 @@ function populateCargoDropdowns(c) {
 
   // disc and size use lists too
   const discEl = document.getElementById('c-disc');
-  if (discEl && discEl.tagName === 'SELECT') populateSelect('c-disc', lists.discTypes, cur.disc, '— 貨物類型 —');
+  if (discEl && discEl.tagName === 'SELECT') populateSelect('c-disc', productNames(), cur.disc, '— 貨物類型 —');
   const sizeEl = document.getElementById('c-size');
   if (sizeEl) populateSelect('c-size', lists.sizes, cur.size, '');
 }
@@ -1916,7 +1994,7 @@ function populateInvoiceDropdowns(inv) {
     ? customers.map(x => x.company || x.contact).filter(Boolean)
     : uniqVals(invoices, 'billTo');
   populateSelect('i-billTo', [...new Set(custNames)].sort(), cur.billTo, '— 選擇客戶 —');
-  populateSelect('i-item',   lists.itemTypes, cur.item, '— 選擇商品 —');
+  populateSelect('i-item', productNames(), cur.item, '— 選擇商品 —');
 }
 
 // ── Delivery modal dropdowns ──
@@ -1985,36 +2063,30 @@ function onDistChange() {
 function populateDelivItemsGrid(d) {
   const grid = document.getElementById('d-items-grid');
   if (!grid) return;
-  const lists = getLists();
-  const items = lists.delivItems || [];
-  // Parse existing items from saved record (stored as JSON in d.delivItems)
+  const prods = getProducts();
   let saved = {};
   if (d && d.delivItems) {
     try { saved = JSON.parse(d.delivItems); } catch(e) { saved = {}; }
   }
-  // Also read legacy wraps/parts
-  if (d && d.wraps && !saved['包膜數量']) saved['包膜數量'] = d.wraps;
-  grid.innerHTML = items.map(item => {
-    const safeId = 'ditem-' + item.replace(/[^a-zA-Z0-9]/g,'_');
-    const val = saved[item] || '';
+  if (d && d.wraps && !saved['Cotton Wrap']) saved['Cotton Wrap'] = d.wraps;
+  grid.innerHTML = prods.map(p => {
+    const safeId = 'ditem-' + p.name.replace(/[^a-zA-Z0-9]/g,'_');
+    const val = saved[p.name] || '';
     return '<div style="display:flex;flex-direction:column;gap:4px">' +
-      '<label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">' + item + '</label>' +
+      '<label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">' + p.name + ' <span style="font-weight:400;color:var(--text-dim)">(' + p.unit + ')</span></label>' +
       '<input type="number" id="' + safeId + '" value="' + val + '" placeholder="0" min="0" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:var(--sans);font-size:0.875rem;color:var(--text);outline:none">' +
       '</div>';
   }).join('');
 }
 
 function getDelivItemsData() {
-  const grid = document.getElementById('d-items-grid');
-  if (!grid) return {};
-  const lists = getLists();
-  const items = lists.delivItems || [];
+  const prods = getProducts();
   const result = {};
-  items.forEach(item => {
-    const safeId = 'ditem-' + item.replace(/[^a-zA-Z0-9]/g,'_');
+  prods.forEach(p => {
+    const safeId = 'ditem-' + p.name.replace(/[^a-zA-Z0-9]/g,'_');
     const el = document.getElementById(safeId);
-    const val = el ? (Number(el.value)||0) : 0;
-    if (val > 0) result[item] = val;
+    const val = Number(el?.value)||0;
+    if (val > 0) result[p.name] = val;
   });
   return result;
 }
