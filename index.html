@@ -536,10 +536,41 @@ select option { background: var(--surface2); }
 </div>
 
 <div class="page" id="page-inventory">
-  <div class="page-header"><div class="page-title">庫存分析 <span>Inventory</span></div></div>
+  <div class="page-header">
+    <div class="page-title">庫存分析 <span>Inventory</span></div>
+    <button class="btn-add" onclick="openProductionModal()">＋ 新增生產記錄</button>
+  </div>
   <div class="stats-row" id="inventory-stats"></div>
   <div id="inventory-content" style="margin-top:8px"></div>
 </div>
+<div class="modal-overlay" id="productionModal" onclick="closeIfOutside(event,'productionModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="productionModalTitle">新增生產記錄</div>
+      <button class="modal-close" onclick="closeModal('productionModal')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>日期</label><input type="date" id="p-date"></div>
+        <div class="form-group"><label>生產批號（選填）</label><input id="p-batch" placeholder="e.g. WG-2026-01"></div>
+        <div class="form-group full"><label>消耗原料</label>
+          <div id="p-input-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div>
+        </div>
+        <div class="form-group full"><label>生產成品</label>
+          <div id="p-output-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div>
+        </div>
+        <div class="form-group full"><label>備註</label><textarea id="p-notes"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" id="productionDeleteBtn" style="display:none" onclick="deleteProduction()">🗑 刪除</button>
+      <button class="btn-cancel" onclick="closeModal('productionModal')">取消</button>
+      <button class="btn-save" onclick="saveProduction()">儲存</button>
+    </div>
+  </div>
+</div>
+
 </main>
 
 <div class="modal-overlay" id="customerModal" onclick="closeIfOutside(event,'customerModal')">
@@ -860,11 +891,12 @@ select option { background: var(--surface2); }
 // ══════════════════════════════
 const API = 'https://script.google.com/macros/s/AKfycbyt6jYEDSeesF1chOR1oQhRYRZx_1GTNFB79mZpJY2qF7CDu2iDow4A80S8b6Mefpd8/exec';
 
-let cargo      = [];
-let invoices   = [];
-let deliveries = [];
-let tasks      = [];
-let customers  = [];
+let cargo       = [];
+let invoices    = [];
+let deliveries  = [];
+let tasks       = [];
+let customers   = [];
+let productions = [];
 let _syncing   = false;
 
 // ── Sync indicator ──
@@ -891,7 +923,7 @@ function hideSync() {
 async function loadAll() {
   showSync('⟳ 載入中…');
   try {
-    const sheets = ['Shipments','Invoices','Deliveries','Tasks','Customers','Settings'];
+    const sheets = ['Shipments','Invoices','Deliveries','Tasks','Customers','Settings','Production'];
     const results = await Promise.all(sheets.map(s =>
       fetch(`${API}?sheet=${s}`).then(r => r.json())
     ));
@@ -904,6 +936,7 @@ async function loadAll() {
     });
     tasks      = results[3].data || [];
     customers  = results[4].data || [];
+    productions = (results[6]?.data || []).map(p => ({ ...p, date: normalizeDate(p.date) }));
     // Load settings from Sheets
     const rawSets = results[5]?.data || [];
     if (rawSets.length) {
@@ -2130,13 +2163,14 @@ function renderInventory() {
 
   // Top stats
   const totalInQty  = cargo.reduce((s,sh) => s + (Number(sh.qty)||0), 0);
+  const totalProdRuns = productions.length;
   const inTransit   = cargo.filter(s => s.status !== '已完成').length;
   const arrived     = cargo.filter(s => s.status === '已完成').length;
   const pendingDeliv = deliveries.filter(d => d.status !== '已配送').length;
   sEl.innerHTML =
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + totalInQty.toLocaleString() + '</div><div class="stat-card-lbl">總進貨量</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + inTransit + '</div><div class="stat-card-lbl">週途中貨批</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + arrived + '</div><div class="stat-card-lbl">已到貨批</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + totalProdRuns + '</div><div class="stat-card-lbl">生產記錄</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + pendingDeliv + '</div><div class="stat-card-lbl">待配送次</div></div>';
 
   let html = '';
@@ -2145,9 +2179,19 @@ function renderInventory() {
 
     // Incoming: cargo QTY where disc contains product name (fuzzy)
     const relCargo = cargo.filter(s => s.disc && s.disc.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,'')));
-    const inQty = relCargo.reduce((s,sh) => s + (Number(sh.qty)||0), 0);
+    const cargoQty = relCargo.reduce((s,sh) => s + (Number(sh.qty)||0), 0);
     const inTransitQty = relCargo.filter(s=>s.status!=='已完成').reduce((s,sh)=>s+(Number(sh.qty)||0),0);
     const arrivedQty   = relCargo.filter(s=>s.status==='已完成').reduce((s,sh)=>s+(Number(sh.qty)||0),0);
+    // Production outputs (this product was produced)
+    let prodOutputQty = 0;
+    // Production inputs (this product was consumed as raw material)
+    let prodInputQty = 0;
+    productions.forEach(pr => {
+      try { const o = JSON.parse(pr.outputs||'{}'); Object.entries(o).forEach(([k,v])=>{ if(k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) prodOutputQty+=Number(v)||0; }); } catch(e){}
+      try { const i = JSON.parse(pr.inputs||'{}');  Object.entries(i).forEach(([k,v])=>{ if(k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) prodInputQty +=Number(v)||0; }); } catch(e){}
+    });
+    const inQty = cargoQty + prodOutputQty; // total available = imported + produced
+    const consumedQty = prodInputQty;        // consumed as raw material in production
 
     // Delivered: from delivItems JSON or legacy wraps
     let delivQty = 0;
@@ -2164,8 +2208,9 @@ function renderInventory() {
       }
     });
 
-    const remaining = inQty - delivQty;
-    const pct = inQty > 0 ? Math.min(100, Math.round(delivQty/inQty*100)) : 0;
+    const totalOut = delivQty + consumedQty;
+    const remaining = inQty - totalOut;
+    const pct = inQty > 0 ? Math.min(100, Math.round(totalOut/inQty*100)) : 0;
 
     html += '<div class="card" style="margin-bottom:12px">';
     html += '<div class="card-top"><div>';
@@ -2174,17 +2219,47 @@ function renderInventory() {
     html += '</div></div>';
 
     html += '<div class="card-grid" style="margin-top:10px">';
-    html += '<div class="card-field"><div class="card-field-lbl">總進貨</div><div class="card-field-val" style="color:var(--blue)">' + inQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">總進貨/生產</div><div class="card-field-val" style="color:var(--blue)">' + inQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
     html += '<div class="card-field"><div class="card-field-lbl">週途中</div><div class="card-field-val" style="color:var(--amber)">' + inTransitQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
     html += '<div class="card-field"><div class="card-field-lbl">已配送</div><div class="card-field-val" style="color:var(--green)">' + delivQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
+    if (consumedQty > 0) html += '<div class="card-field"><div class="card-field-lbl">生產消耗</div><div class="card-field-val" style="color:var(--purple)">' + consumedQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
+    if (prodOutputQty > 0) html += '<div class="card-field"><div class="card-field-lbl">自產成品</div><div class="card-field-val" style="color:var(--teal)">' + prodOutputQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
     html += '<div class="card-field"><div class="card-field-lbl">剰餘庫存</div><div class="card-field-val" style="color:' + (remaining>0?'var(--teal)':remaining===0?'var(--text-muted)':'var(--red)') + ';font-size:1.05rem;font-weight:700">' + remaining.toLocaleString() + ' ' + prod.unit + '</div></div>';
     html += '</div>';
 
     // Progress bar
     if (inQty > 0) {
       html += '<div style="margin-top:10px">';
-      html += '<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px"><span>配送進度</span><span>' + pct + '% (' + delivQty.toLocaleString() + ' / ' + inQty.toLocaleString() + ' ' + prod.unit + ')</span></div>';
+      const barLabel = consumedQty > 0 ? '配送+消耗進度' : '配送進度';
+      html += '<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px"><span>' + barLabel + '</span><span>' + pct + '% (' + totalOut.toLocaleString() + ' / ' + inQty.toLocaleString() + ' ' + prod.unit + ')</span></div>';
       html += '<div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;background:' + (pct>=100?'var(--green)':'var(--teal)') + ';width:' + pct + '%;transition:width 0.3s"></div></div>';
+      html += '</div>';
+    }
+
+    // Production records for this product
+    const relProd = productions.filter(pr => {
+      try {
+        const i = JSON.parse(pr.inputs||'{}');
+        const o = JSON.parse(pr.outputs||'{}');
+        return Object.keys(i).some(k=>k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) ||
+               Object.keys(o).some(k=>k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,'')));
+      } catch(e){ return false; }
+    });
+    if (relProd.length) {
+      html += '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">';
+      html += '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">生產記錄</div>';
+      relProd.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).forEach(pr => {
+        let inStr='', outStr='';
+        try{ const i=JSON.parse(pr.inputs||'{}');  inStr  = Object.entries(i).map(([k,v])=>k+' x'+v).join(', '); } catch(e){}
+        try{ const o=JSON.parse(pr.outputs||'{}'); outStr = Object.entries(o).map(([k,v])=>k+' x'+v).join(', '); } catch(e){}
+        html += '<div onclick="openProductionModal(productions.find(p=>p.id===\'' + pr.id + '\'))" style="cursor:pointer;display:flex;align-items:start;gap:8px;margin-bottom:8px;padding:8px;background:var(--surface2);border-radius:8px;font-size:0.8rem">';
+        html += '<div style="min-width:70px;color:var(--text-muted)">' + fmtDate(pr.date) + '</div>';
+        html += '<div style="flex:1">';
+        if (inStr)  html += '<div>消耗: <span style="color:var(--purple)">' + inStr + '</span></div>';
+        if (outStr) html += '<div>生產: <span style="color:var(--teal)">'   + outStr + '</span></div>';
+        if (pr.batch) html += '<div style="color:var(--text-dim)">Batch: ' + pr.batch + '</div>';
+        html += '</div></div>';
+      });
       html += '</div>';
     }
 
@@ -2209,6 +2284,88 @@ function renderInventory() {
   cEl.innerHTML = html || '<div style="text-align:center;padding:40px;color:var(--text-muted)">請先在『設定』建立產品清單</div>';
 }
 
+
+// ==============================
+// PRODUCTION
+// ==============================
+let editingProduction = null;
+
+function populateProdGrids() {
+  const prods = getProducts();
+  // Input: raw materials (category = 原料 or 其他)
+  const inputs  = prods.filter(p => p.category !== '成品' && p.category !== '包膜');
+  // Output: finished goods
+  const outputs = prods.filter(p => p.category === '成品' || p.category === '包膜' || p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('cotton'));
+  // If no category distinction, show all for both
+  const inProds  = inputs.length  ? inputs  : prods;
+  const outProds = outputs.length ? outputs : prods;
+
+  const saved = editingProduction || {};
+  let inSaved  = {}; try { inSaved  = JSON.parse(saved.inputs  || '{}'); } catch(e) {}
+  let outSaved = {}; try { outSaved = JSON.parse(saved.outputs || '{}'); } catch(e) {}
+
+  const mkGrid = (prods, savedObj, idPrefix) => prods.map(p => {
+    const sid = idPrefix + p.name.replace(/[^a-zA-Z0-9]/g,'_');
+    const val = savedObj[p.name] || '';
+    return '<div style="display:flex;flex-direction:column;gap:4px">' +
+      '<label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">' + p.name + ' <span style="font-weight:400">(' + p.unit + ')</span></label>' +
+      '<input type="number" id="' + sid + '" value="' + val + '" placeholder="0" min="0" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.875rem;color:var(--text);outline:none">' +
+      '</div>';
+  }).join('');
+
+  const ig = document.getElementById('p-input-grid');
+  const og = document.getElementById('p-output-grid');
+  if (ig) ig.innerHTML = mkGrid(inProds, inSaved, 'pin_');
+  if (og) og.innerHTML = mkGrid(outProds, outSaved, 'pout_');
+}
+
+function getProdGridData(prods, idPrefix) {
+  const result = {};
+  prods.forEach(p => {
+    const sid = idPrefix + p.name.replace(/[^a-zA-Z0-9]/g,'_');
+    const el = document.getElementById(sid);
+    const val = Number(el?.value)||0;
+    if (val > 0) result[p.name] = val;
+  });
+  return result;
+}
+
+function openProductionModal(rec) {
+  editingProduction = rec || null;
+  document.getElementById('productionModalTitle').textContent = rec ? '編輯生產記錄' : '新增生產記錄';
+  document.getElementById('productionDeleteBtn').style.display = rec ? 'block' : 'none';
+  document.getElementById('p-date').value  = rec ? (rec.date||'') : new Date().toISOString().split('T')[0];
+  document.getElementById('p-batch').value = rec ? (rec.batch||'') : '';
+  document.getElementById('p-notes').value = rec ? (rec.notes||'') : '';
+  populateProdGrids();
+  document.getElementById('productionModal').classList.add('open');
+}
+
+async function saveProduction() {
+  const prods = getProducts();
+  const inputs  = prods.filter(p => p.category !== '成品' && p.category !== '包膜');
+  const outputs = prods.filter(p => p.category === '成品' || p.category === '包膜' || p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('cotton'));
+  const inProds  = inputs.length  ? inputs  : prods;
+  const outProds = outputs.length ? outputs : prods;
+  const record = {
+    id:      editingProduction ? editingProduction.id : uid(),
+    date:    document.getElementById('p-date').value,
+    batch:   document.getElementById('p-batch').value.trim(),
+    inputs:  JSON.stringify(getProdGridData(inProds,  'pin_')),
+    outputs: JSON.stringify(getProdGridData(outProds, 'pout_')),
+    notes:   document.getElementById('p-notes').value.trim(),
+  };
+  closeModal('productionModal');
+  const ok = await saveToSheet('Production', record);
+  if (ok) await loadAll();
+}
+
+async function deleteProduction() {
+  if (!editingProduction || !confirm('確定刪除此生產記錄？')) return;
+  closeModal('productionModal');
+  const ok = await deleteFromSheet('Production', editingProduction.id);
+  if (ok) await loadAll();
+}
 
 // ── INIT ──
 renderDashboard(); // show empty dashboard immediately
