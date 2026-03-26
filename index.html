@@ -2218,13 +2218,25 @@ function renderInventory() {
     html += '<div class="card-id">' + prod.unit + ' &middot; ' + prod.category + '</div>';
     html += '</div></div>';
 
-    html += '<div class="card-grid" style="margin-top:10px">';
-    html += '<div class="card-field"><div class="card-field-lbl">總進貨/生產</div><div class="card-field-val" style="color:var(--blue)">' + inQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
-    html += '<div class="card-field"><div class="card-field-lbl">週途中</div><div class="card-field-val" style="color:var(--amber)">' + inTransitQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
+    html += '<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">';
+    html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid var(--blue);border-radius:10px;padding:10px 12px">';
+    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">進口成品</div>';
+    html += '<div style="font-size:1.1rem;font-weight:700;color:var(--blue)">' + importedQty.toLocaleString() + ' ' + prod.unit + '</div>';
+    if (inTransitQty>0) html += '<div style="font-size:0.72rem;color:var(--amber)">週途中: ' + inTransitQty.toLocaleString() + '</div>';
+    html += '</div>';
+    html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid var(--purple);border-radius:10px;padding:10px 12px">';
+    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">自產成品</div>';
+    html += '<div style="font-size:1.1rem;font-weight:700;color:var(--purple)">' + prodOutputQty.toLocaleString() + ' ' + prod.unit + '</div>';
+    html += '</div>';
+    html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid ' + (remaining>0?'var(--teal)':remaining===0?'var(--border)':'var(--red)') + ';border-radius:10px;padding:10px 12px">';
+    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">剰餘庫存</div>';
+    html += '<div style="font-size:1.3rem;font-weight:800;color:' + (remaining>0?'var(--teal)':remaining===0?'var(--text-muted)':'var(--red)') + '">' + remaining.toLocaleString() + ' ' + prod.unit + '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="card-grid" style="margin-top:8px">';
     html += '<div class="card-field"><div class="card-field-lbl">已配送</div><div class="card-field-val" style="color:var(--green)">' + delivQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
-    if (consumedQty > 0) html += '<div class="card-field"><div class="card-field-lbl">生產消耗</div><div class="card-field-val" style="color:var(--purple)">' + consumedQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
-    if (prodOutputQty > 0) html += '<div class="card-field"><div class="card-field-lbl">自產成品</div><div class="card-field-val" style="color:var(--teal)">' + prodOutputQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
-    html += '<div class="card-field"><div class="card-field-lbl">剰餘庫存</div><div class="card-field-val" style="color:' + (remaining>0?'var(--teal)':remaining===0?'var(--text-muted)':'var(--red)') + ';font-size:1.05rem;font-weight:700">' + remaining.toLocaleString() + ' ' + prod.unit + '</div></div>';
+    if (consumedQty > 0) html += '<div class="card-field"><div class="card-field-lbl">生產消耗</div><div class="card-field-val" style="color:var(--amber)">' + consumedQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">總可用</div><div class="card-field-val">' + inQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
     html += '</div>';
 
     // Progress bar
