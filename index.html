@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -403,13 +403,13 @@ select option { background: var(--surface2); }
   <div style="background:#161b22;border:1px solid #30363d;border-radius:16px;padding:40px;width:100%;max-width:360px;text-align:center">
     <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:#3fb950;margin-bottom:6px">WG LLC</div>
     <div style="font-size:0.82rem;color:#7d8590;margin-bottom:28px">Operations Management</div>
-    <input type="password" id="auth-input" placeholder="輸入密碼" onkeydown="if(event.key==='Enter')checkAuth()"
+    <input type="password" id="auth-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkAuth()"
       style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;padding:11px 14px;font-size:0.95rem;color:#e6edf3;outline:none;text-align:center;margin-bottom:12px;box-sizing:border-box">
     <button onclick="checkAuth()"
       style="width:100%;background:#3fb950;color:#000;border:none;border-radius:8px;padding:11px;font-size:0.9rem;font-weight:700;cursor:pointer">
-      登入
+      Login
     </button>
-    <div id="auth-error" style="color:#f85149;font-size:0.8rem;margin-top:10px;display:none">密碼錯誤，請再試一次</div>
+    <div id="auth-error" style="color:#f85149;font-size:0.8rem;margin-top:10px;display:none">Incorrect password, please try again</div>
   </div>
 </div>
 
@@ -439,28 +439,28 @@ select option { background: var(--surface2); }
   <div class="nav-logo">WG <span>LLC</span></div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('dashboard')" id="tab-dashboard">
-      <span class="tab-dot" style="background:#3fb950"></span>總覽
+      <span class="tab-dot" style="background:#3fb950"></span>Dashboard
     </button>
     <button class="nav-tab" onclick="showPage('cargo')" id="tab-cargo">
-      <span class="tab-dot" style="background:#58a6ff"></span>貨批
+      <span class="tab-dot" style="background:#58a6ff"></span>Shipments
     </button>
     <button class="nav-tab" onclick="showPage('invoice')" id="tab-invoice">
-      <span class="tab-dot" style="background:#39d3c3"></span>發票
+      <span class="tab-dot" style="background:#39d3c3"></span>Invoices
     </button>
     <button class="nav-tab" onclick="showPage('delivery')" id="tab-delivery">
-      <span class="tab-dot" style="background:#a371f7"></span>配送
+      <span class="tab-dot" style="background:#a371f7"></span>Delivery
     </button>
     <button class="nav-tab" onclick="showPage('tasks')" id="tab-tasks">
-      <span class="tab-dot" style="background:#d29922"></span>任務
+      <span class="tab-dot" style="background:#d29922"></span>Tasks
     </button>
     <button class="nav-tab" onclick="showPage('customers')" id="tab-customers">
-      <span class="tab-dot" style="background:#f0883e"></span>客戶
+      <span class="tab-dot" style="background:#f0883e"></span>Customers
     </button>
     <button class="nav-tab" onclick="showPage('inventory')" id="tab-inventory">
-      <span class="tab-dot" style="background:#39d3c3"></span>庫存
+      <span class="tab-dot" style="background:#39d3c3"></span>Inventory
     </button>
     <button class="nav-tab" onclick="showPage('settings')" id="tab-settings">
-      <span class="tab-dot" style="background:#8b949e"></span>設定
+      <span class="tab-dot" style="background:#8b949e"></span>Settings
     </button>
   </div>
 </nav>
@@ -470,7 +470,7 @@ select option { background: var(--surface2); }
 <!-- ══ DASHBOARD ══ -->
 <div class="page active" id="page-dashboard">
   <div class="page-header">
-    <div class="page-title">營運總覽 <span id="dash-date"></span></div>
+    <div class="page-title">Operations Overview <span id="dash-date"></span></div>
   </div>
   <div class="stats-row" id="dash-stats"></div>
   <div class="dash-grid" id="dash-grid"></div>
@@ -479,8 +479,8 @@ select option { background: var(--surface2); }
 <!-- ══ CARGO ══ -->
 <div class="page" id="page-cargo">
   <div class="page-header">
-    <div class="page-title">貨批管理 <span>Shipment Tracker</span></div>
-    <button class="btn-add" onclick="openCargoModal()">＋ 新增貨批</button>
+    <div class="page-title">Shipment Management <span>Tracker</span></div>
+    <button class="btn-add" onclick="openCargoModal()">+ New Shipment</button>
   </div>
   <div class="stats-row" id="cargo-stats"></div>
   <div class="cards-list" id="cargo-list"></div>
@@ -490,7 +490,7 @@ select option { background: var(--surface2); }
 <div class="page" id="page-invoice">
   <div class="page-header">
     <div class="page-title">發票管理 <span>Invoice &amp; Payments</span></div>
-    <button class="btn-add" onclick="openInvoiceModal()">＋ 新增發票</button>
+    <button class="btn-add" onclick="openInvoiceModal()">+ New Invoice</button>
   </div>
   <div class="stats-row" id="invoice-stats"></div>
   <div class="cards-list" id="invoice-list"></div>
@@ -499,8 +499,8 @@ select option { background: var(--surface2); }
 <!-- ══ DELIVERY ══ -->
 <div class="page" id="page-delivery">
   <div class="page-header">
-    <div class="page-title">配送管理 <span>Delivery Tracking</span></div>
-    <button class="btn-add" onclick="openDeliveryModal()">＋ 新增地址</button>
+    <div class="page-title">Delivered管理 <span>Delivery Tracking</span></div>
+    <button class="btn-add" onclick="openDeliveryModal()">+ New Delivery</button>
   </div>
   <div class="stats-row" id="delivery-stats"></div>
   <div class="cards-list" id="delivery-list"></div>
@@ -510,7 +510,7 @@ select option { background: var(--surface2); }
 <div class="page" id="page-tasks">
   <div class="page-header">
     <div class="page-title">每週任務 <span>Weekly Tasks</span></div>
-    <button class="btn-add" onclick="openTaskModal()">＋ 新增任務</button>
+    <button class="btn-add" onclick="openTaskModal()">+ New Task</button>
   </div>
   <div id="tasks-content"></div>
 </div>
@@ -518,7 +518,7 @@ select option { background: var(--surface2); }
 <div class="page" id="page-customers">
   <div class="page-header">
     <div class="page-title">客戶管理 <span>Customer Directory</span></div>
-    <button class="btn-add" onclick="openCustomerModal()">＋ 新增客戶</button>
+    <button class="btn-add" onclick="openCustomerModal()">+ New Customer</button>
   </div>
   <div class="stats-row" id="customer-stats"></div>
   <div style="margin-bottom:12px">
@@ -530,15 +530,15 @@ select option { background: var(--surface2); }
 
 <div class="page" id="page-settings">
   <div class="page-header">
-    <div class="page-title">設定 <span>Settings</span></div>
+    <div class="page-title">Settings <span>Configuration</span></div>
   </div>
   <div id="settings-content"></div>
 </div>
 
 <div class="page" id="page-inventory">
   <div class="page-header">
-    <div class="page-title">庫存分析 <span>Inventory</span></div>
-    <button class="btn-add" onclick="openProductionModal()">＋ 新增生產記錄</button>
+    <div class="page-title">Inventory Analysis <span>Inventory</span></div>
+    <button class="btn-add" onclick="openProductionModal()">+ New Production Record</button>
   </div>
   <div class="stats-row" id="inventory-stats"></div>
   <div id="inventory-content" style="margin-top:8px"></div>
@@ -547,26 +547,26 @@ select option { background: var(--surface2); }
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <div class="modal-title" id="productionModalTitle">新增生產記錄</div>
+      <div class="modal-title" id="productionModalTitle">New Production Record</div>
       <button class="modal-close" onclick="closeModal('productionModal')">&#x2715;</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group"><label>日期</label><input type="date" id="p-date"></div>
-        <div class="form-group"><label>生產批號（選填）</label><input id="p-batch" placeholder="e.g. WG-2026-01"></div>
-        <div class="form-group full"><label>消耗原料</label>
+        <div class="form-group"><label>Date</label><input type="date" id="p-date"></div>
+        <div class="form-group"><label>Batch Number (optional)</label><input id="p-batch" placeholder="e.g. WG-2026-01"></div>
+        <div class="form-group full"><label>Raw Material Used</label>
           <div id="p-input-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div>
         </div>
-        <div class="form-group full"><label>生產成品</label>
+        <div class="form-group full"><label>Finished Goods Produced</label>
           <div id="p-output-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div>
         </div>
-        <div class="form-group full"><label>備註</label><textarea id="p-notes"></textarea></div>
+        <div class="form-group full"><label>Notes</label><textarea id="p-notes"></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-delete" id="productionDeleteBtn" style="display:none" onclick="deleteProduction()">🗑 刪除</button>
-      <button class="btn-cancel" onclick="closeModal('productionModal')">取消</button>
-      <button class="btn-save" onclick="saveProduction()">儲存</button>
+      <button class="btn-delete" id="productionDeleteBtn" style="display:none" onclick="deleteProduction()">🗑 Delete</button>
+      <button class="btn-cancel" onclick="closeModal('productionModal')">Cancel</button>
+      <button class="btn-save" onclick="saveProduction()">Save</button>
     </div>
   </div>
 </div>
@@ -577,26 +577,26 @@ select option { background: var(--surface2); }
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <div class="modal-title" id="customerModalTitle">新增客戶</div>
+      <div class="modal-title" id="customerModalTitle">New Customer</div>
       <button class="modal-close" onclick="closeModal('customerModal')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group full"><label>公司名稱</label><input id="cu-company" placeholder="AG Pro Companies"></div>
-        <div class="form-group"><label>聯絡人</label><input id="cu-contact" placeholder="John Smith"></div>
-        <div class="form-group"><label>客戶類型</label>
+        <div class="form-group full"><label>Company Name</label><input id="cu-company" placeholder="AG Pro Companies"></div>
+        <div class="form-group"><label>Contact</label><input id="cu-contact" placeholder="John Smith"></div>
+        <div class="form-group"><label>Customer Type</label>
           <select id="cu-type">
             <option value="AG Pro">AG Pro</option>
             <option value="Tom">Tom</option>
             <option value="經銷商">經銷商</option>
             <option value="其他">其他</option>
           </select></div>
-        <div class="form-group"><label>電話</label><input type="tel" id="cu-phone" placeholder="(404) 555-0000"></div>
+        <div class="form-group"><label>Phone</label><input type="tel" id="cu-phone" placeholder="(404) 555-0000"></div>
         <div class="form-group"><label>Email</label><input type="email" id="cu-email" placeholder="email@example.com"></div>
-        <div class="form-group full"><label>地址</label><input id="cu-addr" placeholder="903 N Tennille Ave"></div>
-        <div class="form-group"><label>城市, 州</label><input id="cu-city" placeholder="Donaldsonville, GA"></div>
-        <div class="form-group"><label>郵遞區號</label><input id="cu-zip" placeholder="39845"></div>
-        <div class="form-group"><label>付款條件</label>
+        <div class="form-group full"><label>Address</label><input id="cu-addr" placeholder="903 N Tennille Ave"></div>
+        <div class="form-group"><label>City, State</label><input id="cu-city" placeholder="Donaldsonville, GA"></div>
+        <div class="form-group"><label>ZIP Code</label><input id="cu-zip" placeholder="39845"></div>
+        <div class="form-group"><label>付款條pcs</label>
           <select id="cu-terms">
             <option value="Wire">Wire Transfer</option>
             <option value="Net 30">Net 30</option>
@@ -610,13 +610,13 @@ select option { background: var(--surface2); }
             <option value="暫停">暫停</option>
             <option value="潛在">潛在</option>
           </select></div>
-        <div class="form-group full"><label>備註</label><textarea id="cu-notes" placeholder="特殊需求、信用額度、注意事項..."></textarea></div>
+        <div class="form-group full"><label>Notes</label><textarea id="cu-notes" placeholder="特殊需求、信用額度、注意事項..."></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-delete" id="customerDeleteBtn" style="display:none" onclick="deleteCustomer()">刪除</button>
-      <button class="btn-cancel" onclick="closeModal('customerModal')">取消</button>
-      <button class="btn-save" onclick="saveCustomer()">儲存</button>
+      <button class="btn-delete" id="customerDeleteBtn" style="display:none" onclick="deleteCustomer()">Delete</button>
+      <button class="btn-cancel" onclick="closeModal('customerModal')">Cancel</button>
+      <button class="btn-save" onclick="saveCustomer()">Save</button>
     </div>
   </div>
 </div>
@@ -630,7 +630,7 @@ select option { background: var(--surface2); }
   <div class="modal" style="max-width:640px">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <div class="modal-title" id="cargoModalTitle">新增貨批</div>
+      <div class="modal-title" id="cargoModalTitle">New Shipment</div>
       <button class="modal-close" onclick="closeModal('cargoModal')">✕</button>
     </div>
     <div class="modal-body">
@@ -640,12 +640,12 @@ select option { background: var(--surface2); }
         <div class="form-group"><label>客戶 Customer</label><select id="c-customer"></select></div>
         <div class="form-group"><label>狀態</label>
           <select id="c-status">
-            <option value="待出港">待出港</option>
-            <option value="海運中">海運中</option>
-            <option value="到港待清關">到港待清關</option>
-            <option value="清關中">清關中</option>
-            <option value="待配送">待配送</option>
-            <option value="已完成">已完成</option>
+            <option value="Pending Departure">Pending Departure</option>
+            <option value="In Transit">In Transit</option>
+            <option value="Arrived - Pending Customs">Arrived - Pending Customs</option>
+            <option value="Customs Clearance">Customs Clearance</option>
+            <option value="Pending">Pending</option>
+            <option value="Completed">Completed</option>
           </select>
         </div>
         <div class="form-group full"><label>貨櫃號碼（每行一個，可先空白之後註屎）</label>
@@ -654,11 +654,11 @@ select option { background: var(--surface2); }
         <div class="form-group"><label>裝載港 Port of Loading</label><select id="c-pol"></select></div>
         <div class="form-group"><label>卸貨港 Port of Discharge</label><select id="c-pod"></select></div>
         <div class="form-group"><label>ETD 出港日</label><input type="date" id="c-etd"></div>
-        <div class="form-group"><label>ETA 到港日</label><input type="date" id="c-eta"></div>
-        <div class="form-group"><label>最終交付日</label><input type="date" id="c-etaFinal"></div>
-        <div class="form-group"><label>貨物類型 Disc.</label><select id="c-disc"></select></div>
-        <div class="form-group"><label>數量 QTY</label><input id="c-qty" placeholder="21 PKGS x 3 貨櫃"></div>
-        <div class="form-group"><label>售價 Selling Price (USD)</label><input type="number" id="c-sellPrice" placeholder="0"></div>
+        <div class="form-group"><label>ETA日</label><input type="date" id="c-eta"></div>
+        <div class="form-group"><label>Final Delivery Date</label><input type="date" id="c-etaFinal"></div>
+        <div class="form-group"><label>Disc. Type</label><select id="c-disc"></select></div>
+        <div class="form-group"><label>Quantity (QTY)</label><input id="c-qty" placeholder="21 PKGS x 3 貨櫃"></div>
+        <div class="form-group"><label>Sell Price Selling Price (USD)</label><input type="number" id="c-sellPrice" placeholder="0"></div>
         <div class="form-group"><label>製造成本 Mfg (USD)</label><input type="number" id="c-mfgCost" placeholder="0"></div>
         <div class="form-group"><label>海運費 Freight (USD)</label><input type="number" id="c-freight" placeholder="0"></div>
         <div class="form-group"><label>陸運費 Trucking (USD)</label><input type="number" id="c-trucking" placeholder="0"></div>
@@ -668,15 +668,15 @@ select option { background: var(--surface2); }
         <div class="form-group"><label>Chassis + Tarp (USD)</label><input type="number" id="c-chassis" placeholder="0"></div>
         <div class="form-group"><label>Bank Charge (USD)</label><input type="number" id="c-bankCharge" placeholder="0"></div>
         <div class="form-group full"><label>最終目的地</label><input id="c-dest" placeholder="903 N Tennille Ave, Donaldsonville GA 39845"></div>
-        <div class="form-group full"><label>備註</label><textarea id="c-notes" placeholder="特殊事項…"></textarea></div>
+        <div class="form-group full"><label>Notes</label><textarea id="c-notes" placeholder="特殊事項…"></textarea></div>
       </div>
 
       <!-- Document Checklist -->
       <div id="cargoDocSection" style="display:none;margin-top:16px">
-        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);padding:12px 0 8px;border-top:1px solid var(--border)">文件追蹤 Document Checklist</div>
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);padding:12px 0 8px;border-top:1px solid var(--border)">Document Checklist</div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
           <input type="checkbox" id="doc-cb-doc_debitNote" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
-          <div><label for="doc-cb-doc_debitNote" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Debit Note 收到</label>
+          <div><label for="doc-cb-doc_debitNote" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Debit Note Received</label>
             <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
               <input id="doc-ref-doc_debitNote" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
               <input type="date" id="doc-date-doc_debitNote" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
@@ -685,7 +685,7 @@ select option { background: var(--surface2); }
         </div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
           <input type="checkbox" id="doc-cb-doc_arrivalNotice" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
-          <div><label for="doc-cb-doc_arrivalNotice" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Arrival Notice 收到</label>
+          <div><label for="doc-cb-doc_arrivalNotice" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Arrival Notice Received</label>
             <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
               <input id="doc-ref-doc_arrivalNotice" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
               <input type="date" id="doc-date-doc_arrivalNotice" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
@@ -694,22 +694,22 @@ select option { background: var(--surface2); }
         </div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
           <input type="checkbox" id="doc-cb-doc_carrierFeePaid" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
-          <div><label for="doc-cb-doc_carrierFeePaid" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Carrier Fee 已付</label>
+          <div><label for="doc-cb-doc_carrierFeePaid" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Carrier Fee Paid</label>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
           <input type="checkbox" id="doc-cb-doc_packingList" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
-          <div><label for="doc-cb-doc_packingList" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Packing List 已提供</label>
+          <div><label for="doc-cb-doc_packingList" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Packing List Provided</label>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
           <input type="checkbox" id="doc-cb-doc_commercialInv" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
-          <div><label for="doc-cb-doc_commercialInv" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Commercial Invoice 已提供</label>
+          <div><label for="doc-cb-doc_commercialInv" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Commercial Invoice Provided</label>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
           <input type="checkbox" id="doc-cb-doc_entrySummary" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
-          <div><label for="doc-cb-doc_entrySummary" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Entry Summary 收到</label>
+          <div><label for="doc-cb-doc_entrySummary" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Entry Summary Received</label>
             <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
               <input id="doc-ref-doc_entrySummary" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
               <input type="date" id="doc-date-doc_entrySummary" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
@@ -718,12 +718,12 @@ select option { background: var(--surface2); }
         </div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
           <input type="checkbox" id="doc-cb-doc_finalAddress" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
-          <div><label for="doc-cb-doc_finalAddress" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">最終地址已提供</label>
+          <div><label for="doc-cb-doc_finalAddress" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Final Address Provided</label>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
           <input type="checkbox" id="doc-cb-doc_inlandBOL" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
-          <div><label for="doc-cb-doc_inlandBOL" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Inland BOL 收到</label>
+          <div><label for="doc-cb-doc_inlandBOL" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Inland BOL Received</label>
             <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
               <input id="doc-ref-doc_inlandBOL" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
               <input type="date" id="doc-date-doc_inlandBOL" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
@@ -732,12 +732,12 @@ select option { background: var(--surface2); }
         </div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
           <input type="checkbox" id="doc-cb-doc_customerNotified" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
-          <div><label for="doc-cb-doc_customerNotified" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">已通知客戶 Enroute</label>
+          <div><label for="doc-cb-doc_customerNotified" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Customer Notified Enroute</label>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
           <input type="checkbox" id="doc-cb-doc_forwarderInv" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
-          <div><label for="doc-cb-doc_forwarderInv" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Forwarder Invoice 收到</label>
+          <div><label for="doc-cb-doc_forwarderInv" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Forwarder Invoice Received</label>
             <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
               <input id="doc-ref-doc_forwarderInv" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
               <input type="date" id="doc-date-doc_forwarderInv" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
@@ -746,7 +746,7 @@ select option { background: var(--surface2); }
         </div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
           <input type="checkbox" id="doc-cb-doc_forwarderPaid" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
-          <div><label for="doc-cb-doc_forwarderPaid" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">貨代費用已付款</label>
+          <div><label for="doc-cb-doc_forwarderPaid" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Forwarder Fee Paid</label>
             <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
               <input type="date" id="doc-date-doc_forwarderPaid" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
             </div>
@@ -754,7 +754,7 @@ select option { background: var(--surface2); }
         </div>
         <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
           <input type="checkbox" id="doc-cb-doc_customerPaid" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
-          <div><label for="doc-cb-doc_customerPaid" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">客戶貨款已收</label>
+          <div><label for="doc-cb-doc_customerPaid" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Customer Payment Received</label>
             <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
               <input type="date" id="doc-date-doc_customerPaid" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
             </div>
@@ -763,9 +763,9 @@ select option { background: var(--surface2); }
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-delete" id="cargoDeleteBtn" style="display:none" onclick="deleteCargo()">刪除</button>
-      <button class="btn-cancel" onclick="closeModal('cargoModal')">取消</button>
-      <button class="btn-save" onclick="saveCargo()">儲存</button>
+      <button class="btn-delete" id="cargoDeleteBtn" style="display:none" onclick="deleteCargo()">Delete</button>
+      <button class="btn-cancel" onclick="closeModal('cargoModal')">Cancel</button>
+      <button class="btn-save" onclick="saveCargo()">Save</button>
     </div>
   </div>
 </div>
@@ -774,35 +774,35 @@ select option { background: var(--surface2); }
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <div class="modal-title" id="invoiceModalTitle">新增發票</div>
+      <div class="modal-title" id="invoiceModalTitle">New Invoice</div>
       <button class="modal-close" onclick="closeModal('invoiceModal')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
         <div class="form-group"><label>發票號碼</label><input id="i-num" placeholder="10097"></div>
-        <div class="form-group"><label>日期</label><input type="date" id="i-date"></div>
+        <div class="form-group"><label>Date</label><input type="date" id="i-date"></div>
         <div class="form-group full"><label>客戶 Bill To</label><select id="i-billTo"></select></div>
-        <div class="form-group full"><label>項目說明</label><select id="i-item"></select></div>
-        <div class="form-group"><label>數量 QTY</label><input type="number" id="i-qty" placeholder="1323"></div>
-        <div class="form-group"><label>單位</label><input id="i-unit" placeholder="Rolls"></div>
+        <div class="form-group full"><label>Item說明</label><select id="i-item"></select></div>
+        <div class="form-group"><label>Quantity (QTY)</label><input type="number" id="i-qty" placeholder="1323"></div>
+        <div class="form-group"><label>Unit</label><input id="i-unit" placeholder="Rolls"></div>
         <div class="form-group"><label>單價 Unit Price (USD)</label><input type="number" id="i-unitPrice" placeholder="485"></div>
         <div class="form-group"><label>狀態</label>
           <select id="i-status">
-            <option value="未付款">未付款</option>
-            <option value="部分付款">部分付款</option>
-            <option value="已付清">已付清</option>
+            <option value="Unpaid">Unpaid</option>
+            <option value="Partial">Partial</option>
+            <option value="Paid">Paid</option>
           </select>
         </div>
         <div class="form-group"><label>已收金額 Paid (USD)</label><input type="number" id="i-paid" placeholder="0"></div>
         <div class="form-group"><label>付款日期</label><input type="date" id="i-paidDate"></div>
         <div class="form-group full"><label>相關貨櫃號碼（用逗號分隔）</label><input id="i-containers" placeholder="MRSU4783132, MRSU6977775"></div>
-        <div class="form-group full"><label>備註</label><textarea id="i-notes"></textarea></div>
+        <div class="form-group full"><label>Notes</label><textarea id="i-notes"></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-delete" id="invoiceDeleteBtn" style="display:none" onclick="deleteInvoice()">🗑 刪除</button>
-      <button class="btn-cancel" onclick="closeModal('invoiceModal')">取消</button>
-      <button class="btn-save" onclick="saveInvoice()">儲存</button>
+      <button class="btn-delete" id="invoiceDeleteBtn" style="display:none" onclick="deleteInvoice()">🗑 Delete</button>
+      <button class="btn-cancel" onclick="closeModal('invoiceModal')">Cancel</button>
+      <button class="btn-save" onclick="saveInvoice()">Save</button>
     </div>
   </div>
 </div>
@@ -812,53 +812,53 @@ select option { background: var(--surface2); }
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <div class="modal-title" id="deliveryModalTitle">新增配送地址</div>
+      <div class="modal-title" id="deliveryModalTitle">New Delivery地址</div>
       <button class="modal-close" onclick="closeModal('deliveryModal')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group full"><label>House B/L 選擇（從現有貨批）</label>
+        <div class="form-group full"><label>House B/L (from existing shipments)</label>
           <select id="d-bolNum" onchange="onBolSelect()" style="font-family:var(--mono)"></select>
         </div>
-        <div class="form-group full"><label>貨櫃號碼（選擇 BOL 後自動帶入，可多選）</label>
+        <div class="form-group full"><label>Container Numbers (auto-loaded after BOL selection, multi-select)</label>
           <div id="d-container-checks" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px 0;min-height:32px">
-            <span style="font-size:0.8rem;color:var(--text-dim)">先選擇 BOL</span>
+            <span style="font-size:0.8rem;color:var(--text-dim)">Select BOL first</span>
           </div>
         </div>
-        <div class="form-group"><label>經銷商類型 Distributor</label><select id="d-dist" onchange="onDistChange()"></select></div>
-        <div class="form-group"><label>公司名稱 Company</label><select id="d-business" onchange="onCompanyChange()"></select></div>
-        <div class="form-group full"><label>地址（從現有地址選擇，或手動輸入）</label>
-          <select id="d-addr-select" onchange="onAddrSelect()"><option value="">— 選擇已有地址 —</option></select>
+        <div class="form-group"><label>Distributor Type</label><select id="d-dist" onchange="onDistChange()"></select></div>
+        <div class="form-group"><label>Company</label><select id="d-business" onchange="onCompanyChange()"></select></div>
+        <div class="form-group full"><label>Address</label>
+          <select id="d-addr-select" onchange="onAddrSelect()"><option value="">— Select existing address —</option></select>
           <input id="d-addr" placeholder="262 Country Road 12" style="margin-top:6px">
         </div>
-        <div class="form-group"><label>城市, 州</label><input id="d-city" placeholder="Headland, AL"></div>
-        <div class="form-group"><label>郵遞區號</label><input id="d-zip" placeholder="36345"></div>
-        <div class="form-group"><label>聯絡人</label><input id="d-contact" placeholder="Michael DeShazo"></div>
-        <div class="form-group"><label>電話</label><input type="tel" id="d-phone" placeholder="(334)714-4555"></div>
-        <div class="form-group"><label>配送狀態</label>
+        <div class="form-group"><label>City, State</label><input id="d-city" placeholder="Headland, AL"></div>
+        <div class="form-group"><label>ZIP Code</label><input id="d-zip" placeholder="36345"></div>
+        <div class="form-group"><label>Contact</label><input id="d-contact" placeholder="Michael DeShazo"></div>
+        <div class="form-group"><label>Phone</label><input type="tel" id="d-phone" placeholder="(334)714-4555"></div>
+        <div class="form-group"><label>Status</label>
           <select id="d-status">
-            <option value="待配送">待配送</option>
-            <option value="已排程">已排程</option>
-            <option value="已配送">已配送</option>
+            <option value="Pending">Pending</option>
+            <option value="Scheduled">Scheduled</option>
+            <option value="Delivered">Delivered</option>
           </select>
         </div>
-        <div class="form-group"><label>配送日期</label><input type="date" id="d-delivDate"></div>
-        <div class="form-group"><label>成品來源</label>
+        <div class="form-group"><label>Delivery Date</label><input type="date" id="d-delivDate"></div>
+        <div class="form-group"><label>Product Source</label>
           <select id="d-source">
-            <option value="">— 選擇來源 —</option>
-            <option value="進口">🚢 進口 Imported</option>
-            <option value="自產">🏭 自產 Self-produced</option>
+            <option value="">— Select source —</option>
+            <option value="Imported">🚢 Imported</option>
+            <option value="Self-produced">🏭 Self-produced</option>
           </select>
         </div>
-        <div class="form-group full"><label>配送內容</label><div id="d-items-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div></div>
-        <div class="form-group full"><label>備註</label><textarea id="d-notes"></textarea></div>
+        <div class="form-group full"><label>Delivery Contents</label><div id="d-items-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div></div>
+        <div class="form-group full"><label>Notes</label><textarea id="d-notes"></textarea></div>
       </div>
     </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-delete" id="deliveryDeleteBtn" style="display:none" onclick="deleteDelivery()">🗑 刪除</button>
-      <button class="btn-cancel" onclick="closeModal('deliveryModal')">取消</button>
-      <button class="btn-save" onclick="saveDelivery()">儲存</button>
+      <button class="btn-delete" id="deliveryDeleteBtn" style="display:none" onclick="deleteDelivery()">🗑 Delete</button>
+      <button class="btn-cancel" onclick="closeModal('deliveryModal')">Cancel</button>
+      <button class="btn-save" onclick="saveDelivery()">Save</button>
     </div>
   </div>
 </div>
@@ -868,26 +868,26 @@ select option { background: var(--surface2); }
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <div class="modal-title">新增任務</div>
+      <div class="modal-title">New Task</div>
       <button class="modal-close" onclick="closeModal('taskModal')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group full"><label>任務說明</label><input id="t-text" placeholder="例：確認 Container MRSU4783132 清關狀態"></div>
+        <div class="form-group full"><label>Task Description</label><input id="t-text" placeholder="例：確認 Container MRSU4783132 清關狀態"></div>
         <div class="form-group"><label>週次（週一日期）</label><input type="date" id="t-week"></div>
         <div class="form-group"><label>優先度</label>
           <select id="t-priority">
-            <option value="一般">一般</option>
-            <option value="重要">重要</option>
-            <option value="緊急">緊急</option>
+            <option value="Normal">Normal</option>
+            <option value="Important">Important</option>
+            <option value="Urgent">Urgent</option>
           </select>
         </div>
-        <div class="form-group full"><label>備註</label><textarea id="t-notes" placeholder="細節說明…"></textarea></div>
+        <div class="form-group full"><label>Notes</label><textarea id="t-notes" placeholder="細節說明…"></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal('taskModal')">取消</button>
-      <button class="btn-save" onclick="saveTask()">儲存</button>
+      <button class="btn-cancel" onclick="closeModal('taskModal')">Cancel</button>
+      <button class="btn-save" onclick="saveTask()">Save</button>
     </div>
   </div>
 </div>
@@ -928,7 +928,7 @@ function hideSync() {
 
 // ── Fetch all data from Google Sheets ──
 async function loadAll() {
-  showSync('⟳ 載入中…');
+  showSync('⟳ Loading...');
   try {
     const sheets = ['Shipments','Invoices','Deliveries','Tasks','Customers','Settings','Production'];
     const results = await Promise.all(sheets.map(s =>
@@ -938,7 +938,7 @@ async function loadAll() {
     invoices   = results[1].data || [];
     deliveries = (results[2].data || []).map(d => {
       if (d.bolNum !== undefined) d.bolNum = String(d.bolNum).trim();
-      if (!d.source) d.source = '進口';
+      if (!d.source) d.source = 'Imported';
       ['delivDate'].forEach(f => { d[f] = normalizeDate(d[f]); });
       return d;
     });
@@ -956,18 +956,18 @@ async function loadAll() {
     // normalize booleans for tasks
     tasks = tasks.map(t => ({ ...t, done: t.done === true || t.done === 'TRUE' || t.done === 'true' }));
 
-    showSync('✓ 已同步', 'var(--green-dim)');
+    showSync('✓ Synced', 'var(--green-dim)');
     setTimeout(hideSync, 2000);
     renderAll();
   } catch(e) {
-    showSync('⚠ 無法連線', 'var(--red-dim)');
+    showSync('⚠ Connection failed', 'var(--red-dim)');
     console.error(e);
   }
 }
 
 // ── Save single record to Google Sheets ──
 async function saveToSheet(sheet, record) {
-  showSync('⟳ 儲存中…');
+  showSync('⟳ Save中…');
   try {
     const res = await fetch(API, {
       method: 'POST',
@@ -975,11 +975,11 @@ async function saveToSheet(sheet, record) {
     });
     const json = await res.json();
     if (!json.ok) throw new Error(json.error);
-    showSync('✓ 已儲存', 'var(--green-dim)');
+    showSync('✓ 已Save', 'var(--green-dim)');
     setTimeout(hideSync, 1500);
     return true;
   } catch(e) {
-    showSync('⚠ 儲存失敗', 'var(--red-dim)');
+    showSync('⚠ Save失敗', 'var(--red-dim)');
     console.error(e);
     return false;
   }
@@ -987,17 +987,17 @@ async function saveToSheet(sheet, record) {
 
 // ── Delete record from Google Sheets ──
 async function deleteFromSheet(sheet, id) {
-  showSync('⟳ 刪除中…');
+  showSync('⟳ Deleting...');
   try {
     await fetch(API, {
       method: 'POST',
       body: JSON.stringify({ sheet, action: 'delete', record: { id } }),
     });
-    showSync('✓ 已刪除', 'var(--green-dim)');
+    showSync('✓ Deleted', 'var(--green-dim)');
     setTimeout(hideSync, 1500);
     return true;
   } catch(e) {
-    showSync('⚠ 刪除失敗', 'var(--red-dim)');
+    showSync('⚠ Delete failed', 'var(--red-dim)');
     return false;
   }
 }
@@ -1021,7 +1021,7 @@ function fmtDate(d) {
   try {
     const dt = new Date(s + (s.includes('T') ? '' : 'T12:00:00'));
     if (isNaN(dt.getTime())) return '—';
-    return dt.toLocaleDateString('zh-TW', {month:'short', day:'numeric'});
+    return dt.toLocaleDateString('en-US', {month:'short', day:'numeric'});
   } catch(e) { return '—'; }
 }
 function daysFromNow(d) {
@@ -1269,12 +1269,12 @@ function closeIfOutside(e, id) { if (e.target === document.getElementById(id)) c
 
 function openInvoiceModal(inv) {
   editingInvoice = inv || null;
-  document.getElementById('invoiceModalTitle').textContent = inv ? '編輯發票' : '新增發票';
+  document.getElementById('invoiceModalTitle').textContent = inv ? 'Edit Invoice' : 'New Invoice';
   document.getElementById('invoiceDeleteBtn').style.display = inv ? 'block' : 'none';
   populateInvoiceDropdowns(inv);
   ['num','date','qty','unit','unitPrice','status','paid','paidDate','containers','notes'].forEach(k => {
     const el = document.getElementById('i-'+k);
-    if (el) el.value = inv ? (inv[k] || '') : (k === 'status' ? '未付款' : '');
+    if (el) el.value = inv ? (inv[k] || '') : (k === 'status' ? 'Unpaid' : '');
   });
   // Auto-fill unit when item already set
   const itemSel = document.getElementById('i-item');
@@ -1297,14 +1297,14 @@ async function saveInvoice() {
   ['num','date','billTo','item','qty','unit','unitPrice','status','paid','paidDate','containers','notes'].forEach(k => {
     data[k] = document.getElementById('i-'+k)?.value || '';
   });
-  if (!data.billTo) { alert('請輸入客戶名稱'); return; }
+  if (!data.billTo) { alert('請輸入客戶Name'); return; }
   const record = editingInvoice ? { ...editingInvoice, ...data } : { id: uid(), ...data };
   closeModal('invoiceModal');
   const ok = await saveToSheet('Invoices', record);
   if (ok) await loadAll();
 }
 async function deleteInvoice() {
-  if (!editingInvoice || !confirm('確定刪除此發票？')) return;
+  if (!editingInvoice || !confirm('確定Delete此發票？')) return;
   closeModal('invoiceModal');
   const ok = await deleteFromSheet('Invoices', editingInvoice.id);
   if (ok) await loadAll();
@@ -1314,10 +1314,10 @@ function onBolSelect() {
   const bolVal = (document.getElementById('d-bolNum')?.value || '').trim();
   const box = document.getElementById('d-container-checks');
   if (!box) return;
-  if (!bolVal) { box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">先選擇 BOL</span>'; return; }
+  if (!bolVal) { box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">Select BOL first</span>'; return; }
   const shipment = cargo.find(s => String(s.bolNum||'').trim() === bolVal);
   const ctrs = shipment ? (shipment.containers||'').split(/[,\n]/).map(x=>x.trim()).filter(Boolean) : [];
-  if (!ctrs.length) { box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">此 BOL 尚無貨櫃號碼（請先在貨批頁面填入）</span>'; return; }
+  if (!ctrs.length) { box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">No containers for this BOL（請先在shipments page填入）</span>'; return; }
   const currentId = editingDelivery ? editingDelivery.id : null;
   const usedByOthers = new Set(
     deliveries
@@ -1328,20 +1328,20 @@ function onBolSelect() {
     const isUsed = usedByOthers.has(ct);
     return '<label style="display:inline-flex;align-items:center;gap:6px;background:'+(isUsed?'var(--surface3)':'var(--surface2)')+';border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:'+(isUsed?'default':'pointer')+';font-size:0.82rem;font-family:var(--mono);opacity:'+(isUsed?'0.45':'1')+'">' +
       '<input type="checkbox" name="d-ctr" value="'+ct+'"'+(isUsed?' disabled':'')+' style="accent-color:var(--green);width:14px;height:14px"> ' +
-      ct + (isUsed?' <span style="font-size:0.65rem;color:var(--text-muted)">已配送</span>':'') + '</label>';
+      ct + (isUsed?' <span style="font-size:0.65rem;color:var(--text-muted)">Delivered</span>':'') + '</label>';
   }).join('');
 }
 
 function openDeliveryModal(d) {
   editingDelivery = d || null;
-  document.getElementById('deliveryModalTitle').textContent = d ? '編輯配送' : '新增配送';
+  document.getElementById('deliveryModalTitle').textContent = d ? 'Edit Delivery' : 'New Delivery';
   document.getElementById('deliveryDeleteBtn').style.display = d ? 'block' : 'none';
 
   // BOL dropdown
   const bolSel = document.getElementById('d-bolNum');
   if (bolSel) {
     const bols = [...new Set(cargo.filter(s=>s.bolNum).map(s=>String(s.bolNum).trim()))].filter(Boolean).sort();
-    bolSel.innerHTML = '<option value="">— 選擇 BOL —</option>' +
+    bolSel.innerHTML = '<option value="">— Select BOL —</option>' +
       bols.map(b => '<option value="'+b+'"'+(d&&String(d.bolNum||'').trim()===b?' selected':'')+'>'+b+'</option>').join('');
   }
 
@@ -1355,9 +1355,9 @@ function openDeliveryModal(d) {
       box.innerHTML = ctrs.length ? ctrs.map(ct =>
         '<label style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:0.82rem;font-family:var(--mono)">' +
         '<input type="checkbox" name="d-ctr" value="'+ct+'"'+(selected.includes(ct)?' checked':'')+' style="accent-color:var(--green);width:14px;height:14px"> '+ct+'</label>'
-      ).join('') : '<span style="font-size:0.8rem;color:var(--text-dim)">此 BOL 尚無貨櫃號碼</span>';
+      ).join('') : '<span style="font-size:0.8rem;color:var(--text-dim)">No containers for this BOL</span>';
     } else {
-      box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">先選擇 BOL</span>';
+      box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">Select BOL first</span>';
     }
   }
 
@@ -1368,13 +1368,13 @@ function openDeliveryModal(d) {
     if (bizSel) {
       const companies = customers.filter(x => !d.dist || x.type === d.dist).map(x => x.company||x.contact).filter(Boolean).sort();
       const unique = [...new Set(companies)];
-      bizSel.innerHTML = '<option value="">— 選擇公司 —</option>' +
+      bizSel.innerHTML = '<option value="">— Select company —</option>' +
         unique.map(co => '<option value="'+co+'"'+(d.business===co?' selected':'')+'>'+co+'</option>').join('');
     }
   }
   ['addr','city','zip','contact','phone','status','delivDate','source','wraps','parts','notes'].forEach(k => {
     const el = document.getElementById('d-'+k);
-    if (el) el.value = d ? (d[k]||'') : (k==='status'?'待配送':'');
+    if (el) el.value = d ? (d[k]||'') : (k==='status'?'Pending':'');
   });
   const addrSel = document.getElementById('d-addr-select');
   if (addrSel) addrSel.value = '';
@@ -1395,14 +1395,14 @@ async function saveDelivery() {
   const checked = [...document.querySelectorAll('input[name="d-ctr"]:checked')].map(x=>x.value);
   data.containerNum = checked.join(', ');
   data.delivItems = JSON.stringify(getDelivItemsData());
-  if (!data.addr && !data.city) { alert('請輸入地址或城市'); return; }
+  if (!data.addr && !data.city) { alert('Please enter address or city'); return; }
   const record = editingDelivery ? { ...editingDelivery, ...data } : { id: uid(), ...data };
   closeModal('deliveryModal');
   const ok = await saveToSheet('Deliveries', record);
   if (ok) await loadAll();
 }
 async function deleteDelivery() {
-  if (!editingDelivery || !confirm('確定刪除此地址？')) return;
+  if (!editingDelivery || !confirm('確定Delete此地址？')) return;
   closeModal('deliveryModal');
   const ok = await deleteFromSheet('Deliveries', editingDelivery.id);
   if (ok) await loadAll();
@@ -1411,14 +1411,14 @@ async function deleteDelivery() {
 function openTaskModal() {
   document.getElementById('t-text').value = '';
   document.getElementById('t-week').value = getWeekMonday(new Date());
-  document.getElementById('t-priority').value = '一般';
+  document.getElementById('t-priority').value = 'Normal';
   document.getElementById('t-notes').value = '';
   document.getElementById('taskModal').classList.add('open');
 }
 
 async function saveTask() {
   const text = document.getElementById('t-text').value.trim();
-  if (!text) { alert('請輸入任務說明'); return; }
+  if (!text) { alert('Please enter task description'); return; }
   const record = {
     id: uid(),
     text,
@@ -1444,31 +1444,31 @@ function emptyState(icon, text, sub) {
 // INVOICE
 // ==============================
 const INV_STATUS = {
-  '未付款':   'badge-red',
-  '部分付款': 'badge-amber',
-  '已付清':   'badge-green',
+  'Unpaid':   'badge-red',
+  'Partial': 'badge-amber',
+  'Paid':   'badge-green',
 };
 
 function renderInvoiceStats() {
   const total  = invoices.reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)), 0);
   const paid   = invoices.reduce((s,i) => s + (Number(i.paid)||0), 0);
-  const unpaid = invoices.filter(i => i.status !== '已付清').length;
+  const unpaid = invoices.filter(i => i.status !== 'Paid').length;
   const el = document.getElementById('invoice-stats');
   if (!el) return;
   el.innerHTML =
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + fmt$(total) + '</div><div class="stat-card-lbl">總發票金額</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + fmt$(paid) + '</div><div class="stat-card-lbl">已收款</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--red)">' + fmt$(total - paid) + '</div><div class="stat-card-lbl">未收款</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + unpaid + '</div><div class="stat-card-lbl">待收發票</div></div>';
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + fmt$(total) + '</div><div class="stat-card-lbl">Total Invoiced</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + fmt$(paid) + '</div><div class="stat-card-lbl">Collected</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--red)">' + fmt$(total - paid) + '</div><div class="stat-card-lbl">Outstanding</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + unpaid + '</div><div class="stat-card-lbl">Pending Invoices</div></div>';
 }
 
 function renderInvoices() {
   renderInvoiceStats();
   const el = document.getElementById('invoice-list');
   if (!el) return;
-  if (!invoices.length) { el.innerHTML = emptyState('🧾','尚無發票資料','點擊新增發票開始記錄'); return; }
+  if (!invoices.length) { el.innerHTML = emptyState('🧾','No invoices yet','點擊New Invoice開始記錄'); return; }
   const sorted = [...invoices].sort((a,b) => {
-    const o = {'未付款':0,'部分付款':1,'已付清':2};
+    const o = {'Unpaid':0,'Partial':1,'Paid':2};
     return (o[a.status]||0)-(o[b.status]||0);
   });
   let html = '';
@@ -1481,10 +1481,10 @@ function renderInvoices() {
     html += '<div class="card-title">' + (inv.billTo||'—') + '</div></div>';
     html += '<span class="badge ' + (INV_STATUS[inv.status]||'badge-muted') + '">' + (inv.status||'—') + '</span></div>';
     html += '<div class="card-grid">';
-    if (inv.item)    html += '<div class="card-field"><div class="card-field-lbl">項目</div><div class="card-field-val">' + inv.item + '</div></div>';
-    html += '<div class="card-field"><div class="card-field-lbl">數量</div><div class="card-field-val">' + (inv.qty||'—') + ' ' + (inv.unit||'') + '</div></div>';
-    html += '<div class="card-field"><div class="card-field-lbl">總金額</div><div class="card-field-val" style="color:var(--teal)">' + fmt$(total) + '</div></div>';
-    html += '<div class="card-field"><div class="card-field-lbl">未收餘額</div><div class="card-field-val" style="color:' + (balance>0?'var(--red)':'var(--green)') + '">' + fmt$(balance) + '</div></div>';
+    if (inv.item)    html += '<div class="card-field"><div class="card-field-lbl">Item</div><div class="card-field-val">' + inv.item + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">Qty</div><div class="card-field-val">' + (inv.qty||'—') + ' ' + (inv.unit||'') + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">Total Amount</div><div class="card-field-val" style="color:var(--teal)">' + fmt$(total) + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">Balance Due</div><div class="card-field-val" style="color:' + (balance>0?'var(--red)':'var(--green)') + '">' + fmt$(balance) + '</div></div>';
     html += '</div>';
     if (total > 0) html += '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%;background:' + (pct===100?'var(--green)':'var(--teal)') + '"></div></div>';
     html += '</div>';
@@ -1496,32 +1496,32 @@ function renderInvoices() {
 // DELIVERY
 // ==============================
 const DEL_STATUS = {
-  '待配送':  'badge-amber',
-  '已排程':  'badge-blue',
-  '已配送':  'badge-green',
+  'Pending':  'badge-amber',
+  'Scheduled':  'badge-blue',
+  'Delivered':  'badge-green',
 };
 
 function renderDeliveryStats() {
-  const pending   = deliveries.filter(d => d.status === '待配送').length;
-  const scheduled = deliveries.filter(d => d.status === '已排程').length;
-  const done      = deliveries.filter(d => d.status === '已配送').length;
-  const totalWraps= deliveries.filter(d => d.status !== '已配送').reduce((s,d) => s+(Number(d.wraps)||0), 0);
+  const pending   = deliveries.filter(d => d.status === 'Pending').length;
+  const scheduled = deliveries.filter(d => d.status === 'Scheduled').length;
+  const done      = deliveries.filter(d => d.status === 'Delivered').length;
+  const totalWraps= deliveries.filter(d => d.status !== 'Delivered').reduce((s,d) => s+(Number(d.wraps)||0), 0);
   const el = document.getElementById('delivery-stats');
   if (!el) return;
   el.innerHTML =
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + pending + '</div><div class="stat-card-lbl">待配送</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + scheduled + '</div><div class="stat-card-lbl">已排程</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + done + '</div><div class="stat-card-lbl">已完成</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + totalWraps + '</div><div class="stat-card-lbl">待送包膜卷</div></div>';
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + pending + '</div><div class="stat-card-lbl">Pending</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + scheduled + '</div><div class="stat-card-lbl">Scheduled</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + done + '</div><div class="stat-card-lbl">Completed</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + totalWraps + '</div><div class="stat-card-lbl">Wraps Pending</div></div>';
 }
 
 function renderDeliveries() {
   renderDeliveryStats();
   const el = document.getElementById('delivery-list');
   if (!el) return;
-  if (!deliveries.length) { el.innerHTML = emptyState('🚛','尚無配送地址','點擊新增地址開始管理'); return; }
+  if (!deliveries.length) { el.innerHTML = emptyState('🚛','尚無Delivered地址','Click New Delivery to get started'); return; }
   const sorted = [...deliveries].sort((a,b) => {
-    const o = {'待配送':0,'已排程':1,'已配送':2};
+    const o = {'Pending':0,'Scheduled':1,'Delivered':2};
     return (o[a.status]||0)-(o[b.status]||0);
   });
   let html = '';
@@ -1540,45 +1540,48 @@ function renderDeliveries() {
 
     html += '</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">';
     html += '<span class="badge ' + (DEL_STATUS[d.status]||'badge-muted') + '">' + d.status + '</span>';
-    if (d.source) html += '<span style="font-size:0.68rem;padding:2px 7px;border-radius:10px;background:' + (d.source==='自產'?'var(--purple-dim,#3a2d4a)':'var(--blue-dim,#1a2d3d)') + ';color:' + (d.source==='自產'?'var(--purple)':'var(--blue)') + '">' + (d.source==='自產'?'🏭':'🚢') + ' ' + d.source + '</span>';
-    html += '<button onclick="event.stopPropagation();toggleDelivered(\'' + d.id + '\')" class="delivery-check ' + (d.status==='已配送'?'delivered':'') + '" title="標記已配送">' + (d.status==='已配送'?'✓':'') + '</button>';
+    if (d.source) html += '<span style="font-size:0.68rem;padding:2px 7px;border-radius:10px;background:' + (d.source==='Self-produced'?'var(--purple-dim,#3a2d4a)':'var(--blue-dim,#1a2d3d)') + ';color:' + (d.source==='Self-produced'?'var(--purple)':'var(--blue)') + '">' + (d.source==='Self-produced'?'🏭':'🚢') + ' ' + d.source + '</span>';
+    html += '<button onclick="event.stopPropagation();toggleDelivered(\'' + d.id + '\')" class="delivery-check ' + (d.status==='Delivered'?'delivered':'') + '" title="標記Delivered">' + (d.status==='Delivered'?'✓':'') + '</button>';
     html += '</div></div>';
     html += '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px">📍 ' + (d.addr||'') + (d.city?', '+d.city:'') + ' ' + (d.zip||'') + '</div>';
     const shipRefD = d.bolNum ? cargo.find(s => String(s.bolNum||'').trim() === String(d.bolNum||'').trim()) : null;
     const inlandBol = shipRefD ? (shipRefD.ref_inlandBOL||'') : '';
     if (inlandBol) html += '<div style="font-size:0.75rem;color:var(--amber);margin-bottom:6px;font-family:var(--mono)">📄 Inland BOL: ' + inlandBol + '</div>';
     html += '<div class="card-grid">';
-    if (d.contact)   html += '<div class="card-field"><div class="card-field-lbl">聯絡人</div><div class="card-field-val">' + d.contact + '</div></div>';
-    if (d.phone)     html += '<div class="card-field"><div class="card-field-lbl">電話</div><div class="card-field-val">' + fmtPhone(d.phone) + '</div></div>';
+    if (d.contact)   html += '<div class="card-field"><div class="card-field-lbl">Contact</div><div class="card-field-val">' + d.contact + '</div></div>';
+    if (d.phone)     html += '<div class="card-field"><div class="card-field-lbl">Phone</div><div class="card-field-val">' + fmtPhone(d.phone) + '</div></div>';
     if (d.delivItems) {
       try {
         const items = JSON.parse(d.delivItems);
-        const prodMap = {}; getProducts().forEach(p => prodMap[p.name] = p);
+        const prods4d = getProducts();
+        const pmap = {}; prods4d.forEach(p => pmap[p.name] = p);
         Object.entries(items).forEach(([k,v]) => {
-          if (v <= 0) return;
-          const pp = prodMap[k];
+          if (!v || Number(v) <= 0) return;
+          // Fuzzy match: handle 'Cotton Wraps' -> 'Cotton Wrap'
+          const kl = k.toLowerCase().replace(/s$/,'');
+          const pp = pmap[k] || prods4d.find(p => p.name.toLowerCase().replace(/s$/,'') === kl || kl.includes(p.name.toLowerCase().replace(/s$/,'')) || p.name.toLowerCase().replace(/s$/,'').includes(kl));
           const rpp = pp?.rollsPerPallet||0;
           const ppc = pp?.palletsPerContainer||0;
-          let displayStr = v + ' ' + (pp?.unit||'');
+          const unit = pp?.unit || 'units';
+          const qty = Number(v);
+          let displayStr = qty.toLocaleString() + ' ' + unit;
           if (rpp > 0) {
-            const pallets = (v/rpp).toFixed(1).replace(/\.0$/,'');
-            displayStr = v + ' ' + (pp?.unit||'') + ' (' + pallets + ' pallets)';
-            if (ppc > 0) {
-              const ctrs = (v/rpp/ppc).toFixed(2).replace(/\.?0+$/,'');
-              displayStr = v + ' ' + (pp?.unit||'') + ' (' + pallets + ' pal / ' + ctrs + ' ctr)';
-            }
+            const pals = (qty/rpp).toFixed(1).replace(/\.0$/,'');
+            displayStr = qty.toLocaleString() + ' ' + unit + ' (' + pals + ' pal';
+            if (ppc > 0) displayStr += ' / ' + (qty/rpp/ppc).toFixed(2).replace(/\.?0+$/,'') + ' ctr';
+            displayStr += ')';
           }
-          html += '<div class="card-field"><div class="card-field-lbl">' + k + '</div><div class="card-field-val">' + displayStr + '</div></div>';
+          html += '<div class="card-field"><div class="card-field-lbl">' + (pp?.name||k) + '</div><div class="card-field-val">' + displayStr + '</div></div>';
         });
       } catch(e) {
-        if (d.wraps) html += '<div class="card-field"><div class="card-field-lbl">包膜</div><div class="card-field-val">' + d.wraps + ' 卷</div></div>';
-        if (d.parts) html += '<div class="card-field"><div class="card-field-lbl">零件</div><div class="card-field-val">' + d.parts + ' 件</div></div>';
+        if (d.wraps) html += '<div class="card-field"><div class="card-field-lbl">Wraps</div><div class="card-field-val">' + d.wraps + ' Rolls</div></div>';
+        if (d.parts) html += '<div class="card-field"><div class="card-field-lbl">Parts</div><div class="card-field-val">' + d.parts + ' pcs</div></div>';
       }
     } else {
-      if (d.wraps) html += '<div class="card-field"><div class="card-field-lbl">包膜</div><div class="card-field-val">' + d.wraps + ' 卷</div></div>';
-      if (d.parts) html += '<div class="card-field"><div class="card-field-lbl">零件</div><div class="card-field-val">' + d.parts + ' 件</div></div>';
+      if (d.wraps) html += '<div class="card-field"><div class="card-field-lbl">Wraps</div><div class="card-field-val">' + d.wraps + ' Rolls</div></div>';
+      if (d.parts) html += '<div class="card-field"><div class="card-field-lbl">Parts</div><div class="card-field-val">' + d.parts + ' pcs</div></div>';
     }
-    if (d.delivDate) html += '<div class="card-field"><div class="card-field-lbl">配送日期</div><div class="card-field-val">' + fmtDate(d.delivDate) + '</div></div>';
+    if (d.delivDate) html += '<div class="card-field"><div class="card-field-lbl">Delivery Date</div><div class="card-field-val">' + fmtDate(d.delivDate) + '</div></div>';
     html += '</div></div>';
   });
   el.innerHTML = html;
@@ -1587,8 +1590,8 @@ function renderDeliveries() {
 async function toggleDelivered(id) {
   const d = deliveries.find(x => x.id === id);
   if (!d) return;
-  d.status = d.status === '已配送' ? '待配送' : '已配送';
-  if (d.status === '已配送' && !d.delivDate) d.delivDate = new Date().toISOString().split('T')[0];
+  d.status = d.status === 'Delivered' ? 'Pending' : 'Delivered';
+  if (d.status === 'Delivered' && !d.delivDate) d.delivDate = new Date().toISOString().split('T')[0];
   renderDeliveries();
   await saveToSheet('Deliveries', d);
 }
@@ -1607,7 +1610,7 @@ function getWeekMonday(date) {
 function renderTasks() {
   const el = document.getElementById('tasks-content');
   if (!el) return;
-  if (!tasks.length) { el.innerHTML = emptyState('✅','尚無任務','點擊新增任務開始規劃'); return; }
+  if (!tasks.length) { el.innerHTML = emptyState('✅','No tasks yet','點擊New Task開始規劃'); return; }
   const weeks = {};
   tasks.forEach(t => {
     const w = t.week || getWeekMonday(new Date());
@@ -1619,19 +1622,19 @@ function renderTasks() {
   Object.keys(weeks).sort().reverse().forEach(w => {
     const wDate = new Date(w+'T12:00:00');
     const wEnd  = new Date(wDate); wEnd.setDate(wEnd.getDate()+6);
-    const label = wDate.toLocaleDateString('zh-TW',{month:'long',day:'numeric'}) + ' – ' + wEnd.toLocaleDateString('zh-TW',{month:'long',day:'numeric'});
-    const wTasks = weeks[w].sort((a,b) => {const po={'緊急':0,'重要':1,'一般':2};return (po[a.priority]||2)-(po[b.priority]||2);});
+    const label = wDate.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' – ' + wEnd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const wTasks = weeks[w].sort((a,b) => {const po={'Urgent':0,'Important':1,'Normal':2};return (po[a.priority]||2)-(po[b.priority]||2);});
     const done = wTasks.filter(t=>t.done).length;
     html += '<div style="font-family:var(--display);font-size:1rem;font-weight:700;color:var(--text);margin:20px 0 10px;display:flex;align-items:center;gap:8px">' + label;
-    if (w === thisWeek) html += '<span style="font-size:0.7rem;font-weight:500;font-family:var(--sans);padding:2px 8px;border-radius:8px;background:var(--green-dim);color:var(--green)">本週</span>';
+    if (w === thisWeek) html += '<span style="font-size:0.7rem;font-weight:500;font-family:var(--sans);padding:2px 8px;border-radius:8px;background:var(--green-dim);color:var(--green)">This Week</span>';
     html += '<span style="font-size:0.7rem;font-weight:500;font-family:var(--sans);padding:2px 8px;border-radius:8px;background:var(--surface3);color:var(--text-muted)">' + done + '/' + wTasks.length + '</span></div>';
     wTasks.forEach(t => {
-      const pc = {'一般':'var(--text-muted)','重要':'var(--amber)','緊急':'var(--red)'};
+      const pc = {'Normal':'var(--text-muted)','Important':'var(--amber)','Urgent':'var(--red)'};
       html += '<div class="task-item ' + (t.done?'done':'') + '">';
       html += '<div class="task-check ' + (t.done?'checked':'') + '" onclick="toggleTask(\'' + t.id + '\')"></div>';
       html += '<div class="task-content"><div class="task-text">' + t.text + '</div>';
       if (t.notes) html += '<div class="task-meta">' + t.notes + '</div>';
-      html += '<div class="task-meta" style="color:' + (pc[t.priority]||'var(--text-muted)') + '">● ' + (t.priority||'一般') + '</div>';
+      html += '<div class="task-meta" style="color:' + (pc[t.priority]||'var(--text-muted)') + '">● ' + (t.priority||'Normal') + '</div>';
       html += '</div><button class="task-del" onclick="deleteTask(\'' + t.id + '\')">✕</button></div>';
     });
   });
@@ -1655,14 +1658,14 @@ async function deleteTask(id) {
 function openTaskModal() {
   document.getElementById('t-text').value = '';
   document.getElementById('t-week').value = getWeekMonday(new Date());
-  document.getElementById('t-priority').value = '一般';
+  document.getElementById('t-priority').value = 'Normal';
   document.getElementById('t-notes').value = '';
   document.getElementById('taskModal').classList.add('open');
 }
 
 async function saveTask() {
   const text = document.getElementById('t-text').value.trim();
-  if (!text) { alert('請輸入任務說明'); return; }
+  if (!text) { alert('Please enter task description'); return; }
   const record = {
     id: uid(), text,
     week: document.getElementById('t-week').value || getWeekMonday(new Date()),
@@ -1679,45 +1682,45 @@ async function saveTask() {
 // DASHBOARD
 // ==============================
 function renderDashboard() {
-  const today = new Date().toLocaleDateString('zh-TW', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+  const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
   const dateEl = document.getElementById('dash-date');
   if (dateEl) dateEl.textContent = today;
-  const unpaidAmt = invoices.filter(i => i.status !== '已付清')
+  const unpaidAmt = invoices.filter(i => i.status !== 'Paid')
     .reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)) - (Number(i.paid)||0), 0);
-  const activeCargo  = cargo.filter(c => c.status !== '已完成').length;
-  const pendingDel   = deliveries.filter(d => d.status !== '已配送').length;
+  const activeCargo  = cargo.filter(c => c.status !== 'Completed').length;
+  const pendingDel   = deliveries.filter(d => d.status !== 'Delivered').length;
   const pendingTasks = tasks.filter(t => !t.done).length;
   const statsEl = document.getElementById('dash-stats');
   if (statsEl) statsEl.innerHTML =
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + activeCargo + '</div><div class="stat-card-lbl">進行中貨批</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--red)">' + fmt$(unpaidAmt) + '</div><div class="stat-card-lbl">未收款</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + pendingDel + '</div><div class="stat-card-lbl">待配送地點</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + pendingTasks + '</div><div class="stat-card-lbl">未完成任務</div></div>';
-  const urgentCargo    = cargo.filter(c => { const d = daysFromNow(c.eta); return d!==null && d<=5 && c.status!=='已完成'; });
-  const unpaidInv      = invoices.filter(i => i.status !== '已付清');
-  const urgentTasks    = tasks.filter(t => !t.done && t.priority === '緊急');
-  const pendingDelList = deliveries.filter(d => d.status !== '已配送');
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + activeCargo + '</div><div class="stat-card-lbl">Active Shipments</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--red)">' + fmt$(unpaidAmt) + '</div><div class="stat-card-lbl">Outstanding</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + pendingDel + '</div><div class="stat-card-lbl">Pending地點</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + pendingTasks + '</div><div class="stat-card-lbl">Pending Tasks</div></div>';
+  const urgentCargo    = cargo.filter(c => { const d = daysFromNow(c.eta); return d!==null && d<=5 && c.status!=='Completed'; });
+  const unpaidInv      = invoices.filter(i => i.status !== 'Paid');
+  const urgentTasks    = tasks.filter(t => !t.done && t.priority === 'Urgent');
+  const pendingDelList = deliveries.filter(d => d.status !== 'Delivered');
   const gridEl = document.getElementById('dash-grid');
   if (!gridEl) return;
   let grid = '';
-  grid += '<div class="dash-card"><div class="dash-card-title">🚢 近期到港貨批</div>';
+  grid += '<div class="dash-card"><div class="dash-card-title">🚢 Upcoming Arrivals</div>';
   if (urgentCargo.length) urgentCargo.forEach(c => { grid += '<div class="dash-list-item"><span style="font-family:var(--mono);font-size:0.8rem">' + (c.bolNum||'BOL?') + '</span><span class="badge badge-blue" style="font-size:0.68rem">' + daysFromNow(c.eta) + '天後</span></div>'; });
-  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">近期無到港貨批</div>';
+  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">No upcoming arrivals</div>';
   grid += '</div>';
-  grid += '<div class="dash-card"><div class="dash-card-title">🧾 待收款發票</div>';
+  grid += '<div class="dash-card"><div class="dash-card-title">🧾 Unpaid Invoices</div>';
   if (unpaidInv.length) unpaidInv.slice(0,5).forEach(i => {
     const bal = ((Number(i.qty)||0)*(Number(i.unitPrice)||0))-(Number(i.paid)||0);
     grid += '<div class="dash-list-item"><span>' + (i.billTo||'—') + ' #' + (i.num||'?') + '</span><span style="color:var(--red);font-family:var(--mono);font-size:0.8rem">' + fmt$(bal) + '</span></div>';
   });
-  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">所有發票已收款 ✓</div>';
+  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">All invoices paid ✓</div>';
   grid += '</div>';
-  grid += '<div class="dash-card"><div class="dash-card-title">⚡ 緊急任務</div>';
-  if (urgentTasks.length) urgentTasks.slice(0,5).forEach(t => { grid += '<div class="dash-list-item"><span style="font-size:0.82rem">' + t.text + '</span><span class="badge badge-red" style="font-size:0.65rem">緊急</span></div>'; });
-  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">無緊急任務</div>';
+  grid += '<div class="dash-card"><div class="dash-card-title">⚡ Urgent任務</div>';
+  if (urgentTasks.length) urgentTasks.slice(0,5).forEach(t => { grid += '<div class="dash-list-item"><span style="font-size:0.82rem">' + t.text + '</span><span class="badge badge-red" style="font-size:0.65rem">Urgent</span></div>'; });
+  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">無Urgent任務</div>';
   grid += '</div>';
-  grid += '<div class="dash-card"><div class="dash-card-title">🚛 待配送地點</div>';
+  grid += '<div class="dash-card"><div class="dash-card-title">🚛 Pending地點</div>';
   if (pendingDelList.length) pendingDelList.slice(0,5).forEach(d => { grid += '<div class="dash-list-item"><span style="font-size:0.82rem">' + (d.city||d.addr||'—') + (d.bolNum?' <span style="font-size:0.7rem;color:var(--blue)">'+d.bolNum+'</span>':'') + '</span><span class="badge ' + (DEL_STATUS[d.status]||'badge-muted') + '" style="font-size:0.65rem">' + d.status + '</span></div>'; });
-  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">無待配送地點</div>';
+  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">無Pending地點</div>';
   grid += '</div>';
   gridEl.innerHTML = grid;
 }
@@ -1765,7 +1768,7 @@ function renderCustomers() {
   if (!filtered.length) {
     el.innerHTML = customers.length
       ? emptyState("?","找不到符合的客戶","試試其他搜尋悡語")
-      : emptyState("?","尚無客戶資料","點擊新增客戶開始建立清單");
+      : emptyState("?","No customers yet","點擊New Customer開始建立清單");
     return;
   }
   const types = ["AG Pro","Tom","經銷商","其他"];
@@ -1777,7 +1780,7 @@ function renderCustomers() {
     group.forEach(cu => {
       const relInv   = invoices.filter(i => i.billTo && cu.company && i.billTo.toLowerCase().includes(cu.company.toLowerCase()));
       const lastInv  = [...relInv].sort((a,b) => (b.date||"") > (a.date||"") ? 1 : -1)[0];
-      const activeCg = cargo.filter(g => g.customer && cu.company && g.customer.toLowerCase().includes(cu.company.toLowerCase()) && g.status !== "已完成").length;
+      const activeCg = cargo.filter(g => g.customer && cu.company && g.customer.toLowerCase().includes(cu.company.toLowerCase()) && g.status !== "Completed").length;
       html += "<div class=\"card\" style=\"border-left:3px solid var(--orange)\" onclick=\"openCustomerEdit('" + cu.id + "')\">";
       html += "<div class=\"card-top\"><div>";
       html += "<div class=\"card-id\">" + (cu.type||"") + (cu.terms ? " &middot; " + cu.terms : "") + "</div>";
@@ -1785,12 +1788,12 @@ function renderCustomers() {
       if (cu.contact && cu.company) html += "<div style=\"font-size:0.8rem;color:var(--text-muted);margin-top:2px\">" + cu.contact + "</div>";
       html += "</div><span class=\"badge " + (CUST_CLS[cu.status]||"badge-green") + "\">" + (cu.status||"活躍") + "</span></div>";
       html += "<div class=\"card-grid\">";
-      if (cu.phone)      html += "<div class=\"card-field\"><div class=\"card-field-lbl\">電話</div><div class=\"card-field-val\">" + cu.phone + "</div></div>";
+      if (cu.phone)      html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Phone</div><div class=\"card-field-val\">" + cu.phone + "</div></div>";
       if (cu.email)      html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Email</div><div class=\"card-field-val\" style=\"font-size:0.75rem\">" + cu.email + "</div></div>";
       if (cu.city)       html += "<div class=\"card-field\"><div class=\"card-field-lbl\">城市</div><div class=\"card-field-val\">" + cu.city + "</div></div>";
       if (relInv.length) html += "<div class=\"card-field\"><div class=\"card-field-lbl\">發票數</div><div class=\"card-field-val\" style=\"color:var(--teal)\">" + relInv.length + " 張</div></div>";
       if (activeCg)      html += "<div class=\"card-field\"><div class=\"card-field-lbl\">進行中貨櫃</div><div class=\"card-field-val\" style=\"color:var(--blue)\">" + activeCg + " 個</div></div>";
-      if (lastInv)       html += "<div class=\"card-field\"><div class=\"card-field-lbl\">上次訂貨</div><div class=\"card-field-val\">" + fmtDate(lastInv.date) + "</div></div>";
+      if (lastInv)       html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Last Order</div><div class=\"card-field-val\">" + fmtDate(lastInv.date) + "</div></div>";
       html += "</div>";
       if (cu.notes) html += "<div style=\"font-size:0.75rem;color:var(--text-muted);margin-top:8px;line-height:1.4\">" + cu.notes + "</div>";
       html += "</div>";
@@ -1803,7 +1806,7 @@ let editingCustomer = null;
 
 function openCustomerModal(cu) {
   editingCustomer = cu || null;
-  document.getElementById("customerModalTitle").textContent = cu ? "編輯客戶" : "新增客戶";
+  document.getElementById("customerModalTitle").textContent = cu ? "Edit Customer" : "New Customer";
   document.getElementById("customerDeleteBtn").style.display = cu ? "block" : "none";
   const defs = {company:"",contact:"",type:"AG Pro",phone:"",email:"",addr:"",city:"",zip:"",terms:"Wire",status:"活躍",notes:""};
   Object.keys(defs).forEach(k => {
@@ -1819,7 +1822,7 @@ async function saveCustomer() {
   ["company","contact","type","phone","email","addr","city","zip","terms","status","notes"].forEach(k => {
     data[k] = document.getElementById("cu-"+k)?.value || "";
   });
-  if (!data.company && !data.contact) { alert("請輸入公司名稱或聯絡人"); return; }
+  if (!data.company && !data.contact) { alert("請輸入公司Name或Contact"); return; }
   const record = editingCustomer ? {...editingCustomer,...data} : {id:uid(),...data};
   closeModal("customerModal");
   const ok = await saveToSheet("Customers", record);
@@ -1827,7 +1830,7 @@ async function saveCustomer() {
 }
 
 async function deleteCustomer() {
-  if (!editingCustomer || !confirm("確定刪除此客戶？")) return;
+  if (!editingCustomer || !confirm("確定Delete此客戶？")) return;
   closeModal("customerModal");
   const ok = await deleteFromSheet("Customers", editingCustomer.id);
   if (ok) await loadAll();
@@ -1841,10 +1844,10 @@ async function deleteCustomer() {
 // Default lists (fallback if nothing saved)
 // Products: [{name, unit, category}]
 const DEFAULT_PRODUCTS = [
-  { name: 'Cotton Wrap',           unit: 'Rolls',  category: '成品', rollsPerPallet: 9,  palletsPerContainer: 21 },
-  { name: 'Cotton Picker Spindle', unit: 'Pieces', category: '零件', rollsPerPallet: 0,  palletsPerContainer: 0  },
-  { name: 'Raw Films',             unit: 'Rolls',  category: '原料', rollsPerPallet: 0,  palletsPerContainer: 0  },
-  { name: 'Forklift',              unit: 'Units',  category: '其他', rollsPerPallet: 0,  palletsPerContainer: 0  },
+  { name: 'Cotton Wrap',           unit: 'Rolls',  category: 'Finished Good', rollsPerPallet: 9,  palletsPerContainer: 21 },
+  { name: 'Cotton Picker Spindle', unit: 'Pieces', category: 'Parts', rollsPerPallet: 0,  palletsPerContainer: 0  },
+  { name: 'Raw Films',             unit: 'Rolls',  category: 'Raw Material', rollsPerPallet: 0,  palletsPerContainer: 0  },
+  { name: 'Forklift',              unit: 'Units',  category: 'Other', rollsPerPallet: 0,  palletsPerContainer: 0  },
 ];
 
 const DEFAULT_LISTS = {
@@ -1883,15 +1886,15 @@ function saveLists(lists) {
 function renderSettings() {
   const lists = getLists();
   const CONFIGS = [
-    { key: 'carriers',  label: '運輸公司 Carrier',   desc: '貨櫃新增時的運輸公司選項' },
-    { key: 'ports',     label: '港口 Ports',              desc: '裝載港和卸貨港選項' },
-    { key: 'sizes', label: '貨櫃尺寸 Size', desc: '貨櫃尺寸選項' },
+    { key: 'carriers',  label: '運輸公司 Carrier',   desc: '貨櫃Add時的運輸公司Option' },
+    { key: 'ports',     label: 'Portss',              desc: '裝載港和卸貨港Option' },
+    { key: 'sizes', label: 'Container Sizes', desc: '貨櫃SizeOption' },
   ];
   const el = document.getElementById('settings-content');
   if (!el) return;
 
   let html = '<div style="max-width:600px">';
-  html += '<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:20px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px">這裡管理所有下拉選單的選項清單。選項存在這台裝置上，下次開啟会保留。</div>';
+  html += '<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:20px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px">這裡管理所有下拉選單的Option Lists。Option存在這台裝置上，下次開啟会保留。</div>';
 
   CONFIGS.forEach(function(cfg) {
     const items = lists[cfg.key] || [];
@@ -1911,17 +1914,17 @@ function renderSettings() {
     });
     html += '</div>';
     html += '<div style="display:flex;gap:8px">';
-    html += "<input id=\"new-" + cfg.key + "\" placeholder=\"輸入新選項後按 Enter 或新增\" style=\"flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:0.875rem;color:var(--text);outline:none\" onkeydown=\"if(event.key==='Enter')addListItem('" + cfg.key + "')\">";
-    html += "<button onclick=\"addListItem('" + cfg.key + "')\" style=\"background:var(--green);color:#000;border:none;border-radius:8px;padding:8px 16px;font-family:var(--sans);font-size:0.82rem;font-weight:700;cursor:pointer\">新增</button>";
+    html += "<input id=\"new-" + cfg.key + "\" placeholder=\"輸入新Option後按 Enter 或Add\" style=\"flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:0.875rem;color:var(--text);outline:none\" onkeydown=\"if(event.key==='Enter')addListItem('" + cfg.key + "')\">";
+    html += "<button onclick=\"addListItem('" + cfg.key + "')\" style=\"background:var(--green);color:#000;border:none;border-radius:8px;padding:8px 16px;font-family:var(--sans);font-size:0.82rem;font-weight:700;cursor:pointer\">Add</button>";
     html += '</div></div>';
   });
 
-  html += '<button onclick="resetLists()" style="margin-top:4px;background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:8px;padding:8px 16px;font-family:var(--sans);font-size:0.8rem;cursor:pointer">還原預設選項</button>';
+  html += '<button onclick="resetLists()" style="margin-top:4px;background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:8px;padding:8px 16px;font-family:var(--sans);font-size:0.8rem;cursor:pointer">Reset to Defaults</button>';
 
   // Products section
   const prods = getProducts();
-  html += '<div style="margin-top:24px"><div style="font-family:var(--display);font-size:0.95rem;font-weight:700;margin-bottom:4px">產品清單 Products</div>';
-  html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">統一管理貨物名稱、單位、類別，貨批、發票、配送都從這裡選取</div>';
+  html += '<div style="margin-top:24px"><div style="font-family:var(--display);font-size:0.95rem;font-weight:700;margin-bottom:4px">Product List</div>';
+  html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">Manage product names, units, and categories used across Shipments, Invoices, and Deliveries</div>';
   html += '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">';
   prods.forEach((p,i) => {
     html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">';
@@ -1930,12 +1933,12 @@ function renderSettings() {
     if (p.rollsPerPallet > 0)      html += ' &middot; ' + p.rollsPerPallet + '/pallet';
     if (p.palletsPerContainer > 0) html += ' &middot; ' + p.palletsPerContainer + 'p/ctr';
     html += '</div></div>';
-    html += '<button onclick="editProduct(' + i + ')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:4px 8px">✎ 編輯</button>';
+    html += '<button onclick="editProduct(' + i + ')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:4px 8px">✎ Edit</button>';
     html += '<button onclick="deleteProduct(' + i + ')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.8rem;padding:4px 8px">×</button>';
     html += '</div>';
   });
   html += '</div>';
-  html += '<button onclick="addProduct()" style="background:var(--green);color:#000;border:none;border-radius:8px;padding:8px 18px;font-family:var(--sans);font-size:0.82rem;font-weight:700;cursor:pointer">＋ 新增產品</button>';
+  html += '<button onclick="addProduct()" style="background:var(--green);color:#000;border:none;border-radius:8px;padding:8px 18px;font-family:var(--sans);font-size:0.82rem;font-weight:700;cursor:pointer">＋ Add Product</button>';
   html += '</div>';
   html += '</div>';
   el.innerHTML = html;
@@ -1957,18 +1960,18 @@ function addListItem(key) {
 }
 
 function addProduct() {
-  const name = prompt('產品名稱:');
+  const name = prompt('產品Name:');
   if (!name || !name.trim()) return;
-  const unit = prompt('單位 (e.g. Rolls, Pieces, Units):', 'Units');
+  const unit = prompt('Unit (e.g. Rolls, Pieces, Units):', 'Units');
   if (unit === null) return;
-  const cat  = prompt('類別 (成品/原料/零件/其他):', '其他');
+  const cat  = prompt('Category (成品/原料/Parts/其他):', 'Other');
   if (cat === null) return;
-  const rpp  = prompt('每 pallet 幾個 ' + (unit||'').trim() + '? (0 = 不適用)', '0');
+  const rpp  = prompt('Units per pallet ( ' + (unit||'').trim() + '? (0 = not applicable)', '0');
   if (rpp === null) return;
-  const ppc  = prompt('每 Container 幾個 Pallets? (0 = 不適用)', '0');
+  const ppc  = prompt('Pallets per container? (0 = not applicable)', '0');
   if (ppc === null) return;
   const prods = getProducts();
-  prods.push({ name: name.trim(), unit: (unit||'Units').trim(), category: (cat||'其他').trim(), rollsPerPallet: Number(rpp)||0, palletsPerContainer: Number(ppc)||0 });
+  prods.push({ name: name.trim(), unit: (unit||'Units').trim(), category: (cat||'Other').trim(), rollsPerPallet: Number(rpp)||0, palletsPerContainer: Number(ppc)||0 });
   saveProducts(prods);
   renderSettings();
 }
@@ -1977,15 +1980,15 @@ function editProduct(idx) {
   const prods = getProducts();
   const p = prods[idx];
   if (!p) return;
-  const name = prompt('產品名稱:', p.name);
+  const name = prompt('產品Name:', p.name);
   if (name === null) return;
-  const unit = prompt('單位:', p.unit);
+  const unit = prompt('Unit:', p.unit);
   if (unit === null) return;
-  const cat  = prompt('類別:', p.category);
+  const cat  = prompt('Category:', p.category);
   if (cat === null) return;
-  const rpp  = prompt('每 pallet 幾個 ' + (unit||'').trim() + '? (0=不適用)', String(p.rollsPerPallet||0));
+  const rpp  = prompt('Units per pallet ( ' + (unit||'').trim() + '? (0 = not applicable)', String(p.rollsPerPallet||0));
   if (rpp === null) return;
-  const ppc  = prompt('每 Container 幾個 Pallets? (0=不適用)', String(p.palletsPerContainer||0));
+  const ppc  = prompt('Pallets per container? (0 = not applicable)', String(p.palletsPerContainer||0));
   if (ppc === null) return;
   prods[idx] = { name: name.trim()||p.name, unit: unit.trim()||p.unit, category: cat.trim()||p.category, rollsPerPallet: Number(rpp)||0, palletsPerContainer: Number(ppc)||0 };
   saveProducts(prods);
@@ -1994,14 +1997,14 @@ function editProduct(idx) {
 
 function deleteProduct(idx) {
   const prods = getProducts();
-  if (!confirm('確定刪除「' + prods[idx]?.name + '」？')) return;
+  if (!confirm('確定Delete「' + prods[idx]?.name + '」？')) return;
   prods.splice(idx, 1);
   saveProducts(prods);
   renderSettings();
 }
 
 function editListItem(key, oldVal) {
-  const newVal = prompt('編輯選項:', oldVal);
+  const newVal = prompt('EditOption:', oldVal);
   if (!newVal || newVal.trim() === oldVal) return;
   const lists = getLists();
   const idx = lists[key].indexOf(oldVal);
@@ -2020,7 +2023,7 @@ function removeListItem(key, val) {
 }
 
 function resetLists() {
-  if (!confirm('確定還原所有預設選項？自訂義的選項會被刪除。')) return;
+  if (!confirm('確定還原所有預設Option？自訂義的Option會被Delete。')) return;
   localStorage.removeItem('wg_lists');
   renderSettings();
 }
@@ -2063,7 +2066,7 @@ function populateCargoDropdowns(c) {
 
   // disc and size use lists too
   const discEl = document.getElementById('c-disc');
-  if (discEl && discEl.tagName === 'SELECT') populateSelect('c-disc', productNames(), cur.disc, '— 貨物類型 —');
+  if (discEl && discEl.tagName === 'SELECT') populateSelect('c-disc', productNames(), cur.disc, '— Select disc. type —');
   const sizeEl = document.getElementById('c-size');
   if (sizeEl) populateSelect('c-size', lists.sizes, cur.size, '');
 }
@@ -2077,7 +2080,7 @@ function populateInvoiceDropdowns(inv) {
     ? customers.map(x => x.company || x.contact).filter(Boolean)
     : uniqVals(invoices, 'billTo');
   populateSelect('i-billTo', [...new Set(custNames)].sort(), cur.billTo, '— 選擇客戶 —');
-  populateSelect('i-item', productNames(), cur.item, '— 選擇商品 —');
+  populateSelect('i-item', productNames(), cur.item, '— Select item —');
 }
 
 // ── Delivery modal dropdowns ──
@@ -2087,15 +2090,15 @@ function populateDeliveryDropdowns(d) {
   // Distributor type: from unique customer types
   const distTypes = customers.length
     ? [...new Set(customers.map(x => x.type).filter(Boolean))].sort()
-    : ['AG Pro', 'Tom', '其他'];
-  populateSelect('d-dist', distTypes, cur.dist, '— 選擇類型 —');
+    : ['AG Pro', 'Tom', 'Other'];
+  populateSelect('d-dist', distTypes, cur.dist, '— Select type —');
 
   // Company: filter by selected type
   const selectedType = cur.dist || '';
   const companies = customers
     .filter(x => !selectedType || x.type === selectedType)
     .map(x => x.company || x.contact).filter(Boolean).sort();
-  populateSelect('d-business', [...new Set(companies)], cur.business || cur.dist, '— 選擇公司 —');
+  populateSelect('d-business', [...new Set(companies)], cur.business || cur.dist, '— Select company —');
 
   // Address select: from existing deliveries
   const addrSelect = document.getElementById('d-addr-select');
@@ -2105,7 +2108,7 @@ function populateDeliveryDropdowns(d) {
       .map(x => ({ label: (x.addr + (x.city ? ', ' + x.city : '')), addr: x.addr, city: x.city, zip: x.zip, contact: x.contact, phone: x.phone, dist: x.dist, business: x.business }));
     const seen = new Set();
     const unique = addrs.filter(a => { if (seen.has(a.addr)) return false; seen.add(a.addr); return true; });
-    addrSelect.innerHTML = '<option value="">— 從現有地址選擇 —</option>' +
+    addrSelect.innerHTML = '<option value="">— Select existing address —</option>' +
       unique.map(a => '<option value="' + a.addr + '" data-city="' + (a.city||'') + '" data-zip="' + (a.zip||'') + '" data-contact="' + (a.contact||'') + '" data-phone="' + (a.phone||'') + '" data-dist="' + (a.dist||'') + '" data-business="' + (a.business||'') + '">' + a.label + '</option>').join('');
   }
 }
@@ -2133,7 +2136,7 @@ function onDistChange() {
       .filter(x => !distType || x.type === distType)
       .map(x => x.company || x.contact).filter(Boolean).sort();
     const unique = [...new Set(companies)];
-    bizSel.innerHTML = '<option value="">— 選擇公司 —</option>' +
+    bizSel.innerHTML = '<option value="">— Select company —</option>' +
       unique.map(co => '<option value="'+co+'">'+co+'</option>').join('');
   }
   // Clear address fields when type changes
@@ -2275,14 +2278,14 @@ function renderInventory() {
   // Top stats
   const totalInQty  = cargo.reduce((s,sh) => s + (Number(sh.qty)||0), 0);
   const totalProdRuns = productions.length;
-  const inTransit   = cargo.filter(s => s.status !== '已完成').length;
-  const arrived     = cargo.filter(s => s.status === '已完成').length;
-  const pendingDeliv = deliveries.filter(d => d.status !== '已配送').length;
+  const inTransit   = cargo.filter(s => s.status !== 'Completed').length;
+  const arrived     = cargo.filter(s => s.status === 'Completed').length;
+  const pendingDeliv = deliveries.filter(d => d.status !== 'Delivered').length;
   sEl.innerHTML =
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + totalInQty.toLocaleString() + '</div><div class="stat-card-lbl">總進貨量</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + inTransit + '</div><div class="stat-card-lbl">週途中貨批</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + totalProdRuns + '</div><div class="stat-card-lbl">生產記錄</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + pendingDeliv + '</div><div class="stat-card-lbl">待配送次</div></div>';
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + totalInQty.toLocaleString() + '</div><div class="stat-card-lbl">Total Received</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + inTransit + '</div><div class="stat-card-lbl">In Transit</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + totalProdRuns + '</div><div class="stat-card-lbl">Production Runs</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + pendingDeliv + '</div><div class="stat-card-lbl">Pending次</div></div>';
 
   let html = '';
   prods.forEach(prod => {
@@ -2292,8 +2295,8 @@ function renderInventory() {
     const relCargo = cargo.filter(s => s.disc && s.disc.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,'')));
     const cargoQty = relCargo.reduce((s,sh) => s + (Number(sh.qty)||0), 0);
     const importedQty = cargoQty;
-    const inTransitQty = relCargo.filter(s=>s.status!=='已完成').reduce((s,sh)=>s+(Number(sh.qty)||0),0);
-    const arrivedQty   = relCargo.filter(s=>s.status==='已完成').reduce((s,sh)=>s+(Number(sh.qty)||0),0);
+    const inTransitQty = relCargo.filter(s=>s.status!=='Completed').reduce((s,sh)=>s+(Number(sh.qty)||0),0);
+    const arrivedQty   = relCargo.filter(s=>s.status==='Completed').reduce((s,sh)=>s+(Number(sh.qty)||0),0);
     // Production outputs (this product was produced)
     let prodOutputQty = 0;
     // Production inputs (this product was consumed as raw material)
@@ -2315,7 +2318,7 @@ function renderInventory() {
           Object.entries(it).forEach(([k,v]) => { if (k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) qty += Number(v)||0; });
         } catch(e) {}
       } else if (pnl.includes('cotton') && d.wraps) { qty += Number(d.wraps)||0; }
-      if (d.source === '自產') delivSelfQty += qty;
+      if (d.source === 'Self-produced') delivSelfQty += qty;
       else delivImportedQty += qty;
     });
     const delivQty = delivImportedQty + delivSelfQty;
@@ -2334,27 +2337,27 @@ function renderInventory() {
 
     html += '<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">';
     html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid var(--blue);border-radius:10px;padding:10px 12px">';
-    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">🚢 進口</div>';
+    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">🚢 Imported</div>';
     html += '<div style="font-size:1rem;font-weight:700;color:var(--blue)">' + importedQty.toLocaleString() + ' ' + prod.unit + '</div>';
     if (inTransitQty>0) html += '<div style="font-size:0.7rem;color:var(--amber)">週途: '+inTransitQty.toLocaleString()+'</div>';
-    html += '<div style="font-size:0.7rem;color:var(--text-dim);border-top:1px solid var(--border);padding-top:3px;margin-top:4px">配送: '+delivImportedQty.toLocaleString()+'</div>';
-    html += '<div style="font-size:0.85rem;font-weight:700;color:' + (remainImported>=0?'var(--teal)':'var(--red)') + '">剰: '+remainImported.toLocaleString()+'</div>';
+    html += '<div style="font-size:0.7rem;color:var(--text-dim);border-top:1px solid var(--border);padding-top:3px;margin-top:4px">Delivered: '+delivImportedQty.toLocaleString()+'</div>';
+    html += '<div style="font-size:0.85rem;font-weight:700;color:' + (remainImported>=0?'var(--teal)':'var(--red)') + '">Rem:: '+remainImported.toLocaleString()+'</div>';
     html += '</div>';
     html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid var(--purple);border-radius:10px;padding:10px 12px">';
-    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">🏭 自產</div>';
+    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">🏭 Self-produced</div>';
     html += '<div style="font-size:1rem;font-weight:700;color:var(--purple)">' + prodOutputQty.toLocaleString() + ' ' + prod.unit + '</div>';
-    html += '<div style="font-size:0.7rem;color:var(--text-dim);border-top:1px solid var(--border);padding-top:3px;margin-top:4px">配送: '+delivSelfQty.toLocaleString()+'</div>';
-    html += '<div style="font-size:0.85rem;font-weight:700;color:' + (remainSelf>=0?'var(--teal)':'var(--red)') + '">剰: '+remainSelf.toLocaleString()+'</div>';
+    html += '<div style="font-size:0.7rem;color:var(--text-dim);border-top:1px solid var(--border);padding-top:3px;margin-top:4px">Delivered: '+delivSelfQty.toLocaleString()+'</div>';
+    html += '<div style="font-size:0.85rem;font-weight:700;color:' + (remainSelf>=0?'var(--teal)':'var(--red)') + '">Rem:: '+remainSelf.toLocaleString()+'</div>';
     html += '</div>';
     html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid ' + (remaining>0?'var(--teal)':remaining===0?'var(--border)':'var(--red)') + ';border-radius:10px;padding:10px 12px">';
-    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">總剰餘</div>';
+    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">Total Remaining</div>';
     html += '<div style="font-size:1.3rem;font-weight:800;color:' + (remaining>0?'var(--teal)':remaining===0?'var(--text-muted)':'var(--red)') + '">' + remaining.toLocaleString() + ' ' + prod.unit + '</div>';
     html += '</div>';
     html += '</div>';
     html += '<div class="card-grid" style="margin-top:8px">';
-    html += '<div class="card-field"><div class="card-field-lbl">已配送</div><div class="card-field-val" style="color:var(--green)">' + delivQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
-    if (consumedQty > 0) html += '<div class="card-field"><div class="card-field-lbl">生產消耗</div><div class="card-field-val" style="color:var(--amber)">' + consumedQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
-    html += '<div class="card-field"><div class="card-field-lbl">總可用</div><div class="card-field-val">' + inQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">Delivered</div><div class="card-field-val" style="color:var(--green)">' + delivQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
+    if (consumedQty > 0) html += '<div class="card-field"><div class="card-field-lbl">Production Consumed</div><div class="card-field-val" style="color:var(--amber)">' + consumedQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">Total Available</div><div class="card-field-val">' + inQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
     if (prod.rollsPerPallet > 0) {
       const rpp2 = prod.rollsPerPallet;
       const ppc2 = prod.palletsPerContainer||0;
@@ -2366,7 +2369,7 @@ function renderInventory() {
     // Progress bar
     if (inQty > 0) {
       html += '<div style="margin-top:10px">';
-      const barLabel = consumedQty > 0 ? '配送+消耗進度' : '配送進度';
+      const barLabel = consumedQty > 0 ? 'Delivered+Consumed進度' : 'Delivered進度';
       html += '<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px"><span>' + barLabel + '</span><span>' + pct + '% (' + totalOut.toLocaleString() + ' / ' + inQty.toLocaleString() + ' ' + prod.unit + ')</span></div>';
       html += '<div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;background:' + (pct>=100?'var(--green)':'var(--teal)') + ';width:' + pct + '%;transition:width 0.3s"></div></div>';
       html += '</div>';
@@ -2383,7 +2386,7 @@ function renderInventory() {
     });
     if (relProd.length) {
       html += '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">';
-      html += '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">生產記錄</div>';
+      html += '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Production Runs</div>';
       relProd.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).forEach(pr => {
         let inStr='', outStr='';
         try{ const i=JSON.parse(pr.inputs||'{}');  inStr  = Object.entries(i).map(([k,v])=>k+' x'+v).join(', '); } catch(e){}
@@ -2391,8 +2394,8 @@ function renderInventory() {
         html += '<div onclick="openProductionModal(productions.find(p=>p.id===\'' + pr.id + '\'))" style="cursor:pointer;display:flex;align-items:start;gap:8px;margin-bottom:8px;padding:8px;background:var(--surface2);border-radius:8px;font-size:0.8rem">';
         html += '<div style="min-width:70px;color:var(--text-muted)">' + fmtDate(pr.date) + '</div>';
         html += '<div style="flex:1">';
-        if (inStr)  html += '<div>消耗: <span style="color:var(--purple)">' + inStr + '</span></div>';
-        if (outStr) html += '<div>生產: <span style="color:var(--teal)">'   + outStr + '</span></div>';
+        if (inStr)  html += '<div>Consumed: <span style="color:var(--purple)">' + inStr + '</span></div>';
+        if (outStr) html += '<div>Produced: <span style="color:var(--teal)">'   + outStr + '</span></div>';
         if (pr.batch) html += '<div style="color:var(--text-dim)">Batch: ' + pr.batch + '</div>';
         html += '</div></div>';
       });
@@ -2402,13 +2405,13 @@ function renderInventory() {
     // Related shipments
     if (relCargo.length) {
       html += '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">';
-      html += '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">相關貨批</div>';
+      html += '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Related Shipments</div>';
       relCargo.forEach(sh => {
-        const stC = sh.status==='已完成'?'var(--green)':sh.status==='到港待清關)'?'var(--amber)':'var(--blue)';
+        const stC = sh.status==='Completed'?'var(--green)':sh.status==='Arrived - Pending Customs)'?'var(--amber)':'var(--blue)';
         html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:0.82rem">';
         html += '<span style="font-family:var(--mono);color:var(--text-muted);min-width:110px">' + (sh.bolNum||'—') + '</span>';
         html += '<span style="flex:1;color:var(--text)">' + (Number(sh.qty)||0).toLocaleString() + ' ' + prod.unit + '</span>';
-        html += '<span style="color:' + (sh.status==='已完成'?'var(--green)':sh.status&&sh.status.includes('到港')?'var(--amber)':'var(--blue)') + ';font-size:0.75rem">' + (sh.status||'—') + '</span>';
+        html += '<span style="color:' + (sh.status==='Completed'?'var(--green)':sh.status&&sh.status.includes('到港')?'var(--amber)':'var(--blue)') + ';font-size:0.75rem">' + (sh.status||'—') + '</span>';
         html += '</div>';
       });
       html += '</div>';
@@ -2429,9 +2432,9 @@ let editingProduction = null;
 function populateProdGrids() {
   const prods = getProducts();
   // Input: raw materials (category = 原料 or 其他)
-  const inputs  = prods.filter(p => p.category !== '成品' && p.category !== '包膜');
+  const inputs  = prods.filter(p => p.category !== 'Finished Good' && p.category !== 'Wraps');
   // Output: finished goods
-  const outputs = prods.filter(p => p.category === '成品' || p.category === '包膜' || p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('cotton'));
+  const outputs = prods.filter(p => p.category === 'Finished Good' || p.category === 'Wraps' || p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('cotton'));
   // If no category distinction, show all for both
   const inProds  = inputs.length  ? inputs  : prods;
   const outProds = outputs.length ? outputs : prods;
@@ -2468,7 +2471,7 @@ function getProdGridData(prods, idPrefix) {
 
 function openProductionModal(rec) {
   editingProduction = rec || null;
-  document.getElementById('productionModalTitle').textContent = rec ? '編輯生產記錄' : '新增生產記錄';
+  document.getElementById('productionModalTitle').textContent = rec ? 'Edit Production Record' : 'New Production Record';
   document.getElementById('productionDeleteBtn').style.display = rec ? 'block' : 'none';
   document.getElementById('p-date').value  = rec ? (rec.date||'') : new Date().toISOString().split('T')[0];
   document.getElementById('p-batch').value = rec ? (rec.batch||'') : '';
@@ -2479,8 +2482,8 @@ function openProductionModal(rec) {
 
 async function saveProduction() {
   const prods = getProducts();
-  const inputs  = prods.filter(p => p.category !== '成品' && p.category !== '包膜');
-  const outputs = prods.filter(p => p.category === '成品' || p.category === '包膜' || p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('cotton'));
+  const inputs  = prods.filter(p => p.category !== 'Finished Good' && p.category !== 'Wraps');
+  const outputs = prods.filter(p => p.category === 'Finished Good' || p.category === 'Wraps' || p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('cotton'));
   const inProds  = inputs.length  ? inputs  : prods;
   const outProds = outputs.length ? outputs : prods;
   const record = {
@@ -2497,7 +2500,7 @@ async function saveProduction() {
 }
 
 async function deleteProduction() {
-  if (!editingProduction || !confirm('確定刪除此生產記錄？')) return;
+  if (!editingProduction || !confirm('確定Delete此Production Runs？')) return;
   closeModal('productionModal');
   const ok = await deleteFromSheet('Production', editingProduction.id);
   if (ok) await loadAll();
