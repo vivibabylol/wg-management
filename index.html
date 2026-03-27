@@ -525,6 +525,8 @@ select option { background: var(--surface2); }
     <input id="customer-search" placeholder="Search customers、Company、City..." oninput="renderCustomers()"
       style="width:100%;max-width:360px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-family:var(--sans);font-size:0.875rem;color:var(--text);outline:none;">
   </div>
+  <div id="distributor-summary" style="margin-bottom:24px"></div>
+  <div style="font-family:var(--display);font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:12px">Individual Customers</div>
   <div class="cards-list" id="customer-list"></div>
 </div>
 
@@ -1757,8 +1759,134 @@ function renderCustomerStats() {
     "<div class=\"stat-card\"><div class=\"stat-card-val\" style=\"color:var(--blue)\">" + tom + "</div><div class=\"stat-card-lbl\">Tom</div></div>";
 }
 
+function toggleDistDetail(type) {
+  const el = document.getElementById('dist-detail-' + type.replace(/\s/g,'_'));
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function renderDistributorSummary() {
+  const el = document.getElementById('distributor-summary');
+  if (!el) return;
+  const types = [...new Set(deliveries.map(d => d.dist).filter(Boolean))];
+  if (!types.length) { el.innerHTML = ''; return; }
+
+  const thisYear = new Date().getFullYear();
+  let html = '<div style="font-family:var(--display);font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:12px">Distributor Summary</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">';
+
+  types.sort().forEach(type => {
+    const typeId = type.replace(/\s/g,'_');
+    // All deliveries for this distributor
+    const typeDels = deliveries.filter(d => d.dist === type);
+    const doneDels = typeDels.filter(d => d.status === 'Delivered');
+    const pendDels = typeDels.filter(d => d.status !== 'Delivered');
+    const lastDel  = [...typeDels].sort((a,b) => (b.delivDate||'') > (a.delivDate||'') ? 1 : -1)[0];
+
+    // All invoices for this distributor type (match by dist field in delivery)
+    const typeCompanies = [...new Set(typeDels.map(d => d.business).filter(Boolean))];
+    const typeInvs = invoices.filter(i => i.billTo && typeCompanies.some(co => i.billTo.toLowerCase().includes(co.toLowerCase())));
+    const totalRev = typeInvs.reduce((s,i) => s + (Number(i.qty)||0)*(Number(i.unitPrice)||0), 0);
+    const unpaid   = typeInvs.filter(i => i.status !== 'Paid').reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)) - (Number(i.paid)||0), 0);
+
+    // Annual product qty from deliveries this year
+    const annualQty = {};
+    const prods4d = getProducts();
+    typeDels.filter(d => d.delivDate && new Date(d.delivDate).getFullYear() === thisYear).forEach(d => {
+      if (d.delivItems) {
+        try {
+          const it = JSON.parse(d.delivItems);
+          Object.entries(it).forEach(([k,v]) => {
+            if (Number(v) <= 0) return;
+            const kl = k.toLowerCase().replace(/s$/,'');
+            const pp = prods4d.find(p => p.name.toLowerCase().replace(/s$/,'') === kl || kl.includes(p.name.toLowerCase().replace(/s$/,'')));
+            const pname = pp ? pp.name : k;
+            annualQty[pname] = (annualQty[pname]||0) + Number(v);
+          });
+        } catch(e) {}
+      } else if (d.wraps) {
+        annualQty['Cotton Wrap'] = (annualQty['Cotton Wrap']||0) + Number(d.wraps);
+      }
+    });
+
+    // Individual companies under this distributor
+    const companies = [...new Set(typeDels.map(d => d.business).filter(Boolean))].sort();
+
+    html += '<div class="card" style="border-left:3px solid var(--orange)">';
+    html += '<div style="display:flex;align-items:start;justify-content:space-between">';
+    html += '<div>';
+    html += '<div class="card-id">' + type + '</div>';
+    html += '<div class="card-title">' + typeCompanies.length + ' ' + (typeCompanies.length === 1 ? 'company' : 'companies') + '</div>';
+    html += '</div>';
+    if (unpaid > 0) html += '<span class="badge badge-red" style="font-size:0.68rem">Owes ' + fmt$(unpaid) + '</span>';
+    html += '</div>';
+
+    html += '<div class="card-grid" style="margin-top:10px">';
+    if (totalRev > 0) html += '<div class="card-field"><div class="card-field-lbl">Total Revenue</div><div class="card-field-val" style="color:var(--teal)">' + fmt$(totalRev) + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">Deliveries</div><div class="card-field-val">' + doneDels.length + ' done' + (pendDels.length ? ' / ' + pendDels.length + ' pending' : '') + '</div></div>';
+    if (lastDel) html += '<div class="card-field"><div class="card-field-lbl">Last Delivery</div><div class="card-field-val">' + fmtDate(lastDel.delivDate) + '</div></div>';
+    html += '</div>';
+
+    // Annual qty badges
+    if (Object.keys(annualQty).length) {
+      const prodMap4d = {}; prods4d.forEach(p => prodMap4d[p.name] = p);
+      html += '<div style="margin-top:8px;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">' + thisYear + ' deliveries</div>';
+      html += '<div style="display:flex;flex-wrap:wrap;gap:4px">';
+      Object.entries(annualQty).sort((a,b)=>b[1]-a[1]).forEach(([prod,qty]) => {
+        const unit = prodMap4d[prod]?.unit || '';
+        html += '<span style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:0.75rem">' + prod + ': <b>' + qty.toLocaleString() + '</b> ' + unit + '</span>';
+      });
+      html += '</div>';
+    }
+
+    // Expand companies button
+    if (companies.length) {
+      html += '<button onclick="toggleDistDetail(\'' + type + '\')" style="margin-top:10px;background:none;border:1px solid var(--border);border-radius:6px;padding:5px 14px;font-size:0.78rem;color:var(--text-muted);cursor:pointer;width:100%">&#9660; Companies (' + companies.length + ')</button>';
+      html += '<div id="dist-detail-' + typeId + '" style="display:none;margin-top:10px">';
+      companies.forEach(co => {
+        const coDels = typeDels.filter(d => d.business === co);
+        const lastCoDel = [...coDels].sort((a,b) => (b.delivDate||'') > (a.delivDate||'') ? 1 : -1)[0];
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid var(--border);font-size:0.82rem">';
+        html += '<div>';
+        html += '<div style="font-weight:600">' + co + '</div>';
+        if (lastCoDel) html += '<div style="font-size:0.72rem;color:var(--text-muted)">Last: ' + fmtDate(lastCoDel.delivDate) + (lastCoDel.city ? ' &middot; ' + lastCoDel.city : '') + '</div>';
+        html += '</div>';
+        html += '<span style="font-size:0.75rem;color:var(--text-muted)">' + coDels.length + ' del</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function custDeliveries(cu) {
+  if (!cu.company) return [];
+  const cnl = cu.company.toLowerCase();
+  return deliveries.filter(d =>
+    (d.business && d.business.toLowerCase().includes(cnl)) ||
+    (d.dist     && d.dist.toLowerCase().includes(cnl))
+  ).sort((a,b) => (b.delivDate||'') > (a.delivDate||'') ? 1 : -1);
+}
+
+function custInvoices(cu) {
+  if (!cu.company) return [];
+  const cnl = cu.company.toLowerCase();
+  return invoices.filter(i => i.billTo && i.billTo.toLowerCase().includes(cnl));
+}
+
+function toggleCustDetail(id) {
+  const el = document.getElementById('cust-detail-' + id);
+  if (!el) return;
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+}
+
 function renderCustomers() {
   renderCustomerStats();
+  renderDistributorSummary();
   const el = document.getElementById("customer-list");
   if (!el) return;
   const q = (document.getElementById("customer-search")?.value || "").toLowerCase();
@@ -1767,8 +1895,8 @@ function renderCustomers() {
   );
   if (!filtered.length) {
     el.innerHTML = customers.length
-      ? emptyState("?","No matching customers","TryOthersearch term")
-      : emptyState("?","No customers yet","ClickNew CustomerStart building your list");
+      ? emptyState("?","No matching customers","Try a different search term")
+      : emptyState("?","No customers yet","Click + New Customer to get started");
     return;
   }
   const types = ["AG Pro","Tom","Distributor","Other"];
@@ -1778,23 +1906,90 @@ function renderCustomers() {
     if (!group.length) return;
     html += "<div class=\"section-label\">" + type + " (" + group.length + ")</div>";
     group.forEach(cu => {
-      const relInv   = invoices.filter(i => i.billTo && cu.company && i.billTo.toLowerCase().includes(cu.company.toLowerCase()));
-      const lastInv  = [...relInv].sort((a,b) => (b.date||"") > (a.date||"") ? 1 : -1)[0];
+      const relInv  = custInvoices(cu);
+      const relDel  = custDeliveries(cu);
+      const lastDel = relDel[0];
+      const totalRev = relInv.reduce((s,i) => s+(Number(i.qty)||0)*(Number(i.unitPrice)||0), 0);
+      const unpaid   = relInv.filter(i => i.status !== 'Paid').reduce((s,i) => s+((Number(i.qty)||0)*(Number(i.unitPrice)||0))-(Number(i.paid)||0), 0);
       const activeCg = cargo.filter(g => g.customer && cu.company && g.customer.toLowerCase().includes(cu.company.toLowerCase()) && g.status !== "Completed").length;
-      html += "<div class=\"card\" style=\"border-left:3px solid var(--orange)\" onclick=\"openCustomerEdit('" + cu.id + "')\">";
+
+      // Annual qty by product
+      const thisYear = new Date().getFullYear();
+      const annualByProd = {};
+      relInv.filter(i => i.date && new Date(i.date).getFullYear() === thisYear).forEach(i => {
+        if (!i.item) return;
+        if (!annualByProd[i.item]) annualByProd[i.item] = 0;
+        annualByProd[i.item] += Number(i.qty)||0;
+      });
+
+      html += "<div class=\"card\" style=\"border-left:3px solid var(--orange)\">";
+      // Card header - click to open edit
+      html += "<div onclick=\"openCustomerEdit('" + cu.id + "')\" style=\"cursor:pointer\">";
       html += "<div class=\"card-top\"><div>";
       html += "<div class=\"card-id\">" + (cu.type||"") + (cu.terms ? " &middot; " + cu.terms : "") + "</div>";
       html += "<div class=\"card-title\">" + (cu.company||cu.contact||"&mdash;") + "</div>";
       if (cu.contact && cu.company) html += "<div style=\"font-size:0.8rem;color:var(--text-muted);margin-top:2px\">" + cu.contact + "</div>";
       html += "</div><span class=\"badge " + (CUST_CLS[cu.status]||"badge-green") + "\">" + (cu.status||"Active") + "</span></div>";
-      html += "<div class=\"card-grid\">";
-      if (cu.phone)      html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Phone</div><div class=\"card-field-val\">" + cu.phone + "</div></div>";
-      if (cu.email)      html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Email</div><div class=\"card-field-val\" style=\"font-size:0.75rem\">" + cu.email + "</div></div>";
-      if (cu.city)       html += "<div class=\"card-field\"><div class=\"card-field-lbl\">City</div><div class=\"card-field-val\">" + cu.city + "</div></div>";
-      if (relInv.length) html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Invoices</div><div class=\"card-field-val\" style=\"color:var(--teal)\">" + relInv.length + " 張</div></div>";
-      if (activeCg)      html += "<div class=\"card-field\"><div class=\"card-field-lbl\">In ProgressContainer</div><div class=\"card-field-val\" style=\"color:var(--blue)\">" + activeCg + " 個</div></div>";
-      if (lastInv)       html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Last Order</div><div class=\"card-field-val\">" + fmtDate(lastInv.date) + "</div></div>";
+
+      // Summary stats
+      html += "<div class=\"card-grid\" style=\"margin-top:10px\">";
+      if (totalRev > 0) html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Total Revenue</div><div class=\"card-field-val\" style=\"color:var(--teal)\">" + fmt$(totalRev) + "</div></div>";
+      if (unpaid > 0)   html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Outstanding</div><div class=\"card-field-val\" style=\"color:var(--red)\">" + fmt$(unpaid) + "</div></div>";
+      if (lastDel)      html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Last Delivery</div><div class=\"card-field-val\">" + fmtDate(lastDel.delivDate) + "</div></div>";
+      if (relDel.length) html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Deliveries</div><div class=\"card-field-val\">" + relDel.length + " total</div></div>";
+      if (activeCg)     html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Active Shipments</div><div class=\"card-field-val\" style=\"color:var(--blue)\">" + activeCg + "</div></div>";
+      if (cu.phone)     html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Phone</div><div class=\"card-field-val\">" + fmtPhone(cu.phone) + "</div></div>";
       html += "</div>";
+
+      // Annual qty by product
+      if (Object.keys(annualByProd).length) {
+        const prods4c = getProducts();
+        const prodMap4c = {};
+        prods4c.forEach(p => prodMap4c[p.name] = p);
+        html += "<div style=\"margin-top:10px;font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px\">" + thisYear + " Purchases</div>";
+        html += "<div style=\"display:flex;flex-wrap:wrap;gap:6px\">";
+        Object.entries(annualByProd).sort((a,b)=>b[1]-a[1]).forEach(([prod, qty]) => {
+          const pp = prodMap4c[prod] || prods4c.find(p => prod.toLowerCase().replace(/s$/,'').includes(p.name.toLowerCase().replace(/s$/,'')));
+          const unit = pp?.unit || '';
+          html += "<span style=\"background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:0.78rem\">" + prod + ": <b>" + qty.toLocaleString() + "</b> " + unit + "</span>";
+        });
+        html += "</div>";
+      }
+      html += "</div>";
+
+      // Toggle button for delivery history
+      if (relDel.length > 0) {
+        html += "<button onclick=\"event.stopPropagation();toggleCustDetail('" + cu.id + "')\" style=\"margin-top:10px;background:none;border:1px solid var(--border);border-radius:6px;padding:5px 14px;font-size:0.78rem;color:var(--text-muted);cursor:pointer;width:100%\">&#9660; Delivery History (" + relDel.length + ")</button>";
+        html += "<div id=\"cust-detail-" + cu.id + "\" style=\"display:none;margin-top:10px\">";
+        html += "<div style=\"font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px\">Delivery History</div>";
+        relDel.forEach(d => {
+          const statusC = d.status==="Delivered"?"var(--green)":d.status==="Scheduled"?"var(--blue)":"var(--amber)";
+          html += "<div style=\"display:flex;align-items:start;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:0.8rem\">";
+          html += "<div style=\"min-width:70px;color:var(--text-muted)\">" + (fmtDate(d.delivDate)||"—") + "</div>";
+          html += "<div style=\"flex:1\">";
+          html += "<div style=\"font-weight:600\">" + (d.city||d.addr||"—") + "</div>";
+          if (d.containerNum) {
+            const ctrs = d.containerNum.split(",").map(x=>x.trim()).filter(Boolean);
+            html += "<div style=\"font-family:var(--mono);font-size:0.72rem;color:var(--teal);margin-top:2px\">" + ctrs.join(" · ") + "</div>";
+          }
+          if (d.bolNum) html += "<div style=\"font-size:0.7rem;color:var(--text-dim)\">BOL: " + d.bolNum + "</div>";
+          // Delivery contents
+          if (d.delivItems) {
+            try {
+              const items = JSON.parse(d.delivItems);
+              const parts = Object.entries(items).filter(([k,v])=>Number(v)>0).map(([k,v])=>k+": "+Number(v).toLocaleString());
+              if (parts.length) html += "<div style=\"font-size:0.72rem;color:var(--text-muted);margin-top:2px\">" + parts.join(" · ") + "</div>";
+            } catch(e) {}
+          } else if (d.wraps) {
+            html += "<div style=\"font-size:0.72rem;color:var(--text-muted);margin-top:2px\">Wraps: " + Number(d.wraps).toLocaleString() + "</div>";
+          }
+          html += "</div>";
+          html += "<span style=\"font-size:0.72rem;color:" + statusC + ";white-space:nowrap\">" + (d.status||"—") + "</span>";
+          html += "</div>";
+        });
+        html += "</div>";
+      }
+
       if (cu.notes) html += "<div style=\"font-size:0.75rem;color:var(--text-muted);margin-top:8px;line-height:1.4\">" + cu.notes + "</div>";
       html += "</div>";
     });
