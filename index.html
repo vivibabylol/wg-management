@@ -457,6 +457,9 @@ select option { background: var(--surface2); }
     <button class="nav-tab" onclick="showPage('delivery')" id="tab-delivery">
       <span class="tab-dot" style="background:#d6bcfa"></span>Delivery
     </button>
+    <button class="nav-tab" onclick="showPage('rawmaterials')" id="tab-rawmaterials">
+      <span class="tab-dot" style="background:#fc8181"></span>Raw Materials
+    </button>
     <button class="nav-tab" onclick="showPage('production')" id="tab-production">
       <span class="tab-dot" style="background:#f6ad55"></span>Production
     </button>
@@ -514,6 +517,15 @@ select option { background: var(--surface2); }
   <div class="cards-list" id="delivery-list"></div>
 </div>
 
+<div class="page" id="page-rawmaterials">
+  <div class="page-header">
+    <div class="page-title">Raw Materials <span>Lot &amp; Batch Tracking</span></div>
+    <button class="btn-add" onclick="openRawMaterialLotModal()">+ New Lot</button>
+  </div>
+  <div class="stats-row" id="rawmat-stats"></div>
+  <div id="rawmat-list" style="margin-top:8px"></div>
+</div>
+
 <div class="page" id="page-production">
   <div class="page-header">
     <div class="page-title">Production <span>Manufacturing Records</span></div>
@@ -563,6 +575,42 @@ select option { background: var(--surface2); }
 </div>
 
 
+<div class="modal-overlay" id="rawMaterialLotModal" onclick="closeIfOutside(event,'rawMaterialLotModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="rmModalTitle">New Raw Material Lot</div>
+      <button class="modal-close" onclick="closeModal('rawMaterialLotModal')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Lot Number</label><input id="rm-lotNum" placeholder="RM-2026-001" style="font-family:var(--mono)"></div>
+        <div class="form-group"><label>Date Received</label><input type="date" id="rm-dateReceived"></div>
+        <div class="form-group"><label>Material</label>
+          <select id="rm-material">
+            <option value="">Select material...</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Unit</label><input id="rm-unit" placeholder="Rolls"></div>
+        <div class="form-group"><label>Quantity Received</label><input type="number" id="rm-qty" placeholder="0" min="0"></div>
+        <div class="form-group"><label>Source</label>
+          <select id="rm-source">
+            <option value="Import">Import</option>
+            <option value="Local">Local Supplier</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>Supplier</label><input id="rm-supplier" placeholder="Supplier name"></div>
+        <div class="form-group full"><label>Notes</label><textarea id="rm-notes" placeholder="Additional notes..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" id="rmDeleteBtn" style="display:none" onclick="deleteRawMaterialLot()">Delete</button>
+      <button class="btn-cancel" onclick="closeModal('rawMaterialLotModal')">Cancel</button>
+      <button class="btn-save" onclick="saveRawMaterialLot()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="productionModal" onclick="closeIfOutside(event,'productionModal')">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -574,7 +622,7 @@ select option { background: var(--surface2); }
       <div class="form-grid">
         <div class="form-group"><label>Date</label><input type="date" id="p-date"></div>
         <div class="form-group"><label>Batch Number (optional)</label><input id="p-batch" placeholder="e.g. WG-2026-01"></div>
-        <div class="form-group full"><label>Raw Material Used</label>
+        <div class="form-group full"><label>Raw Material Lots Used</label>
           <div id="p-input-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div>
         </div>
         <div class="form-group full"><label>Finished Goods Produced</label>
@@ -584,7 +632,7 @@ select option { background: var(--surface2); }
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-delete" id="productionDeleteBtn" style="display:none" onclick="deleteProduction()">🗑 Delete</button>
+      <button class="btn-delete" id="productionDeleteBtn" style="display:none" onclick="deleteProduction()">Delete</button>
       <button class="btn-cancel" onclick="closeModal('productionModal')">Cancel</button>
       <button class="btn-save" onclick="saveProduction()">Save</button>
     </div>
@@ -917,12 +965,13 @@ select option { background: var(--surface2); }
 // ══════════════════════════════
 const API = 'https://script.google.com/macros/s/AKfycbyt6jYEDSeesF1chOR1oQhRYRZx_1GTNFB79mZpJY2qF7CDu2iDow4A80S8b6Mefpd8/exec';
 
-let cargo       = [];
-let invoices    = [];
-let deliveries  = [];
-let tasks       = [];
-let customers   = [];
-let productions = [];
+let cargo            = [];
+let invoices         = [];
+let deliveries       = [];
+let tasks            = [];
+let customers        = [];
+let productions      = [];
+let rawMaterialLots  = [];
 let _syncing   = false;
 
 // ── Sync indicator ──
@@ -949,7 +998,7 @@ function hideSync() {
 async function loadAll() {
   showSync('⟳ Loading...');
   try {
-    const sheets = ['Shipments','Invoices','Deliveries','Tasks','Customers','Settings','Production'];
+    const sheets = ['Shipments','Invoices','Deliveries','Tasks','Customers','Settings','Production','RawMaterialLots'];
     const results = await Promise.all(sheets.map(s =>
       fetch(`${API}?sheet=${s}`).then(r => r.json())
     ));
@@ -964,6 +1013,7 @@ async function loadAll() {
     tasks      = results[3].data || [];
     customers  = results[4].data || [];
     productions = (results[6]?.data || []).map(p => ({ ...p, date: normalizeDate(p.date) }));
+    rawMaterialLots = (results[7]?.data || []).map(l => ({ ...l, dateReceived: normalizeDate(l.dateReceived), qty: Number(l.qty)||0 }));
     // Load settings from Sheets
     const rawSets = results[5]?.data || [];
     if (rawSets.length) {
@@ -1825,6 +1875,7 @@ function renderAll() {
   else if (active === 'settings') renderSettings();
   else if (active === 'inventory') renderInventory();
   else if (active === 'production') renderProduction();
+  else if (active === 'rawmaterials') renderRawMaterials();
 }
 
 
@@ -2692,6 +2743,143 @@ function renderInventory() {
 
 
 // ==============================
+// RAW MATERIALS
+// ==============================
+
+function lotRemaining(lot) {
+  let used = 0;
+  productions.forEach(pr => {
+    try {
+      const parsed = JSON.parse(pr.inputs || '[]');
+      if (Array.isArray(parsed)) {
+        parsed.forEach(i => { if (i.lotNum === lot.lotNum) used += Number(i.qty) || 0; });
+      } else {
+        Object.entries(parsed).forEach(([k, v]) => {
+          if (k.toLowerCase().replace(/s$/,'') === (lot.material||'').toLowerCase().replace(/s$/,'')) used += Number(v) || 0;
+        });
+      }
+    } catch(e) {}
+  });
+  return Math.max(0, (Number(lot.qty) || 0) - used);
+}
+
+function renderRawMaterials() {
+  const sEl = document.getElementById('rawmat-stats');
+  const lEl = document.getElementById('rawmat-list');
+  if (!sEl || !lEl) return;
+
+  const now = new Date();
+  const thisMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const totalLots = rawMaterialLots.length;
+  const activeLots = rawMaterialLots.filter(l => lotRemaining(l) > 0).length;
+  const materials = [...new Set(rawMaterialLots.map(l => l.material).filter(Boolean))];
+  const lowStock = rawMaterialLots.filter(l => { const r = lotRemaining(l); return r > 0 && r < l.qty * 0.2; }).length;
+
+  sEl.innerHTML =
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + totalLots + '</div><div class="stat-card-lbl">Total Lots</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + activeLots + '</div><div class="stat-card-lbl">In Stock</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--orange)">' + materials.length + '</div><div class="stat-card-lbl">Material Types</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:' + (lowStock > 0 ? 'var(--red)' : 'var(--text-muted)') + '">' + lowStock + '</div><div class="stat-card-lbl">Low Stock</div></div>';
+
+  if (!rawMaterialLots.length) {
+    lEl.innerHTML = '<div style="text-align:center;padding:48px 20px;color:var(--text-muted)"><div style="font-size:2rem;margin-bottom:12px">🧪</div><div>No raw material lots yet</div><div style="font-size:0.8rem;color:var(--text-dim);margin-top:6px">Click "+ New Lot" to record your first batch</div></div>';
+    return;
+  }
+
+  const grouped = {};
+  rawMaterialLots.forEach(lot => {
+    const key = lot.material || 'Unknown';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(lot);
+  });
+
+  let html = '';
+  Object.entries(grouped).sort().forEach(([material, lots]) => {
+    const totalRem = lots.reduce((s, l) => s + lotRemaining(l), 0);
+    const unit = lots[0]?.unit || '';
+    html += '<div style="margin-bottom:28px">';
+    html += '<div style="font-family:var(--display);font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">';
+    html += '<span>' + material + '</span><span style="font-family:var(--mono);color:var(--text);font-size:0.9rem">' + totalRem.toLocaleString() + ' ' + unit + ' remaining</span></div>';
+    lots.sort((a,b) => (b.dateReceived||'') > (a.dateReceived||'') ? 1 : -1).forEach(lot => {
+      const rem = lotRemaining(lot);
+      const pct = lot.qty > 0 ? Math.round(rem / lot.qty * 100) : 0;
+      const col = rem <= 0 ? 'var(--text-dim)' : rem < lot.qty * 0.2 ? 'var(--red)' : 'var(--teal)';
+      const usedInRuns = productions.filter(pr => { try { const inp = JSON.parse(pr.inputs||'[]'); return Array.isArray(inp) && inp.some(i=>i.lotNum===lot.lotNum); } catch(e){return false;} }).length;
+      html += '<div class="card" onclick="openRawMaterialLotModal(rawMaterialLots.find(l=>l.id===\'' + lot.id + '\'))" style="margin-bottom:8px">';
+      html += '<div class="card-top">';
+      html += '<div><div class="card-title" style="font-family:var(--mono)">' + lot.lotNum + '</div>';
+      html += '<div class="card-id">' + fmtDate(lot.dateReceived) + ' &middot; ' + (lot.source||'') + (lot.supplier ? ' &middot; ' + lot.supplier : '') + '</div></div>';
+      html += '<div style="text-align:right"><div style="font-family:var(--mono);font-size:1.1rem;font-weight:700;color:' + col + '">' + rem.toLocaleString() + ' <span style="font-size:0.75rem;font-weight:400">' + unit + '</span></div>';
+      html += '<div style="font-size:0.7rem;color:var(--text-muted)">' + pct + '% remaining</div></div>';
+      html += '</div>';
+      html += '<div class="card-grid" style="margin-top:10px">';
+      html += '<div class="card-field"><div class="card-field-lbl">Received</div><div class="card-field-val">' + Number(lot.qty).toLocaleString() + ' ' + unit + '</div></div>';
+      if (usedInRuns > 0) html += '<div class="card-field"><div class="card-field-lbl">Used In</div><div class="card-field-val" style="color:var(--purple)">' + usedInRuns + ' production run' + (usedInRuns>1?'s':'') + '</div></div>';
+      if (lot.notes) html += '<div class="card-field" style="grid-column:1/-1"><div class="card-field-lbl">Notes</div><div class="card-field-val" style="color:var(--text-muted)">' + lot.notes + '</div></div>';
+      html += '</div>';
+      html += '<div style="margin-top:10px"><div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden"><div style="height:100%;background:' + col + ';border-radius:3px;width:' + pct + '%;transition:width 0.3s"></div></div></div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  lEl.innerHTML = html;
+}
+
+let editingRawMaterialLot = null;
+
+function openRawMaterialLotModal(rec) {
+  editingRawMaterialLot = rec || null;
+  const year = new Date().getFullYear();
+  let suggested = '';
+  if (!rec) {
+    const nums = rawMaterialLots.map(l => l.lotNum||'').filter(n => n.startsWith('RM-'+year+'-')).map(n => parseInt(n.split('-')[2])||0).sort((a,b)=>b-a);
+    suggested = 'RM-' + year + '-' + String((nums[0]||0)+1).padStart(3,'0');
+  }
+  document.getElementById('rmModalTitle').textContent = rec ? 'Edit Raw Material Lot' : 'New Raw Material Lot';
+  document.getElementById('rmDeleteBtn').style.display = rec ? 'block' : 'none';
+  document.getElementById('rm-lotNum').value = rec ? (rec.lotNum||'') : suggested;
+  document.getElementById('rm-dateReceived').value = rec ? (rec.dateReceived||'') : new Date().toISOString().split('T')[0];
+  document.getElementById('rm-qty').value = rec ? (rec.qty||'') : '';
+  document.getElementById('rm-unit').value = rec ? (rec.unit||'') : '';
+  document.getElementById('rm-source').value = rec ? (rec.source||'Import') : 'Import';
+  document.getElementById('rm-supplier').value = rec ? (rec.supplier||'') : '';
+  document.getElementById('rm-notes').value = rec ? (rec.notes||'') : '';
+  const prods = getProducts().filter(p => p.category === 'Raw Material' || p.category === 'Parts' || p.category === 'Other' || !p.category);
+  const matSel = document.getElementById('rm-material');
+  matSel.innerHTML = '<option value="">Select material...</option>' +
+    prods.map(p => '<option value="' + p.name + '"' + (rec?.material === p.name ? ' selected' : '') + '>' + p.name + '</option>').join('');
+  if (rec?.material && !prods.find(p => p.name === rec.material)) matSel.innerHTML += '<option value="' + rec.material + '" selected>' + rec.material + '</option>';
+  matSel.onchange = () => { const p = prods.find(x => x.name === matSel.value); if (p) document.getElementById('rm-unit').value = p.unit || ''; };
+  document.getElementById('rawMaterialLotModal').classList.add('open');
+}
+
+async function saveRawMaterialLot() {
+  const lotNum = document.getElementById('rm-lotNum').value.trim();
+  const material = document.getElementById('rm-material').value;
+  if (!lotNum || !material) { alert('Please enter a lot number and select a material.'); return; }
+  const record = {
+    id: editingRawMaterialLot ? editingRawMaterialLot.id : uid(),
+    lotNum, material,
+    qty: document.getElementById('rm-qty').value,
+    unit: document.getElementById('rm-unit').value.trim(),
+    source: document.getElementById('rm-source').value,
+    supplier: document.getElementById('rm-supplier').value.trim(),
+    dateReceived: document.getElementById('rm-dateReceived').value,
+    notes: document.getElementById('rm-notes').value.trim(),
+  };
+  closeModal('rawMaterialLotModal');
+  const ok = await saveToSheet('RawMaterialLots', record);
+  if (ok) await loadAll();
+}
+
+async function deleteRawMaterialLot() {
+  if (!editingRawMaterialLot || !confirm('Delete this raw material lot?')) return;
+  closeModal('rawMaterialLotModal');
+  const ok = await deleteFromSheet('RawMaterialLots', editingRawMaterialLot.id);
+  if (ok) await loadAll();
+}
+
+// ==============================
 // PRODUCTION PAGE
 // ==============================
 function renderProduction() {
@@ -2729,7 +2917,11 @@ function renderProduction() {
   let html = '';
   sorted.forEach(pr => {
     let inStr = '', outStr = '';
-    try { inStr  = Object.entries(JSON.parse(pr.inputs||'{}')).filter(([,v])=>Number(v)>0).map(([k,v])=>k+' × '+Number(v).toLocaleString()).join(' · '); } catch(e){}
+    try {
+      const parsed = JSON.parse(pr.inputs||'[]');
+      if (Array.isArray(parsed)) inStr = parsed.filter(i=>Number(i.qty)>0).map(i=>i.lotNum+' ('+i.material+') × '+Number(i.qty).toLocaleString()).join(' · ');
+      else inStr = Object.entries(parsed).filter(([,v])=>Number(v)>0).map(([k,v])=>k+' × '+Number(v).toLocaleString()).join(' · ');
+    } catch(e){}
     try { outStr = Object.entries(JSON.parse(pr.outputs||'{}')).filter(([,v])=>Number(v)>0).map(([k,v])=>k+' × '+Number(v).toLocaleString()).join(' · '); } catch(e){}
 
     html += '<div class="card" onclick="openProductionModal(productions.find(p=>p.id===\'' + pr.id + '\'))">';
@@ -2755,32 +2947,45 @@ function renderProduction() {
 let editingProduction = null;
 
 function populateProdGrids() {
+  // ── Inputs: show available raw material lots ──
+  const ig = document.getElementById('p-input-grid');
+  if (ig) {
+    let savedInputs = {};
+    if (editingProduction?.inputs) {
+      try {
+        const parsed = JSON.parse(editingProduction.inputs);
+        if (Array.isArray(parsed)) { parsed.forEach(i => { savedInputs[i.lotNum] = i.qty; }); }
+        else { Object.entries(parsed).forEach(([k,v]) => { savedInputs[k] = v; }); }
+      } catch(e) {}
+    }
+    const lots = rawMaterialLots.filter(l => lotRemaining(l) > 0 || savedInputs[l.lotNum]);
+    if (!lots.length) {
+      ig.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:6px 0;grid-column:1/-1">No raw material lots in stock. Add lots in the Raw Materials page first.</div>';
+    } else {
+      ig.innerHTML = lots.map(lot => {
+        const rem = lotRemaining(lot);
+        const val = savedInputs[lot.lotNum] || '';
+        const sid = 'pinput_' + lot.id.replace(/[^a-zA-Z0-9]/g,'_');
+        return '<div style="display:flex;flex-direction:column;gap:4px">' +
+          '<label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">' + lot.lotNum + ' — ' + lot.material + ' <span style="font-weight:400;color:var(--teal)">(' + rem.toLocaleString() + ' ' + lot.unit + ' avail.)</span></label>' +
+          '<input type="number" id="' + sid + '" value="' + val + '" placeholder="0" min="0" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.875rem;color:var(--text);outline:none">' +
+          '</div>';
+      }).join('');
+    }
+  }
+  // ── Outputs: finished goods ──
   const prods = getProducts();
-  // Input: raw materials (category = Raw Material or Other)
-  const inputs  = prods.filter(p => p.category !== 'Finished Good' && p.category !== 'Wraps');
-  // Output: finished goods
-  const outputs = prods.filter(p => p.category === 'Finished Good' || p.category === 'Wraps' || p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('cotton'));
-  // If no category distinction, show all for both
-  const inProds  = inputs.length  ? inputs  : prods;
+  const outputs = prods.filter(p => p.category === 'Finished Good' || p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('cotton'));
   const outProds = outputs.length ? outputs : prods;
-
-  const saved = editingProduction || {};
-  let inSaved  = {}; try { inSaved  = JSON.parse(saved.inputs  || '{}'); } catch(e) {}
-  let outSaved = {}; try { outSaved = JSON.parse(saved.outputs || '{}'); } catch(e) {}
-
-  const mkGrid = (prods, savedObj, idPrefix) => prods.map(p => {
-    const sid = idPrefix + p.name.replace(/[^a-zA-Z0-9]/g,'_');
-    const val = savedObj[p.name] || '';
+  let outSaved = {}; try { outSaved = JSON.parse(editingProduction?.outputs || '{}'); } catch(e) {}
+  const og = document.getElementById('p-output-grid');
+  if (og) og.innerHTML = outProds.map(p => {
+    const sid = 'pout_' + p.name.replace(/[^a-zA-Z0-9]/g,'_');
     return '<div style="display:flex;flex-direction:column;gap:4px">' +
       '<label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">' + p.name + ' <span style="font-weight:400">(' + p.unit + ')</span></label>' +
-      '<input type="number" id="' + sid + '" value="' + val + '" placeholder="0" min="0" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.875rem;color:var(--text);outline:none">' +
+      '<input type="number" id="' + sid + '" value="' + (outSaved[p.name]||'') + '" placeholder="0" min="0" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.875rem;color:var(--text);outline:none">' +
       '</div>';
   }).join('');
-
-  const ig = document.getElementById('p-input-grid');
-  const og = document.getElementById('p-output-grid');
-  if (ig) ig.innerHTML = mkGrid(inProds, inSaved, 'pin_');
-  if (og) og.innerHTML = mkGrid(outProds, outSaved, 'pout_');
 }
 
 function getProdGridData(prods, idPrefix) {
@@ -2807,15 +3012,20 @@ function openProductionModal(rec) {
 
 async function saveProduction() {
   const prods = getProducts();
-  const inputs  = prods.filter(p => p.category !== 'Finished Good' && p.category !== 'Wraps');
-  const outputs = prods.filter(p => p.category === 'Finished Good' || p.category === 'Wraps' || p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('cotton'));
-  const inProds  = inputs.length  ? inputs  : prods;
+  const outputs = prods.filter(p => p.category === 'Finished Good' || p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('cotton'));
   const outProds = outputs.length ? outputs : prods;
+  // Collect lot-based inputs
+  const inputLots = [];
+  rawMaterialLots.forEach(lot => {
+    const sid = 'pinput_' + lot.id.replace(/[^a-zA-Z0-9]/g,'_');
+    const qty = Number(document.getElementById(sid)?.value) || 0;
+    if (qty > 0) inputLots.push({ lotNum: lot.lotNum, material: lot.material, qty, unit: lot.unit });
+  });
   const record = {
     id:      editingProduction ? editingProduction.id : uid(),
     date:    document.getElementById('p-date').value,
     batch:   document.getElementById('p-batch').value.trim(),
-    inputs:  JSON.stringify(getProdGridData(inProds,  'pin_')),
+    inputs:  JSON.stringify(inputLots),
     outputs: JSON.stringify(getProdGridData(outProds, 'pout_')),
     notes:   document.getElementById('p-notes').value.trim(),
   };
