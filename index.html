@@ -457,6 +457,9 @@ select option { background: var(--surface2); }
     <button class="nav-tab" onclick="showPage('delivery')" id="tab-delivery">
       <span class="tab-dot" style="background:#d6bcfa"></span>Delivery
     </button>
+    <button class="nav-tab" onclick="showPage('production')" id="tab-production">
+      <span class="tab-dot" style="background:#f6ad55"></span>Production
+    </button>
     <button class="nav-tab" onclick="showPage('invoice')" id="tab-invoice">
       <span class="tab-dot" style="background:#81e6d9"></span>Invoices
     </button>
@@ -511,6 +514,15 @@ select option { background: var(--surface2); }
   <div class="cards-list" id="delivery-list"></div>
 </div>
 
+<div class="page" id="page-production">
+  <div class="page-header">
+    <div class="page-title">Production <span>Manufacturing Records</span></div>
+    <button class="btn-add" onclick="openProductionModal()">+ New Record</button>
+  </div>
+  <div class="stats-row" id="production-stats"></div>
+  <div class="cards-list" id="production-list"></div>
+</div>
+
 <div class="page" id="page-invoice">
   <div class="page-header">
     <div class="page-title">Invoice Management <span>Invoice &amp; Payments</span></div>
@@ -538,7 +550,6 @@ select option { background: var(--surface2); }
 <div class="page" id="page-inventory">
   <div class="page-header">
     <div class="page-title">Inventory Analysis <span>Inventory</span></div>
-    <button class="btn-add" onclick="openProductionModal()">+ New Production Record</button>
   </div>
   <div class="stats-row" id="inventory-stats"></div>
   <div id="inventory-content" style="margin-top:8px"></div>
@@ -1813,6 +1824,7 @@ function renderAll() {
   else if (active === 'customers') renderCustomers();
   else if (active === 'settings') renderSettings();
   else if (active === 'inventory') renderInventory();
+  else if (active === 'production') renderProduction();
 }
 
 
@@ -2560,14 +2572,13 @@ function renderInventory() {
 
   // Top stats
   const totalInQty  = cargo.reduce((s,sh) => s + (Number(sh.qty)||0), 0);
-  const totalProdRuns = productions.length;
   const inTransit   = cargo.filter(s => s.status !== 'Completed').length;
   const arrived     = cargo.filter(s => s.status === 'Completed').length;
   const pendingDeliv = deliveries.filter(d => d.status !== 'Delivered').length;
   sEl.innerHTML =
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + totalInQty.toLocaleString() + '</div><div class="stat-card-lbl">Total Received</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + inTransit + '</div><div class="stat-card-lbl">In Transit</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + totalProdRuns + '</div><div class="stat-card-lbl">Production Runs</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + arrived + '</div><div class="stat-card-lbl">Completed Shipments</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + pendingDeliv + '</div><div class="stat-card-lbl">Pending Deliveries</div></div>';
 
   let html = '';
@@ -2658,33 +2669,6 @@ function renderInventory() {
       html += '</div>';
     }
 
-    // Production records for this product
-    const relProd = productions.filter(pr => {
-      try {
-        const i = JSON.parse(pr.inputs||'{}');
-        const o = JSON.parse(pr.outputs||'{}');
-        return Object.keys(i).some(k=>k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) ||
-               Object.keys(o).some(k=>k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,'')));
-      } catch(e){ return false; }
-    });
-    if (relProd.length) {
-      html += '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">';
-      html += '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Production Runs</div>';
-      relProd.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).forEach(pr => {
-        let inStr='', outStr='';
-        try{ const i=JSON.parse(pr.inputs||'{}');  inStr  = Object.entries(i).map(([k,v])=>k+' x'+v).join(', '); } catch(e){}
-        try{ const o=JSON.parse(pr.outputs||'{}'); outStr = Object.entries(o).map(([k,v])=>k+' x'+v).join(', '); } catch(e){}
-        html += '<div onclick="openProductionModal(productions.find(p=>p.id===\'' + pr.id + '\'))" style="cursor:pointer;display:flex;align-items:start;gap:8px;margin-bottom:8px;padding:8px;background:var(--surface2);border-radius:8px;font-size:0.8rem">';
-        html += '<div style="min-width:70px;color:var(--text-muted)">' + fmtDate(pr.date) + '</div>';
-        html += '<div style="flex:1">';
-        if (inStr)  html += '<div>Consumed: <span style="color:var(--purple)">' + inStr + '</span></div>';
-        if (outStr) html += '<div>Produced: <span style="color:var(--teal)">'   + outStr + '</span></div>';
-        if (pr.batch) html += '<div style="color:var(--text-dim)">Batch: ' + pr.batch + '</div>';
-        html += '</div></div>';
-      });
-      html += '</div>';
-    }
-
     // Related shipments
     if (relCargo.length) {
       html += '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">';
@@ -2706,6 +2690,64 @@ function renderInventory() {
   cEl.innerHTML = html || '<div style="text-align:center;padding:40px;color:var(--text-muted)">Please go to Settings to configure your product list</div>';
 }
 
+
+// ==============================
+// PRODUCTION PAGE
+// ==============================
+function renderProduction() {
+  const sEl = document.getElementById('production-stats');
+  const lEl = document.getElementById('production-list');
+  if (!sEl || !lEl) return;
+
+  const now = new Date();
+  const thisMonth = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+
+  const totalRuns = productions.length;
+  const thisMonthRuns = productions.filter(p => (p.date||'').startsWith(thisMonth)).length;
+
+  // Sum all outputs and inputs across all records
+  let totalOut = {}, totalIn = {};
+  productions.forEach(pr => {
+    try { Object.entries(JSON.parse(pr.outputs||'{}')).forEach(([k,v]) => { totalOut[k] = (totalOut[k]||0) + (Number(v)||0); }); } catch(e){}
+    try { Object.entries(JSON.parse(pr.inputs||'{}')).forEach(([k,v])  => { totalIn[k]  = (totalIn[k]||0)  + (Number(v)||0); }); } catch(e){}
+  });
+  const mainOut = Object.entries(totalOut).sort((a,b)=>b[1]-a[1])[0];
+  const mainIn  = Object.entries(totalIn).sort((a,b)=>b[1]-a[1])[0];
+
+  sEl.innerHTML =
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--orange)">' + totalRuns + '</div><div class="stat-card-lbl">Total Runs</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + thisMonthRuns + '</div><div class="stat-card-lbl">This Month</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + (mainOut ? mainOut[1].toLocaleString() : '—') + '</div><div class="stat-card-lbl">' + (mainOut ? mainOut[0] + ' Produced' : 'Total Produced') + '</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + (mainIn ? mainIn[1].toLocaleString() : '—') + '</div><div class="stat-card-lbl">' + (mainIn ? mainIn[0] + ' Consumed' : 'Total Consumed') + '</div></div>';
+
+  if (!productions.length) {
+    lEl.innerHTML = '<div style="text-align:center;padding:48px 20px;color:var(--text-muted)"><div style="font-size:2rem;margin-bottom:12px">🏭</div><div>No production records yet</div><div style="font-size:0.8rem;color:var(--text-dim);margin-top:6px">Click "+ New Record" to log your first production run</div></div>';
+    return;
+  }
+
+  const sorted = [...productions].sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1);
+  let html = '';
+  sorted.forEach(pr => {
+    let inStr = '', outStr = '';
+    try { inStr  = Object.entries(JSON.parse(pr.inputs||'{}')).filter(([,v])=>Number(v)>0).map(([k,v])=>k+' × '+Number(v).toLocaleString()).join(' · '); } catch(e){}
+    try { outStr = Object.entries(JSON.parse(pr.outputs||'{}')).filter(([,v])=>Number(v)>0).map(([k,v])=>k+' × '+Number(v).toLocaleString()).join(' · '); } catch(e){}
+
+    html += '<div class="card" onclick="openProductionModal(productions.find(p=>p.id===\'' + pr.id + '\'))">';
+    html += '<div class="card-top">';
+    html += '<div>';
+    html += '<div class="card-title">' + fmtDate(pr.date) + (pr.batch ? ' &nbsp;<span style="font-size:0.78rem;font-weight:400;color:var(--text-muted)">Batch: ' + pr.batch + '</span>' : '') + '</div>';
+    html += '<div class="card-id">' + pr.date + '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="card-grid" style="margin-top:10px">';
+    if (inStr)  html += '<div class="card-field"><div class="card-field-lbl">Raw Material Used</div><div class="card-field-val" style="color:var(--purple)">' + inStr + '</div></div>';
+    if (outStr) html += '<div class="card-field"><div class="card-field-lbl">Finished Goods Produced</div><div class="card-field-val" style="color:var(--teal)">' + outStr + '</div></div>';
+    if (pr.notes) html += '<div class="card-field full" style="grid-column:1/-1"><div class="card-field-lbl">Notes</div><div class="card-field-val" style="color:var(--text-muted)">' + pr.notes + '</div></div>';
+    html += '</div>';
+    html += '</div>';
+  });
+  lEl.innerHTML = html;
+}
 
 // ==============================
 // PRODUCTION
