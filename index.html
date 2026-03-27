@@ -473,6 +473,7 @@ select option { background: var(--surface2); }
     <div class="page-title">Operations Overview <span id="dash-date"></span></div>
   </div>
   <div class="stats-row" id="dash-stats"></div>
+  <div id="dash-actions" style="margin-bottom:16px"></div>
   <div class="dash-grid" id="dash-grid"></div>
 </div>
 
@@ -1682,49 +1683,6 @@ async function saveTask() {
 // ==============================
 // DASHBOARD
 // ==============================
-function renderDashboard() {
-  const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
-  const dateEl = document.getElementById('dash-date');
-  if (dateEl) dateEl.textContent = today;
-  const unpaidAmt = invoices.filter(i => i.status !== 'Paid')
-    .reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)) - (Number(i.paid)||0), 0);
-  const activeCargo  = cargo.filter(c => c.status !== 'Completed').length;
-  const pendingDel   = deliveries.filter(d => d.status !== 'Delivered').length;
-  const pendingTasks = tasks.filter(t => !t.done).length;
-  const statsEl = document.getElementById('dash-stats');
-  if (statsEl) statsEl.innerHTML =
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + activeCargo + '</div><div class="stat-card-lbl">Active Shipments</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--red)">' + fmt$(unpaidAmt) + '</div><div class="stat-card-lbl">Outstanding</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + pendingDel + '</div><div class="stat-card-lbl">PendingLocation</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + pendingTasks + '</div><div class="stat-card-lbl">Pending Tasks</div></div>';
-  const urgentCargo    = cargo.filter(c => { const d = daysFromNow(c.eta); return d!==null && d<=5 && c.status!=='Completed'; });
-  const unpaidInv      = invoices.filter(i => i.status !== 'Paid');
-  const urgentTasks    = tasks.filter(t => !t.done && t.priority === 'Urgent');
-  const pendingDelList = deliveries.filter(d => d.status !== 'Delivered');
-  const gridEl = document.getElementById('dash-grid');
-  if (!gridEl) return;
-  let grid = '';
-  grid += '<div class="dash-card"><div class="dash-card-title">🚢 Upcoming Arrivals</div>';
-  if (urgentCargo.length) urgentCargo.forEach(c => { grid += '<div class="dash-list-item"><span style="font-family:var(--mono);font-size:0.8rem">' + (c.bolNum||'BOL?') + '</span><span class="badge badge-blue" style="font-size:0.68rem">' + daysFromNow(c.eta) + 'days</span></div>'; });
-  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">No upcoming arrivals</div>';
-  grid += '</div>';
-  grid += '<div class="dash-card"><div class="dash-card-title">🧾 Unpaid Invoices</div>';
-  if (unpaidInv.length) unpaidInv.slice(0,5).forEach(i => {
-    const bal = ((Number(i.qty)||0)*(Number(i.unitPrice)||0))-(Number(i.paid)||0);
-    grid += '<div class="dash-list-item"><span>' + (i.billTo||'—') + ' #' + (i.num||'?') + '</span><span style="color:var(--red);font-family:var(--mono);font-size:0.8rem">' + fmt$(bal) + '</span></div>';
-  });
-  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">All invoices paid ✓</div>';
-  grid += '</div>';
-  grid += '<div class="dash-card"><div class="dash-card-title">⚡ UrgentTask</div>';
-  if (urgentTasks.length) urgentTasks.slice(0,5).forEach(t => { grid += '<div class="dash-list-item"><span style="font-size:0.82rem">' + t.text + '</span><span class="badge badge-red" style="font-size:0.65rem">Urgent</span></div>'; });
-  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">無UrgentTask</div>';
-  grid += '</div>';
-  grid += '<div class="dash-card"><div class="dash-card-title">🚛 PendingLocation</div>';
-  if (pendingDelList.length) pendingDelList.slice(0,5).forEach(d => { grid += '<div class="dash-list-item"><span style="font-size:0.82rem">' + (d.city||d.addr||'—') + (d.bolNum?' <span style="font-size:0.7rem;color:var(--blue)">'+d.bolNum+'</span>':'') + '</span><span class="badge ' + (DEL_STATUS[d.status]||'badge-muted') + '" style="font-size:0.65rem">' + d.status + '</span></div>'; });
-  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">無PendingLocation</div>';
-  grid += '</div>';
-  gridEl.innerHTML = grid;
-}
 
 
 function renderAll() {
@@ -3862,45 +3820,2423 @@ function renderDashboard() {
   const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
   const dateEl = document.getElementById('dash-date');
   if (dateEl) dateEl.textContent = today;
-  const unpaidAmt = invoices.filter(i => i.status !== 'Paid')
-    .reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)) - (Number(i.paid)||0), 0);
-  const activeCargo  = cargo.filter(c => c.status !== 'Completed').length;
+
+  // ── Key numbers ──
+  const activeCargo  = cargo.filter(s => s.status !== 'Completed').length;
+  const inTransitCargo = cargo.filter(s => s.status === 'In Transit').length;
+  const arrivingSoon = cargo.filter(s => { const d = daysFromNow(s.eta); return d !== null && d <= 7 && s.status !== 'Completed'; }).length;
   const pendingDel   = deliveries.filter(d => d.status !== 'Delivered').length;
+  const doneDel      = deliveries.filter(d => d.status === 'Delivered').length;
   const pendingTasks = tasks.filter(t => !t.done).length;
+  const urgentTasks  = tasks.filter(t => !t.done && t.priority === 'Urgent').length;
+  const unpaidAmt    = invoices.filter(i => i.status !== 'Paid').reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)) - (Number(i.paid)||0), 0);
+  const collectedMo  = invoices.filter(i => { const d = i.paidDate||i.date; return d && new Date(d).getMonth() === new Date().getMonth() && new Date(d).getFullYear() === new Date().getFullYear(); }).reduce((s,i) => s + (Number(i.paid)||0), 0);
+
+  // Inventory snapshot
+  const prods4d = getProducts();
+  const invSnap = prods4d.map(prod => {
+    const pnl = prod.name.toLowerCase().replace(/s$/,'');
+    const inQty = cargo.filter(s => s.disc && s.disc.toLowerCase().replace(/s$/,'').includes(pnl)).reduce((s,sh) => s+(Number(sh.qty)||0), 0);
+    let delivQty = 0;
+    deliveries.forEach(d => {
+      if (d.delivItems) { try { const it=JSON.parse(d.delivItems); Object.entries(it).forEach(([k,v])=>{ if(k.toLowerCase().replace(/s$/,'').includes(pnl)) delivQty+=Number(v)||0; }); } catch(e){} }
+      else if (pnl.includes('cotton') && d.wraps) delivQty+=Number(d.wraps)||0;
+    });
+    let prodOut = 0;
+    productions.forEach(pr => { try { const o=JSON.parse(pr.outputs||'{}'); Object.entries(o).forEach(([k,v])=>{ if(k.toLowerCase().replace(/s$/,'').includes(pnl)) prodOut+=Number(v)||0; }); } catch(e){} });
+    return { name: prod.name, unit: prod.unit, remaining: (inQty + prodOut) - delivQty, rpp: prod.rollsPerPallet||0, ppc: prod.palletsPerContainer||0 };
+  }).filter(p => p.remaining !== 0 || p.name === 'Cotton Wrap');
+
+  const statsEl = document.getElementById('dash-stats');
+  if (statsEl) statsEl.innerHTML =
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + activeCargo + '</div><div class="stat-card-lbl">Active Shipments</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + arrivingSoon + '</div><div class="stat-card-lbl">Arriving This Week</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--red)">' + fmt$(unpaidAmt) + '</div><div class="stat-card-lbl">Outstanding</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + pendingDel + '</div><div class="stat-card-lbl">Pending Deliveries</div></div>';
+
+  const gridEl = document.getElementById('dash-grid');
+  if (!gridEl) return;
+  let grid = '';
+
+  // ── Attention needed ──
+  const attentionItems = [];
+  cargo.filter(s => { const d=daysFromNow(s.eta); return d!==null&&d<=5&&s.status!=='Completed'; }).forEach(s => {
+    attentionItems.push({ icon:'ship', color:'var(--blue)', text: (s.bolNum||'Shipment') + ' arriving in ' + daysFromNow(s.eta) + ' days', action: "showPage('cargo')" });
+  });
+  if (urgentTasks > 0) attentionItems.push({ icon:'zap', color:'var(--red)', text: urgentTasks + ' urgent task' + (urgentTasks>1?'s':'') + ' need attention', action: "showPage('tasks')" });
+  invoices.filter(i => i.status!=='Paid').slice(0,3).forEach(i => {
+    const bal = ((Number(i.qty)||0)*(Number(i.unitPrice)||0))-(Number(i.paid)||0);
+    if (bal > 0) attentionItems.push({ icon:'invoice', color:'var(--amber)', text: (i.billTo||'Customer') + ' owes ' + fmt$(bal), action: "showPage('invoice')" });
+  });
+
+  grid += '<div class="dash-card" style="grid-column:1/-1">';
+  grid += '<div class="dash-card-title" style="margin-bottom:10px">Needs Attention</div>';
+  if (attentionItems.length) {
+    attentionItems.forEach(a => {
+      grid += '<div onclick="' + a.action + '" style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:4px;background:var(--surface2);border-radius:8px;cursor:pointer;font-size:0.85rem">';
+      grid += '<span style="width:8px;height:8px;border-radius:50%;background:' + a.color + ';flex-shrink:0"></span>';
+      grid += '<span style="flex:1">' + a.text + '</span>';
+      grid += '<span style="font-size:0.7rem;color:var(--text-dim)">&rsaquo;</span>';
+      grid += '</div>';
+    });
+  } else {
+    grid += '<div style="color:var(--text-dim);font-size:0.85rem;padding:10px 0">All good ✓ Nothing urgent right now.</div>';
+  }
+  grid += '</div>';
+
+  // ── Shipment Pipeline ──
+  grid += '<div class="dash-card">';
+  grid += '<div class="dash-card-title">Shipment Pipeline</div>';
+  const pipeline = [
+    { label:'In Transit', count: cargo.filter(s=>s.status==='In Transit').length, color:'var(--blue)' },
+    { label:'At Port/Customs', count: cargo.filter(s=>['Arrived - Pending Customs','Customs Clearance'].includes(s.status)).length, color:'var(--amber)' },
+    { label:'Completed', count: cargo.filter(s=>s.status==='Completed').length, color:'var(--green)' },
+  ];
+  pipeline.forEach(p => {
+    if (p.count === 0) return;
+    grid += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:0.82rem">';
+    grid += '<span style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:' + p.color + '"></span>' + p.label + '</span>';
+    grid += '<span style="font-family:var(--mono);font-weight:700;color:' + p.color + '">' + p.count + '</span>';
+    grid += '</div>';
+  });
+  const nextArr = [...cargo].filter(s=>s.eta&&s.status!=='Completed').sort((a,b)=>a.eta>b.eta?1:-1)[0];
+  if (nextArr) grid += '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:8px">Next arrival: ' + (nextArr.bolNum||'—') + ' in ' + (daysFromNow(nextArr.eta)||'?') + ' days</div>';
+  grid += '</div>';
+
+  // ── Cash Flow ──
+  grid += '<div class="dash-card">';
+  grid += '<div class="dash-card-title">Cash Flow</div>';
+  const totalInv = invoices.reduce((s,i) => s+(Number(i.qty)||0)*(Number(i.unitPrice)||0), 0);
+  const totalPaid = invoices.reduce((s,i) => s+(Number(i.paid)||0), 0);
+  const collPct = totalInv > 0 ? Math.round(totalPaid/totalInv*100) : 0;
+  grid += '<div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text-muted);margin-bottom:4px"><span>Collected</span><span>' + collPct + '%</span></div>';
+  grid += '<div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:var(--green);border-radius:3px;width:' + collPct + '%"></div></div>';
+  grid += '<div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px"><span style="color:var(--text-muted)">Total Invoiced</span><span style="font-family:var(--mono)">' + fmt$(totalInv) + '</span></div>';
+  grid += '<div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px"><span style="color:var(--text-muted)">Collected</span><span style="font-family:var(--mono);color:var(--green)">' + fmt$(totalPaid) + '</span></div>';
+  grid += '<div style="display:flex;justify-content:space-between;font-size:0.82rem"><span style="color:var(--text-muted)">Outstanding</span><span style="font-family:var(--mono);color:' + (unpaidAmt>0?'var(--red)':'var(--green)') + '">' + fmt$(unpaidAmt) + '</span></div>';
+  grid += '</div>';
+
+  // ── Delivery Status ──
+  grid += '<div class="dash-card">';
+  grid += '<div class="dash-card-title">Delivery Status</div>';
+  const delTotal = deliveries.length;
+  const delDone  = deliveries.filter(d=>d.status==='Delivered').length;
+  const delPct   = delTotal > 0 ? Math.round(delDone/delTotal*100) : 0;
+  grid += '<div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text-muted);margin-bottom:4px"><span>Delivered</span><span>' + delDone + ' / ' + delTotal + '</span></div>';
+  grid += '<div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-bottom:10px"><div style="height:100%;background:var(--teal);border-radius:3px;width:' + delPct + '%"></div></div>';
+  ['Pending','Scheduled','Delivered'].forEach(st => {
+    const cnt = deliveries.filter(d=>d.status===st).length;
+    if (!cnt) return;
+    const col = st==='Delivered'?'var(--green)':st==='Scheduled'?'var(--blue)':'var(--amber)';
+    grid += '<div style="display:flex;justify-content:space-between;font-size:0.82rem;padding:4px 0;border-bottom:0.5px solid var(--border)">';
+    grid += '<span style="color:var(--text-muted)">' + st + '</span><span style="font-family:var(--mono);color:' + col + '">' + cnt + '</span></div>';
+  });
+  grid += '</div>';
+
+  // ── Inventory Snapshot ──
+  grid += '<div class="dash-card">';
+  grid += '<div class="dash-card-title">Inventory Snapshot</div>';
+  if (invSnap.length) {
+    invSnap.forEach(p => {
+      const low = p.remaining < 100 && p.rpp > 0;
+      grid += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:0.82rem">';
+      grid += '<span>' + p.name + '</span>';
+      grid += '<div style="text-align:right">';
+      grid += '<span style="font-family:var(--mono);font-weight:700;color:' + (p.remaining>0?'var(--teal)':p.remaining===0?'var(--text-muted)':'var(--red)') + '">' + p.remaining.toLocaleString() + ' ' + p.unit + '</span>';
+      if (p.rpp > 0) grid += '<div style="font-size:0.68rem;color:var(--text-dim)">' + (p.remaining/p.rpp).toFixed(1).replace(/\.0$/,'') + ' pallets</div>';
+      grid += '</div></div>';
+    });
+  } else {
+    grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">No inventory data yet</div>';
+  }
+  grid += '</div>';
+
+  // ── Pending Deliveries ──
+  grid += '<div class="dash-card">';
+  grid += '<div class="dash-card-title">Pending Deliveries</div>';
+  const pendList = deliveries.filter(d => d.status !== 'Delivered').slice(0,6);
+  if (pendList.length) pendList.forEach(d => {
+    grid += '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:0.82rem">';
+    grid += '<div><div>' + (d.city||d.addr||'—') + '</div>';
+    if (d.business) grid += '<div style="font-size:0.72rem;color:var(--text-muted)">' + d.business + '</div></div>';
+    else grid += '</div>';
+    grid += '<span class="badge ' + (DEL_STATUS[d.status]||'badge-muted') + '" style="font-size:0.65rem">' + d.status + '</span>';
+    grid += '</div>';
+  });
+  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">No pending deliveries ✓</div>';
+  grid += '</div>';
+
+  gridEl.innerHTML = grid;
+}
+
+function renderAll() {
+  const active = document.querySelector('.page.active')?.id?.replace('page-','');
+  if (active === 'dashboard') renderDashboard();
+  else if (active === 'cargo') renderCargo();
+  else if (active === 'invoice') renderInvoices();
+  else if (active === 'delivery') renderDeliveries();
+  else if (active === 'tasks') renderTasks();
+  else if (active === 'customers') renderCustomers();
+  else if (active === 'settings') renderSettings();
+  else if (active === 'inventory') renderInventory();
+}
+
+
+// ==============================
+// CUSTOMERS
+// ==============================
+const CUST_CLS = {"Active":"badge-green","Paused":"badge-muted","Prospect":"badge-amber"};
+
+function renderCustomerStats() {
+  const el = document.getElementById("customer-stats");
+  if (!el) return;
+  const active = customers.filter(c => c.status === "Active").length;
+  const agpro  = customers.filter(c => c.type === "AG Pro").length;
+  const tom    = customers.filter(c => c.type === "Tom").length;
+  el.innerHTML =
+    "<div class=\"stat-card\"><div class=\"stat-card-val\" style=\"color:var(--orange)\">" + customers.length + "</div><div class=\"stat-card-lbl\">Total Customers</div></div>" +
+    "<div class=\"stat-card\"><div class=\"stat-card-val\" style=\"color:var(--green)\">" + active + "</div><div class=\"stat-card-lbl\">Active</div></div>" +
+    "<div class=\"stat-card\"><div class=\"stat-card-val\" style=\"color:var(--teal)\">" + agpro + "</div><div class=\"stat-card-lbl\">AG Pro</div></div>" +
+    "<div class=\"stat-card\"><div class=\"stat-card-val\" style=\"color:var(--blue)\">" + tom + "</div><div class=\"stat-card-lbl\">Tom</div></div>";
+}
+
+function toggleDistDetail(type) {
+  const el = document.getElementById('dist-detail-' + type.replace(/\s/g,'_'));
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function renderDistributorSummary() {
+  const el = document.getElementById('distributor-summary');
+  if (!el) return;
+  const types = [...new Set(deliveries.map(d => d.dist).filter(Boolean))];
+  if (!types.length) { el.innerHTML = ''; return; }
+
+  const thisYear = new Date().getFullYear();
+  let html = '<div style="font-family:var(--display);font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:12px">Distributor Summary</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">';
+
+  types.sort().forEach(type => {
+    const typeId = type.replace(/\s/g,'_');
+    // All deliveries for this distributor
+    const typeDels = deliveries.filter(d => d.dist === type);
+    const doneDels = typeDels.filter(d => d.status === 'Delivered');
+    const pendDels = typeDels.filter(d => d.status !== 'Delivered');
+    const lastDel  = [...typeDels].sort((a,b) => (b.delivDate||'') > (a.delivDate||'') ? 1 : -1)[0];
+
+    // All invoices for this distributor type (match by dist field in delivery)
+    const typeCompanies = [...new Set(typeDels.map(d => d.business).filter(Boolean))];
+    const typeInvs = invoices.filter(i => i.billTo && typeCompanies.some(co => i.billTo.toLowerCase().includes(co.toLowerCase())));
+    const totalRev = typeInvs.reduce((s,i) => s + (Number(i.qty)||0)*(Number(i.unitPrice)||0), 0);
+    const unpaid   = typeInvs.filter(i => i.status !== 'Paid').reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)) - (Number(i.paid)||0), 0);
+
+    // Annual product qty from deliveries this year
+    const annualQty = {};
+    const prods4d = getProducts();
+    typeDels.filter(d => d.delivDate && new Date(d.delivDate).getFullYear() === thisYear).forEach(d => {
+      if (d.delivItems) {
+        try {
+          const it = JSON.parse(d.delivItems);
+          Object.entries(it).forEach(([k,v]) => {
+            if (Number(v) <= 0) return;
+            const kl = k.toLowerCase().replace(/s$/,'');
+            const pp = prods4d.find(p => p.name.toLowerCase().replace(/s$/,'') === kl || kl.includes(p.name.toLowerCase().replace(/s$/,'')));
+            const pname = pp ? pp.name : k;
+            annualQty[pname] = (annualQty[pname]||0) + Number(v);
+          });
+        } catch(e) {}
+      } else if (d.wraps) {
+        annualQty['Cotton Wrap'] = (annualQty['Cotton Wrap']||0) + Number(d.wraps);
+      }
+    });
+
+    // Individual companies under this distributor
+    const companies = [...new Set(typeDels.map(d => d.business).filter(Boolean))].sort();
+
+    html += '<div class="card" style="border-left:3px solid var(--orange)">';
+    html += '<div style="display:flex;align-items:start;justify-content:space-between">';
+    html += '<div>';
+    html += '<div class="card-id">' + type + '</div>';
+    html += '<div class="card-title">' + typeCompanies.length + ' ' + (typeCompanies.length === 1 ? 'company' : 'companies') + '</div>';
+    html += '</div>';
+    if (unpaid > 0) html += '<span class="badge badge-red" style="font-size:0.68rem">Owes ' + fmt$(unpaid) + '</span>';
+    html += '</div>';
+
+    html += '<div class="card-grid" style="margin-top:10px">';
+    if (totalRev > 0) html += '<div class="card-field"><div class="card-field-lbl">Total Revenue</div><div class="card-field-val" style="color:var(--teal)">' + fmt$(totalRev) + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">Deliveries</div><div class="card-field-val">' + doneDels.length + ' done' + (pendDels.length ? ' / ' + pendDels.length + ' pending' : '') + '</div></div>';
+    if (lastDel) html += '<div class="card-field"><div class="card-field-lbl">Last Delivery</div><div class="card-field-val">' + fmtDate(lastDel.delivDate) + '</div></div>';
+    html += '</div>';
+
+    // Annual qty badges
+    if (Object.keys(annualQty).length) {
+      const prodMap4d = {}; prods4d.forEach(p => prodMap4d[p.name] = p);
+      html += '<div style="margin-top:8px;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">' + thisYear + ' deliveries</div>';
+      html += '<div style="display:flex;flex-wrap:wrap;gap:4px">';
+      Object.entries(annualQty).sort((a,b)=>b[1]-a[1]).forEach(([prod,qty]) => {
+        const unit = prodMap4d[prod]?.unit || '';
+        html += '<span style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:0.75rem">' + prod + ': <b>' + qty.toLocaleString() + '</b> ' + unit + '</span>';
+      });
+      html += '</div>';
+    }
+
+    // Expand companies button
+    if (companies.length) {
+      html += '<button onclick="toggleDistDetail(\'' + type + '\')" style="margin-top:10px;background:none;border:1px solid var(--border);border-radius:6px;padding:5px 14px;font-size:0.78rem;color:var(--text-muted);cursor:pointer;width:100%">&#9660; Companies (' + companies.length + ')</button>';
+      html += '<div id="dist-detail-' + typeId + '" style="display:none;margin-top:10px">';
+      companies.forEach(co => {
+        const coDels = typeDels.filter(d => d.business === co);
+        const lastCoDel = [...coDels].sort((a,b) => (b.delivDate||'') > (a.delivDate||'') ? 1 : -1)[0];
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid var(--border);font-size:0.82rem">';
+        html += '<div>';
+        html += '<div style="font-weight:600">' + co + '</div>';
+        if (lastCoDel) html += '<div style="font-size:0.72rem;color:var(--text-muted)">Last: ' + fmtDate(lastCoDel.delivDate) + (lastCoDel.city ? ' &middot; ' + lastCoDel.city : '') + '</div>';
+        html += '</div>';
+        html += '<span style="font-size:0.75rem;color:var(--text-muted)">' + coDels.length + ' del</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function custDeliveries(cu) {
+  if (!cu.company) return [];
+  const cnl = cu.company.toLowerCase();
+  return deliveries.filter(d =>
+    (d.business && d.business.toLowerCase().includes(cnl)) ||
+    (d.dist     && d.dist.toLowerCase().includes(cnl))
+  ).sort((a,b) => (b.delivDate||'') > (a.delivDate||'') ? 1 : -1);
+}
+
+function custInvoices(cu) {
+  if (!cu.company) return [];
+  const cnl = cu.company.toLowerCase();
+  return invoices.filter(i => i.billTo && i.billTo.toLowerCase().includes(cnl));
+}
+
+function toggleCustDetail(id) {
+  const el = document.getElementById('cust-detail-' + id);
+  if (!el) return;
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+}
+
+function renderCustomers() {
+  renderCustomerStats();
+  renderDistributorSummary();
+  const el = document.getElementById("customer-list");
+  if (!el) return;
+  const q = (document.getElementById("customer-search")?.value || "").toLowerCase();
+  const filtered = customers.filter(cu =>
+    !q || [cu.company,cu.contact,cu.city,cu.type,cu.email,cu.phone].some(v => v && String(v).toLowerCase().includes(q))
+  );
+  if (!filtered.length) {
+    el.innerHTML = customers.length
+      ? emptyState("?","No matching customers","Try a different search term")
+      : emptyState("?","No customers yet","Click + New Customer to get started");
+    return;
+  }
+  const types = ["AG Pro","Tom","Distributor","Other"];
+  let html = "";
+  types.forEach(type => {
+    const group = filtered.filter(cu => (cu.type||"Other") === type);
+    if (!group.length) return;
+    html += "<div class=\"section-label\">" + type + " (" + group.length + ")</div>";
+    group.forEach(cu => {
+      const relInv  = custInvoices(cu);
+      const relDel  = custDeliveries(cu);
+      const lastDel = relDel[0];
+      const totalRev = relInv.reduce((s,i) => s+(Number(i.qty)||0)*(Number(i.unitPrice)||0), 0);
+      const unpaid   = relInv.filter(i => i.status !== 'Paid').reduce((s,i) => s+((Number(i.qty)||0)*(Number(i.unitPrice)||0))-(Number(i.paid)||0), 0);
+      const activeCg = cargo.filter(g => g.customer && cu.company && g.customer.toLowerCase().includes(cu.company.toLowerCase()) && g.status !== "Completed").length;
+
+      // Annual qty by product
+      const thisYear = new Date().getFullYear();
+      const annualByProd = {};
+      relInv.filter(i => i.date && new Date(i.date).getFullYear() === thisYear).forEach(i => {
+        if (!i.item) return;
+        if (!annualByProd[i.item]) annualByProd[i.item] = 0;
+        annualByProd[i.item] += Number(i.qty)||0;
+      });
+
+      html += "<div class=\"card\" style=\"border-left:3px solid var(--orange)\">";
+      // Card header - click to open edit
+      html += "<div onclick=\"openCustomerEdit('" + cu.id + "')\" style=\"cursor:pointer\">";
+      html += "<div class=\"card-top\"><div>";
+      html += "<div class=\"card-id\">" + (cu.type||"") + (cu.terms ? " &middot; " + cu.terms : "") + "</div>";
+      html += "<div class=\"card-title\">" + (cu.company||cu.contact||"&mdash;") + "</div>";
+      if (cu.contact && cu.company) html += "<div style=\"font-size:0.8rem;color:var(--text-muted);margin-top:2px\">" + cu.contact + "</div>";
+      html += "</div><span class=\"badge " + (CUST_CLS[cu.status]||"badge-green") + "\">" + (cu.status||"Active") + "</span></div>";
+
+      // Summary stats
+      html += "<div class=\"card-grid\" style=\"margin-top:10px\">";
+      if (totalRev > 0) html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Total Revenue</div><div class=\"card-field-val\" style=\"color:var(--teal)\">" + fmt$(totalRev) + "</div></div>";
+      if (unpaid > 0)   html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Outstanding</div><div class=\"card-field-val\" style=\"color:var(--red)\">" + fmt$(unpaid) + "</div></div>";
+      if (lastDel)      html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Last Delivery</div><div class=\"card-field-val\">" + fmtDate(lastDel.delivDate) + "</div></div>";
+      if (relDel.length) html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Deliveries</div><div class=\"card-field-val\">" + relDel.length + " total</div></div>";
+      if (activeCg)     html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Active Shipments</div><div class=\"card-field-val\" style=\"color:var(--blue)\">" + activeCg + "</div></div>";
+      if (cu.phone)     html += "<div class=\"card-field\"><div class=\"card-field-lbl\">Phone</div><div class=\"card-field-val\">" + fmtPhone(cu.phone) + "</div></div>";
+      html += "</div>";
+
+      // Annual qty by product
+      if (Object.keys(annualByProd).length) {
+        const prods4c = getProducts();
+        const prodMap4c = {};
+        prods4c.forEach(p => prodMap4c[p.name] = p);
+        html += "<div style=\"margin-top:10px;font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px\">" + thisYear + " Purchases</div>";
+        html += "<div style=\"display:flex;flex-wrap:wrap;gap:6px\">";
+        Object.entries(annualByProd).sort((a,b)=>b[1]-a[1]).forEach(([prod, qty]) => {
+          const pp = prodMap4c[prod] || prods4c.find(p => prod.toLowerCase().replace(/s$/,'').includes(p.name.toLowerCase().replace(/s$/,'')));
+          const unit = pp?.unit || '';
+          html += "<span style=\"background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:0.78rem\">" + prod + ": <b>" + qty.toLocaleString() + "</b> " + unit + "</span>";
+        });
+        html += "</div>";
+      }
+      html += "</div>";
+
+      // Toggle button for delivery history
+      if (relDel.length > 0) {
+        html += "<button onclick=\"event.stopPropagation();toggleCustDetail('" + cu.id + "')\" style=\"margin-top:10px;background:none;border:1px solid var(--border);border-radius:6px;padding:5px 14px;font-size:0.78rem;color:var(--text-muted);cursor:pointer;width:100%\">&#9660; Delivery History (" + relDel.length + ")</button>";
+        html += "<div id=\"cust-detail-" + cu.id + "\" style=\"display:none;margin-top:10px\">";
+        html += "<div style=\"font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px\">Delivery History</div>";
+        relDel.forEach(d => {
+          const statusC = d.status==="Delivered"?"var(--green)":d.status==="Scheduled"?"var(--blue)":"var(--amber)";
+          html += "<div style=\"display:flex;align-items:start;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:0.8rem\">";
+          html += "<div style=\"min-width:70px;color:var(--text-muted)\">" + (fmtDate(d.delivDate)||"—") + "</div>";
+          html += "<div style=\"flex:1\">";
+          html += "<div style=\"font-weight:600\">" + (d.city||d.addr||"—") + "</div>";
+          if (d.containerNum) {
+            const ctrs = d.containerNum.split(",").map(x=>x.trim()).filter(Boolean);
+            html += "<div style=\"font-family:var(--mono);font-size:0.72rem;color:var(--teal);margin-top:2px\">" + ctrs.join(" · ") + "</div>";
+          }
+          if (d.bolNum) html += "<div style=\"font-size:0.7rem;color:var(--text-dim)\">BOL: " + d.bolNum + "</div>";
+          // Delivery contents
+          if (d.delivItems) {
+            try {
+              const items = JSON.parse(d.delivItems);
+              const parts = Object.entries(items).filter(([k,v])=>Number(v)>0).map(([k,v])=>k+": "+Number(v).toLocaleString());
+              if (parts.length) html += "<div style=\"font-size:0.72rem;color:var(--text-muted);margin-top:2px\">" + parts.join(" · ") + "</div>";
+            } catch(e) {}
+          } else if (d.wraps) {
+            html += "<div style=\"font-size:0.72rem;color:var(--text-muted);margin-top:2px\">Wraps: " + Number(d.wraps).toLocaleString() + "</div>";
+          }
+          html += "</div>";
+          html += "<span style=\"font-size:0.72rem;color:" + statusC + ";white-space:nowrap\">" + (d.status||"—") + "</span>";
+          html += "</div>";
+        });
+        html += "</div>";
+      }
+
+      if (cu.notes) html += "<div style=\"font-size:0.75rem;color:var(--text-muted);margin-top:8px;line-height:1.4\">" + cu.notes + "</div>";
+      html += "</div>";
+    });
+  });
+  el.innerHTML = html;
+}
+
+let editingCustomer = null;
+
+function openCustomerModal(cu) {
+  editingCustomer = cu || null;
+  document.getElementById("customerModalTitle").textContent = cu ? "Edit Customer" : "New Customer";
+  document.getElementById("customerDeleteBtn").style.display = cu ? "block" : "none";
+  const defs = {company:"",contact:"",type:"AG Pro",phone:"",email:"",addr:"",city:"",zip:"",terms:"Wire",status:"Active",notes:""};
+  Object.keys(defs).forEach(k => {
+    const el = document.getElementById("cu-"+k);
+    if (el) el.value = cu ? (cu[k]||"") : defs[k];
+  });
+  document.getElementById("customerModal").classList.add("open");
+}
+function openCustomerEdit(id) { openCustomerModal(customers.find(x => x.id === id)); }
+
+async function saveCustomer() {
+  const data = {};
+  ["company","contact","type","phone","email","addr","city","zip","terms","status","notes"].forEach(k => {
+    data[k] = document.getElementById("cu-"+k)?.value || "";
+  });
+  if (!data.company && !data.contact) { alert("Please enterCompanyName或Contact"); return; }
+  const record = editingCustomer ? {...editingCustomer,...data} : {id:uid(),...data};
+  closeModal("customerModal");
+  const ok = await saveToSheet("Customers", record);
+  if (ok) await loadAll();
+}
+
+async function deleteCustomer() {
+  if (!editingCustomer || !confirm("ConfirmDelete此Customer？")) return;
+  closeModal("customerModal");
+  const ok = await deleteFromSheet("Customers", editingCustomer.id);
+  if (ok) await loadAll();
+}
+
+
+// ==============================
+// SETTINGS & LISTS
+// ==============================
+
+// Default lists (fallback if nothing saved)
+// Products: [{name, unit, category}]
+const DEFAULT_PRODUCTS = [
+  { name: 'Cotton Wrap',           unit: 'Rolls',  category: 'Finished Good', rollsPerPallet: 9,  palletsPerContainer: 21 },
+  { name: 'Cotton Picker Spindle', unit: 'Pieces', category: 'Parts', rollsPerPallet: 0,  palletsPerContainer: 0  },
+  { name: 'Raw Films',             unit: 'Rolls',  category: 'Raw Material', rollsPerPallet: 0,  palletsPerContainer: 0  },
+  { name: 'Forklift',              unit: 'Units',  category: 'Other', rollsPerPallet: 0,  palletsPerContainer: 0  },
+];
+
+const DEFAULT_LISTS = {
+  carriers:  ['Zen Con', 'RTW', 'Evergreen', 'COSCO', 'ONE'],
+  ports:     ['SAV', 'LAX', 'SEA', 'HOU', 'TXG', 'TWTXG', 'XINGANG'],
+  sizes:     ["40'HQ", "40'RD", "20'GP"],
+};
+
+function getProducts() {
+  try {
+    const saved = localStorage.getItem('wg_products');
+    return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+  } catch { return JSON.parse(JSON.stringify(DEFAULT_PRODUCTS)); }
+}
+function saveProducts(products) {
+  localStorage.setItem('wg_products', JSON.stringify(products));
+}
+function productNames() { return getProducts().map(p => p.name); }
+function productUnit(name) { const p = getProducts().find(x=>x.name===name); return p ? p.unit : ''; }
+
+function getLists() {
+  try {
+    const saved = localStorage.getItem('wg_lists');
+    return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_LISTS));
+  } catch { return JSON.parse(JSON.stringify(DEFAULT_LISTS)); }
+}
+function saveLists(lists) {
+  localStorage.setItem('wg_lists', JSON.stringify(lists));
+  // Sync each key to Google Sheets Settings tab
+  Object.keys(lists).forEach(k => {
+    saveToSheet('Settings', {id:'list_'+k, key:k, value:JSON.stringify(lists[k])});
+  });
+}
+
+// ── Settings page ──
+function renderSettings() {
+  const lists = getLists();
+  const CONFIGS = [
+    { key: 'carriers',  label: 'TransportCompany Carrier',   desc: 'ContainerAddcarrier forCompanyOption' },
+    { key: 'ports',     label: 'Portss',              desc: 'POL和PODOption' },
+    { key: 'sizes', label: 'Container Sizes', desc: 'ContainerSizeOption' },
+  ];
+  const el = document.getElementById('settings-content');
+  if (!el) return;
+
+  let html = '<div style="max-width:600px">';
+  html += '<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:20px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px">hereManagementall dropdown options forOption Lists。OptionSaved on this device，Remembered on this device。</div>';
+
+  CONFIGS.forEach(function(cfg) {
+    const items = lists[cfg.key] || [];
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px">';
+    html += '<div style="font-family:var(--display);font-size:0.95rem;font-weight:700;margin-bottom:4px">' + cfg.label + '</div>';
+    html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">' + cfg.desc + '</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
+    items.forEach(function(item) {
+      // Use single quotes inside onclick to avoid breaking HTML attributes
+      const safeKey = cfg.key;
+      const safeItem = item.replace(/'/g, "\\'");
+      html += '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:0.82rem">';
+      html += '<span id="lbl-' + safeKey + '-' + safeItem.replace(/\W/g,'_') + '">' + item + '</span>';
+      html += " <button onclick=\"editListItem('" + safeKey + "','" + safeItem + "')\" style=\"background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.72rem;padding:0 2px;line-height:1\" title=\"Edit\">✎</button>";
+      html += " <button onclick=\"removeListItem('" + safeKey + "','" + safeItem + "')\" style=\"background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.9rem;padding:0 2px;line-height:1\" title=\"Delete\">×</button>";
+      html += '</span>';
+    });
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px">';
+    html += "<input id=\"new-" + cfg.key + "\" placeholder=\"Enter newOptionthen click Enter 或Add\" style=\"flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:0.875rem;color:var(--text);outline:none\" onkeydown=\"if(event.key==='Enter')addListItem('" + cfg.key + "')\">";
+    html += "<button onclick=\"addListItem('" + cfg.key + "')\" style=\"background:var(--green);color:#000;border:none;border-radius:8px;padding:8px 16px;font-family:var(--sans);font-size:0.82rem;font-weight:700;cursor:pointer\">Add</button>";
+    html += '</div></div>';
+  });
+
+  html += '<button onclick="resetLists()" style="margin-top:4px;background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:8px;padding:8px 16px;font-family:var(--sans);font-size:0.8rem;cursor:pointer">Reset to Defaults</button>';
+
+  // Products section
+  const prods = getProducts();
+  html += '<div style="margin-top:24px"><div style="font-family:var(--display);font-size:0.95rem;font-weight:700;margin-bottom:4px">Product List</div>';
+  html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">Manage product names, units, and categories used across Shipments, Invoices, and Deliveries</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">';
+  prods.forEach((p,i) => {
+    html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">';
+    html += '<div><div style="font-size:0.88rem;font-weight:600">' + p.name + '</div>';
+    html += '<div style="font-size:0.72rem;color:var(--text-muted)">' + p.unit + ' &middot; ' + p.category;
+    if (p.rollsPerPallet > 0)      html += ' &middot; ' + p.rollsPerPallet + '/pallet';
+    if (p.palletsPerContainer > 0) html += ' &middot; ' + p.palletsPerContainer + 'p/ctr';
+    html += '</div></div>';
+    if (i > 0)            html += '<button onclick="moveProduct(' + i + ',-1)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:4px 6px" title="Move up">▲</button>';
+    else                  html += '<span style="display:inline-block;width:28px"></span>';
+    if (i < prods.length-1) html += '<button onclick="moveProduct(' + i + ',1)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:4px 6px" title="Move down">▼</button>';
+    else                  html += '<span style="display:inline-block;width:28px"></span>';
+    html += '<button onclick="editProduct(' + i + ')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:4px 8px">✎ Edit</button>';
+    html += '<button onclick="deleteProduct(' + i + ')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.8rem;padding:4px 8px">×</button>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<button onclick="addProduct()" style="background:var(--green);color:#000;border:none;border-radius:8px;padding:8px 18px;font-family:var(--sans);font-size:0.82rem;font-weight:700;cursor:pointer">＋ Add Product</button>';
+  html += '</div>';
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function addListItem(key) {
+  const input = document.getElementById('new-' + key);
+  const val = (input?.value || '').trim();
+  if (!val) { if (input) input.focus(); return; }
+  const lists = getLists();
+  if (!lists[key]) lists[key] = [];
+  if (!lists[key].includes(val)) {
+    lists[key].push(val);
+    lists[key].sort();
+    saveLists(lists);
+  }
+  input.value = '';
+  renderSettings();
+}
+
+function moveProduct(idx, dir) {
+  const prods = getProducts();
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= prods.length) return;
+  [prods[idx], prods[newIdx]] = [prods[newIdx], prods[idx]];
+  saveProducts(prods);
+  renderSettings();
+}
+
+function addProduct() {
+  const name = prompt('ProductsName:');
+  if (!name || !name.trim()) return;
+  const unit = prompt('Unit (e.g. Rolls, Pieces, Units):', 'Units');
+  if (unit === null) return;
+  const cat  = prompt('Category (Finished Good/Raw Material/Parts/Other):', 'Other');
+  if (cat === null) return;
+  const rpp  = prompt('Units per pallet ( ' + (unit||'').trim() + '? (0 = not applicable)', '0');
+  if (rpp === null) return;
+  const ppc  = prompt('Pallets per container? (0 = not applicable)', '0');
+  if (ppc === null) return;
+  const prods = getProducts();
+  prods.push({ name: name.trim(), unit: (unit||'Units').trim(), category: (cat||'Other').trim(), rollsPerPallet: Number(rpp)||0, palletsPerContainer: Number(ppc)||0 });
+  saveProducts(prods);
+  renderSettings();
+}
+
+function editProduct(idx) {
+  const prods = getProducts();
+  const p = prods[idx];
+  if (!p) return;
+  const name = prompt('ProductsName:', p.name);
+  if (name === null) return;
+  const unit = prompt('Unit:', p.unit);
+  if (unit === null) return;
+  const cat  = prompt('Category:', p.category);
+  if (cat === null) return;
+  const rpp  = prompt('Units per pallet ( ' + (unit||'').trim() + '? (0 = not applicable)', String(p.rollsPerPallet||0));
+  if (rpp === null) return;
+  const ppc  = prompt('Pallets per container? (0 = not applicable)', String(p.palletsPerContainer||0));
+  if (ppc === null) return;
+  prods[idx] = { name: name.trim()||p.name, unit: unit.trim()||p.unit, category: cat.trim()||p.category, rollsPerPallet: Number(rpp)||0, palletsPerContainer: Number(ppc)||0 };
+  saveProducts(prods);
+  renderSettings();
+}
+
+function deleteProduct(idx) {
+  const prods = getProducts();
+  if (!confirm('ConfirmDelete「' + prods[idx]?.name + '」？')) return;
+  prods.splice(idx, 1);
+  saveProducts(prods);
+  renderSettings();
+}
+
+function editListItem(key, oldVal) {
+  const newVal = prompt('EditOption:', oldVal);
+  if (!newVal || newVal.trim() === oldVal) return;
+  const lists = getLists();
+  const idx = lists[key].indexOf(oldVal);
+  if (idx !== -1) {
+    lists[key][idx] = newVal.trim();
+    saveLists(lists);
+    renderSettings();
+  }
+}
+
+function removeListItem(key, val) {
+  const lists = getLists();
+  lists[key] = lists[key].filter(x => x !== val);
+  saveLists(lists);
+  renderSettings();
+}
+
+function resetLists() {
+  if (!confirm('Reset all to defaults?Option？CustomOptionwill beDelete。')) return;
+  localStorage.removeItem('wg_lists');
+  renderSettings();
+}
+
+// ==============================
+// DYNAMIC DROPDOWNS
+// ==============================
+
+function uniqVals(arr, key) {
+  return [...new Set(arr.map(x => x[key]).filter(Boolean))].sort();
+}
+
+function buildOptions(values, current, placeholder) {
+  let html = placeholder ? '<option value="">' + placeholder + '</option>' : '';
+  values.forEach(v => {
+    html += '<option value="' + v + '"' + (v === current ? ' selected' : '') + '>' + v + '</option>';
+  });
+  return html;
+}
+
+function populateSelect(id, values, current, placeholder) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (current && !values.includes(current)) values = [current, ...values];
+  el.innerHTML = buildOptions(values, current, placeholder);
+}
+
+// ── Cargo modal dropdowns ──
+function populateCargoDropdowns(c) {
+  const cur = c || {};
+  const lists = getLists();
+
+  const custNames = customers.length
+    ? customers.map(x => x.company || x.contact).filter(Boolean)
+    : uniqVals(cargo, 'customer');
+  populateSelect('c-customer', [...new Set(custNames)].sort(), cur.customer, '— Select customer —');
+  populateSelect('c-carrier',  lists.carriers, cur.carrier, '— SelectTransportCompany —');
+  populateSelect('c-pol',      lists.ports,    cur.pol,     '— POL —');
+  populateSelect('c-pod',      lists.ports,    cur.pod,     '— POD —');
+
+  // disc and size use lists too
+  const discEl = document.getElementById('c-disc');
+  if (discEl && discEl.tagName === 'SELECT') populateSelect('c-disc', productNames(), cur.disc, '— Select disc. type —');
+  const sizeEl = document.getElementById('c-size');
+  if (sizeEl) populateSelect('c-size', lists.sizes, cur.size, '');
+}
+
+// ── Invoice modal dropdowns ──
+function populateInvoiceDropdowns(inv) {
+  const cur = inv || {};
+  const lists = getLists();
+
+  const custNames = customers.length
+    ? customers.map(x => x.company || x.contact).filter(Boolean)
+    : uniqVals(invoices, 'billTo');
+  populateSelect('i-billTo', [...new Set(custNames)].sort(), cur.billTo, '— Select customer —');
+  populateSelect('i-item', productNames(), cur.item, '— Select item —');
+}
+
+// ── Delivery modal dropdowns ──
+function populateDeliveryDropdowns(d) {
+  const cur = d || {};
+
+  // Distributor type: from unique customer types
+  const distTypes = customers.length
+    ? [...new Set(customers.map(x => x.type).filter(Boolean))].sort()
+    : ['AG Pro', 'Tom', 'Other'];
+  populateSelect('d-dist', distTypes, cur.dist, '— Select type —');
+
+  // Company: filter by selected type
+  const selectedType = cur.dist || '';
+  const companies = customers
+    .filter(x => !selectedType || x.type === selectedType)
+    .map(x => x.company || x.contact).filter(Boolean).sort();
+  populateSelect('d-business', [...new Set(companies)], cur.business || cur.dist, '— Select company —');
+
+  // Address select: from existing deliveries
+  const addrSelect = document.getElementById('d-addr-select');
+  if (addrSelect) {
+    const addrs = deliveries
+      .filter(x => x.addr)
+      .map(x => ({ label: (x.addr + (x.city ? ', ' + x.city : '')), addr: x.addr, city: x.city, zip: x.zip, contact: x.contact, phone: x.phone, dist: x.dist, business: x.business }));
+    const seen = new Set();
+    const unique = addrs.filter(a => { if (seen.has(a.addr)) return false; seen.add(a.addr); return true; });
+    addrSelect.innerHTML = '<option value="">— Select existing address —</option>' +
+      unique.map(a => '<option value="' + a.addr + '" data-city="' + (a.city||'') + '" data-zip="' + (a.zip||'') + '" data-contact="' + (a.contact||'') + '" data-phone="' + (a.phone||'') + '" data-dist="' + (a.dist||'') + '" data-business="' + (a.business||'') + '">' + a.label + '</option>').join('');
+  }
+}
+
+// Auto-fill fields when an address is selected from the dropdown
+function onAddrSelect() {
+  const sel = document.getElementById('d-addr-select');
+  const opt = sel?.options[sel.selectedIndex];
+  if (!opt || !opt.value) return;
+  document.getElementById('d-addr').value   = opt.value;
+  document.getElementById('d-city').value   = opt.dataset.city    || '';
+  document.getElementById('d-zip').value    = opt.dataset.zip     || '';
+  document.getElementById('d-contact').value= opt.dataset.contact || '';
+  document.getElementById('d-phone').value  = opt.dataset.phone   || '';
+  if (opt.dataset.dist)     document.getElementById('d-dist').value     = opt.dataset.dist;
+  if (opt.dataset.business) document.getElementById('d-business').value = opt.dataset.business;
+}
+
+function onDistChange() {
+  const distType = (document.getElementById('d-dist')?.value || '').trim();
+  // Update company dropdown to show only companies of this type
+  const bizSel = document.getElementById('d-business');
+  if (bizSel) {
+    const companies = customers
+      .filter(x => !distType || x.type === distType)
+      .map(x => x.company || x.contact).filter(Boolean).sort();
+    const unique = [...new Set(companies)];
+    bizSel.innerHTML = '<option value="">— Select company —</option>' +
+      unique.map(co => '<option value="'+co+'">'+co+'</option>').join('');
+  }
+  // Clear address fields when type changes
+  ['d-addr','d-city','d-zip','d-contact','d-phone'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+function calcRolls(p, containers, pallets, rolls) {
+  const rpp = p.rollsPerPallet||0;
+  const ppc = p.palletsPerContainer||0;
+  if (rolls > 0) return rolls;
+  if (pallets > 0 && rpp > 0) return pallets * rpp;
+  if (containers > 0 && ppc > 0 && rpp > 0) return containers * ppc * rpp;
+  return 0;
+}
+
+function onDelivUnitChange(prodName) {
+  const prods = getProducts();
+  const p = prods.find(x => x.name === prodName);
+  if (!p || !p.rollsPerPallet) return;
+  const sid = 'ditem-' + prodName.replace(/[^a-zA-Z0-9]/g,'_');
+  const ctrEl = document.getElementById(sid + '_ctr');
+  const palEl = document.getElementById(sid + '_pal');
+  const rolEl = document.getElementById(sid + '_rol');
+  if (!ctrEl || !palEl || !rolEl) return;
+  const ctrs = Number(ctrEl.value)||0;
+  const pals = Number(palEl.value)||0;
+  const rols = Number(rolEl.value)||0;
+  const rpp = p.rollsPerPallet||0;
+  const ppc = p.palletsPerContainer||0;
+  // Determine which field was last changed by checking which is non-zero
+  // Priority: containers > pallets > rolls
+  if (ctrs > 0 && ppc > 0 && rpp > 0) {
+    palEl.value = ctrs * ppc;
+    rolEl.value = ctrs * ppc * rpp;
+  } else if (pals > 0 && rpp > 0) {
+    ctrEl.value = ppc > 0 ? (pals/ppc).toFixed(2) : 0;
+    rolEl.value = pals * rpp;
+  } else if (rols > 0 && rpp > 0) {
+    palEl.value = (rols/rpp).toFixed(2);
+    ctrEl.value = ppc > 0 ? (rols/rpp/ppc).toFixed(2) : 0;
+  }
+}
+
+function populateDelivItemsGrid(d) {
+  const grid = document.getElementById('d-items-grid');
+  if (!grid) return;
+  const prods = getProducts();
+  let saved = {};
+  if (d && d.delivItems) {
+    try { saved = JSON.parse(d.delivItems); } catch(e) { saved = {}; }
+  }
+  if (d && d.wraps && !saved['Cotton Wrap']) saved['Cotton Wrap'] = d.wraps;
+  grid.style.gridTemplateColumns = '1fr';
+  grid.innerHTML = prods.map(p => {
+    const sid   = 'ditem-' + p.name.replace(/[^a-zA-Z0-9]/g,'_');
+    const rpp   = p.rollsPerPallet||0;
+    const ppc   = p.palletsPerContainer||0;
+    const rolls = Number(saved[p.name])||0;
+    const pals  = rpp > 0 ? rolls / rpp : 0;
+    const ctrs  = (rpp > 0 && ppc > 0) ? rolls / rpp / ppc : 0;
+    if (rpp > 0) {
+      // Show containers / pallets / rolls with auto-convert
+      const pname = p.name.replace(/'/g,"\\'");
+      return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:4px">' +
+        '<div style="font-size:0.78rem;font-weight:600;color:var(--text);margin-bottom:8px">' + p.name + '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+          (ppc > 0 ? '<div><label style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase">Containers</label>' +
+          '<input type="number" id="' + sid + '_ctr" value="' + (ctrs > 0 ? ctrs.toFixed(1).replace(/\.0$/,'') : '') + '" placeholder="0" min="0" step="0.5" oninput="onDelivUnitChange(\'' + pname + '\')" style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:0.85rem;color:var(--text);outline:none;box-sizing:border-box">' +
+          '</div>' : '') +
+          '<div><label style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase">Pallets</label>' +
+          '<input type="number" id="' + sid + '_pal" value="' + (pals > 0 ? pals.toFixed(1).replace(/\.0$/,'') : '') + '" placeholder="0" min="0" step="0.5" oninput="onDelivUnitChange(\'' + pname + '\')" style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:0.85rem;color:var(--text);outline:none;box-sizing:border-box">' +
+          '</div>' +
+          '<div><label style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase">' + p.unit + '</label>' +
+          '<input type="number" id="' + sid + '_rol" value="' + (rolls || '') + '" placeholder="0" min="0" oninput="onDelivUnitChange(\'' + pname + '\')" style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:0.85rem;color:var(--text);outline:none;box-sizing:border-box">' +
+          '</div>' +
+        '</div>' +
+        '<div style="font-size:0.7rem;color:var(--text-dim);margin-top:6px">' + rpp + ' ' + p.unit + '/pallet' + (ppc ? ' &middot; ' + ppc + ' pallets/ctr' : '') + '</div>' +
+        '</div>';
+    } else {
+      return '<div style="display:flex;flex-direction:column;gap:4px">' +
+        '<label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">' + p.name + ' <span style="font-weight:400;color:var(--text-dim)">(' + p.unit + ')</span></label>' +
+        '<input type="number" id="' + sid + '" value="' + (saved[p.name]||'') + '" placeholder="0" min="0" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.875rem;color:var(--text);outline:none">' +
+        '</div>';
+    }
+  }).join('');
+}
+
+function getDelivItemsData() {
+  const prods = getProducts();
+  const result = {};
+  prods.forEach(p => {
+    const sid = 'ditem-' + p.name.replace(/[^a-zA-Z0-9]/g,'_');
+    const rpp = p.rollsPerPallet||0;
+    const ppc = p.palletsPerContainer||0;
+    if (rpp > 0) {
+      // Read rolls from the _rol field (already synced by onDelivUnitChange)
+      const rolEl = document.getElementById(sid + '_rol');
+      const palEl = document.getElementById(sid + '_pal');
+      const ctrEl = document.getElementById(sid + '_ctr');
+      const rols = Number(rolEl?.value)||0;
+      const pals = Number(palEl?.value)||0;
+      const ctrs = Number(ctrEl?.value)||0;
+      const total = calcRolls(p, ctrs, pals, rols);
+      if (total > 0) result[p.name] = total;
+    } else {
+      const el = document.getElementById(sid);
+      const val = Number(el?.value)||0;
+      if (val > 0) result[p.name] = val;
+    }
+  });
+  return result;
+}
+
+function onCompanyChange() {
+  const companyVal = (document.getElementById('d-business')?.value || '').trim().toLowerCase();
+  if (!companyVal) return;
+  const cust = customers.find(x => (x.company||x.contact||'').trim().toLowerCase() === companyVal);
+  if (!cust) return;
+  const fset = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  fset('d-addr',    cust.addr);
+  fset('d-city',    cust.city);
+  fset('d-zip',     cust.zip);
+  fset('d-contact', cust.contact);
+  fset('d-phone',   cust.phone);
+}
+
+// ==============================
+// INVENTORY
+// ==============================
+function renderInventory() {
+  const prods = getProducts();
+  const sEl = document.getElementById('inventory-stats');
+  const cEl = document.getElementById('inventory-content');
+  if (!sEl || !cEl) return;
+
+  // Top stats
+  const totalInQty  = cargo.reduce((s,sh) => s + (Number(sh.qty)||0), 0);
+  const totalProdRuns = productions.length;
+  const inTransit   = cargo.filter(s => s.status !== 'Completed').length;
+  const arrived     = cargo.filter(s => s.status === 'Completed').length;
+  const pendingDeliv = deliveries.filter(d => d.status !== 'Delivered').length;
+  sEl.innerHTML =
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + totalInQty.toLocaleString() + '</div><div class="stat-card-lbl">Total Received</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + inTransit + '</div><div class="stat-card-lbl">In Transit</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + totalProdRuns + '</div><div class="stat-card-lbl">Production Runs</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + pendingDeliv + '</div><div class="stat-card-lbl">Pending次</div></div>';
+
+  let html = '';
+  prods.forEach(prod => {
+    const pnl = prod.name.toLowerCase();
+
+    // Incoming: cargo QTY where disc contains product name (fuzzy)
+    const relCargo = cargo.filter(s => s.disc && s.disc.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,'')));
+    const cargoQty = relCargo.reduce((s,sh) => s + (Number(sh.qty)||0), 0);
+    const importedQty = cargoQty;
+    const inTransitQty = relCargo.filter(s=>s.status!=='Completed').reduce((s,sh)=>s+(Number(sh.qty)||0),0);
+    const arrivedQty   = relCargo.filter(s=>s.status==='Completed').reduce((s,sh)=>s+(Number(sh.qty)||0),0);
+    // Production outputs (this product was produced)
+    let prodOutputQty = 0;
+    // Production inputs (this product was consumed as raw material)
+    let prodInputQty = 0;
+    productions.forEach(pr => {
+      try { const o = JSON.parse(pr.outputs||'{}'); Object.entries(o).forEach(([k,v])=>{ if(k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) prodOutputQty+=Number(v)||0; }); } catch(e){}
+      try { const i = JSON.parse(pr.inputs||'{}');  Object.entries(i).forEach(([k,v])=>{ if(k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) prodInputQty +=Number(v)||0; }); } catch(e){}
+    });
+    const inQty = cargoQty + prodOutputQty; // total available = imported + produced
+    const consumedQty = prodInputQty;        // consumed as raw material in production
+
+    // Delivered: split by source
+    let delivImportedQty = 0, delivSelfQty = 0;
+    deliveries.forEach(d => {
+      let qty = 0;
+      if (d.delivItems) {
+        try {
+          const it = JSON.parse(d.delivItems);
+          Object.entries(it).forEach(([k,v]) => { if (k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) qty += Number(v)||0; });
+        } catch(e) {}
+      } else if (pnl.includes('cotton') && d.wraps) { qty += Number(d.wraps)||0; }
+      if (d.source === 'Self-produced') delivSelfQty += qty;
+      else delivImportedQty += qty;
+    });
+    const delivQty = delivImportedQty + delivSelfQty;
+
+    const remainImported = importedQty   - delivImportedQty;
+    const remainSelf     = prodOutputQty - delivSelfQty;
+    const totalOut = delivQty + consumedQty;
+    const remaining = inQty - totalOut;
+    const pct = inQty > 0 ? Math.min(100, Math.round(totalOut/inQty*100)) : 0;
+
+    html += '<div class="card" style="margin-bottom:12px">';
+    html += '<div class="card-top"><div>';
+    html += '<div class="card-title">' + prod.name + '</div>';
+    html += '<div class="card-id">' + prod.unit + ' &middot; ' + prod.category + '</div>';
+    html += '</div></div>';
+
+    html += '<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">';
+    html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid var(--blue);border-radius:10px;padding:10px 12px">';
+    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">🚢 Imported</div>';
+    html += '<div style="font-size:1rem;font-weight:700;color:var(--blue)">' + importedQty.toLocaleString() + ' ' + prod.unit + '</div>';
+    if (inTransitQty>0) html += '<div style="font-size:0.7rem;color:var(--amber)">In Transit: '+inTransitQty.toLocaleString()+'</div>';
+    html += '<div style="font-size:0.7rem;color:var(--text-dim);border-top:1px solid var(--border);padding-top:3px;margin-top:4px">Delivered: '+delivImportedQty.toLocaleString()+'</div>';
+    html += '<div style="font-size:0.85rem;font-weight:700;color:' + (remainImported>=0?'var(--teal)':'var(--red)') + '">Rem:: '+remainImported.toLocaleString()+'</div>';
+    html += '</div>';
+    html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid var(--purple);border-radius:10px;padding:10px 12px">';
+    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">🏭 Self-produced</div>';
+    html += '<div style="font-size:1rem;font-weight:700;color:var(--purple)">' + prodOutputQty.toLocaleString() + ' ' + prod.unit + '</div>';
+    html += '<div style="font-size:0.7rem;color:var(--text-dim);border-top:1px solid var(--border);padding-top:3px;margin-top:4px">Delivered: '+delivSelfQty.toLocaleString()+'</div>';
+    html += '<div style="font-size:0.85rem;font-weight:700;color:' + (remainSelf>=0?'var(--teal)':'var(--red)') + '">Rem:: '+remainSelf.toLocaleString()+'</div>';
+    html += '</div>';
+    html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid ' + (remaining>0?'var(--teal)':remaining===0?'var(--border)':'var(--red)') + ';border-radius:10px;padding:10px 12px">';
+    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">Total Remaining</div>';
+    html += '<div style="font-size:1.3rem;font-weight:800;color:' + (remaining>0?'var(--teal)':remaining===0?'var(--text-muted)':'var(--red)') + '">' + remaining.toLocaleString() + ' ' + prod.unit + '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="card-grid" style="margin-top:8px">';
+    html += '<div class="card-field"><div class="card-field-lbl">Delivered</div><div class="card-field-val" style="color:var(--green)">' + delivQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
+    if (consumedQty > 0) html += '<div class="card-field"><div class="card-field-lbl">Production Consumed</div><div class="card-field-val" style="color:var(--amber)">' + consumedQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">Total Available</div><div class="card-field-val">' + inQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
+    if (prod.rollsPerPallet > 0) {
+      const rpp2 = prod.rollsPerPallet;
+      const ppc2 = prod.palletsPerContainer||0;
+      html += '<div class="card-field"><div class="card-field-lbl">= Pallets</div><div class="card-field-val" style="color:var(--text-muted)">' + (inQty/rpp2).toFixed(1).replace(/\.0$/,'') + ' pal</div></div>';
+      if (ppc2>0) html += '<div class="card-field"><div class="card-field-lbl">= Containers</div><div class="card-field-val" style="color:var(--text-muted)">' + (inQty/rpp2/ppc2).toFixed(2).replace(/\.?0+$/,'') + ' ctr</div></div>';
+    }
+    html += '</div>';
+
+    // Progress bar
+    if (inQty > 0) {
+      html += '<div style="margin-top:10px">';
+      const barLabel = consumedQty > 0 ? 'Delivered+ConsumedProgress' : 'DeliveredProgress';
+      html += '<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px"><span>' + barLabel + '</span><span>' + pct + '% (' + totalOut.toLocaleString() + ' / ' + inQty.toLocaleString() + ' ' + prod.unit + ')</span></div>';
+      html += '<div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;background:' + (pct>=100?'var(--green)':'var(--teal)') + ';width:' + pct + '%;transition:width 0.3s"></div></div>';
+      html += '</div>';
+    }
+
+    // Production records for this product
+    const relProd = productions.filter(pr => {
+      try {
+        const i = JSON.parse(pr.inputs||'{}');
+        const o = JSON.parse(pr.outputs||'{}');
+        return Object.keys(i).some(k=>k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) ||
+               Object.keys(o).some(k=>k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,'')));
+      } catch(e){ return false; }
+    });
+    if (relProd.length) {
+      html += '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">';
+      html += '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Production Runs</div>';
+      relProd.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).forEach(pr => {
+        let inStr='', outStr='';
+        try{ const i=JSON.parse(pr.inputs||'{}');  inStr  = Object.entries(i).map(([k,v])=>k+' x'+v).join(', '); } catch(e){}
+        try{ const o=JSON.parse(pr.outputs||'{}'); outStr = Object.entries(o).map(([k,v])=>k+' x'+v).join(', '); } catch(e){}
+        html += '<div onclick="openProductionModal(productions.find(p=>p.id===\'' + pr.id + '\'))" style="cursor:pointer;display:flex;align-items:start;gap:8px;margin-bottom:8px;padding:8px;background:var(--surface2);border-radius:8px;font-size:0.8rem">';
+        html += '<div style="min-width:70px;color:var(--text-muted)">' + fmtDate(pr.date) + '</div>';
+        html += '<div style="flex:1">';
+        if (inStr)  html += '<div>Consumed: <span style="color:var(--purple)">' + inStr + '</span></div>';
+        if (outStr) html += '<div>Produced: <span style="color:var(--teal)">'   + outStr + '</span></div>';
+        if (pr.batch) html += '<div style="color:var(--text-dim)">Batch: ' + pr.batch + '</div>';
+        html += '</div></div>';
+      });
+      html += '</div>';
+    }
+
+    // Related shipments
+    if (relCargo.length) {
+      html += '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">';
+      html += '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Related Shipments</div>';
+      relCargo.forEach(sh => {
+        const stC = sh.status==='Completed'?'var(--green)':sh.status==='Arrived - Pending Customs)'?'var(--amber)':'var(--blue)';
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:0.82rem">';
+        html += '<span style="font-family:var(--mono);color:var(--text-muted);min-width:110px">' + (sh.bolNum||'—') + '</span>';
+        html += '<span style="flex:1;color:var(--text)">' + (Number(sh.qty)||0).toLocaleString() + ' ' + prod.unit + '</span>';
+        html += '<span style="color:' + (sh.status==='Completed'?'var(--green)':sh.status&&sh.status.includes('Arrival')?'var(--amber)':'var(--blue)') + ';font-size:0.75rem">' + (sh.status||'—') + '</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+  });
+
+  cEl.innerHTML = html || '<div style="text-align:center;padding:40px;color:var(--text-muted)">Please go to『Settings』Set upProductslist</div>';
+}
+
+
+// ==============================
+// PRODUCTION
+// ==============================
+let editingProduction = null;
+
+function populateProdGrids() {
+  const prods = getProducts();
+  // Input: raw materials (category = Raw Material or Other)
+  const inputs  = prods.filter(p => p.category !== 'Finished Good' && p.category !== 'Wraps');
+  // Output: finished goods
+  const outputs = prods.filter(p => p.category === 'Finished Good' || p.category === 'Wraps' || p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('cotton'));
+  // If no category distinction, show all for both
+  const inProds  = inputs.length  ? inputs  : prods;
+  const outProds = outputs.length ? outputs : prods;
+
+  const saved = editingProduction || {};
+  let inSaved  = {}; try { inSaved  = JSON.parse(saved.inputs  || '{}'); } catch(e) {}
+  let outSaved = {}; try { outSaved = JSON.parse(saved.outputs || '{}'); } catch(e) {}
+
+  const mkGrid = (prods, savedObj, idPrefix) => prods.map(p => {
+    const sid = idPrefix + p.name.replace(/[^a-zA-Z0-9]/g,'_');
+    const val = savedObj[p.name] || '';
+    return '<div style="display:flex;flex-direction:column;gap:4px">' +
+      '<label style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em">' + p.name + ' <span style="font-weight:400">(' + p.unit + ')</span></label>' +
+      '<input type="number" id="' + sid + '" value="' + val + '" placeholder="0" min="0" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:0.875rem;color:var(--text);outline:none">' +
+      '</div>';
+  }).join('');
+
+  const ig = document.getElementById('p-input-grid');
+  const og = document.getElementById('p-output-grid');
+  if (ig) ig.innerHTML = mkGrid(inProds, inSaved, 'pin_');
+  if (og) og.innerHTML = mkGrid(outProds, outSaved, 'pout_');
+}
+
+function getProdGridData(prods, idPrefix) {
+  const result = {};
+  prods.forEach(p => {
+    const sid = idPrefix + p.name.replace(/[^a-zA-Z0-9]/g,'_');
+    const el = document.getElementById(sid);
+    const val = Number(el?.value)||0;
+    if (val > 0) result[p.name] = val;
+  });
+  return result;
+}
+
+function openProductionModal(rec) {
+  editingProduction = rec || null;
+  document.getElementById('productionModalTitle').textContent = rec ? 'Edit Production Record' : 'New Production Record';
+  document.getElementById('productionDeleteBtn').style.display = rec ? 'block' : 'none';
+  document.getElementById('p-date').value  = rec ? (rec.date||'') : new Date().toISOString().split('T')[0];
+  document.getElementById('p-batch').value = rec ? (rec.batch||'') : '';
+  document.getElementById('p-notes').value = rec ? (rec.notes||'') : '';
+  populateProdGrids();
+  document.getElementById('productionModal').classList.add('open');
+}
+
+async function saveProduction() {
+  const prods = getProducts();
+  const inputs  = prods.filter(p => p.category !== 'Finished Good' && p.category !== 'Wraps');
+  const outputs = prods.filter(p => p.category === 'Finished Good' || p.category === 'Wraps' || p.name.toLowerCase().includes('wrap') || p.name.toLowerCase().includes('cotton'));
+  const inProds  = inputs.length  ? inputs  : prods;
+  const outProds = outputs.length ? outputs : prods;
+  const record = {
+    id:      editingProduction ? editingProduction.id : uid(),
+    date:    document.getElementById('p-date').value,
+    batch:   document.getElementById('p-batch').value.trim(),
+    inputs:  JSON.stringify(getProdGridData(inProds,  'pin_')),
+    outputs: JSON.stringify(getProdGridData(outProds, 'pout_')),
+    notes:   document.getElementById('p-notes').value.trim(),
+  };
+  closeModal('productionModal');
+  const ok = await saveToSheet('Production', record);
+  if (ok) await loadAll();
+}
+
+async function deleteProduction() {
+  if (!editingProduction || !confirm('ConfirmDelete此Production Runs？')) return;
+  closeModal('productionModal');
+  const ok = await deleteFromSheet('Production', editingProduction.id);
+  if (ok) await loadAll();
+}
+
+// ── INIT ──
+renderDashboard(); // show empty dashboard immediately
+loadAll();        // then load data and re-render
+</script>
+</body>
+</html>
+
+<div class="modal-overlay" id="productionModal" onclick="closeIfOutside(event,'productionModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="productionModalTitle">New Production Record</div>
+      <button class="modal-close" onclick="closeModal('productionModal')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Date</label><input type="date" id="p-date"></div>
+        <div class="form-group"><label>Batch Number (optional)</label><input id="p-batch" placeholder="e.g. WG-2026-01"></div>
+        <div class="form-group full"><label>Raw Material Used</label>
+          <div id="p-input-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div>
+        </div>
+        <div class="form-group full"><label>Finished Goods Produced</label>
+          <div id="p-output-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div>
+        </div>
+        <div class="form-group full"><label>Notes</label><textarea id="p-notes"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" id="productionDeleteBtn" style="display:none" onclick="deleteProduction()">🗑 Delete</button>
+      <button class="btn-cancel" onclick="closeModal('productionModal')">Cancel</button>
+      <button class="btn-save" onclick="saveProduction()">Save</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<div class="modal-overlay" id="customerModal" onclick="closeIfOutside(event,'customerModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="customerModalTitle">New Customer</div>
+      <button class="modal-close" onclick="closeModal('customerModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Company Name</label><input id="cu-company" placeholder="AG Pro Companies"></div>
+        <div class="form-group"><label>Contact</label><input id="cu-contact" placeholder="John Smith"></div>
+        <div class="form-group"><label>Customer Type</label>
+          <select id="cu-type">
+            <option value="AG Pro">AG Pro</option>
+            <option value="Tom">Tom</option>
+            <option value="Distributor">Distributor</option>
+            <option value="Other">Other</option>
+          </select></div>
+        <div class="form-group"><label>Phone</label><input type="tel" id="cu-phone" placeholder="(404) 555-0000"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="cu-email" placeholder="email@example.com"></div>
+        <div class="form-group full"><label>Address</label><input id="cu-addr" placeholder="903 N Tennille Ave"></div>
+        <div class="form-group"><label>City, State</label><input id="cu-city" placeholder="Donaldsonville, GA"></div>
+        <div class="form-group"><label>ZIP Code</label><input id="cu-zip" placeholder="39845"></div>
+        <div class="form-group"><label>Payment Termspcs</label>
+          <select id="cu-terms">
+            <option value="Wire">Wire Transfer</option>
+            <option value="Net 30">Net 30</option>
+            <option value="Net 60">Net 60</option>
+            <option value="Prepaid">Prepaid</option>
+            <option value="Other">Other</option>
+          </select></div>
+        <div class="form-group"><label>Status</label>
+          <select id="cu-status">
+            <option value="Active">Active</option>
+            <option value="Paused">Paused</option>
+            <option value="Prospect">Prospect</option>
+          </select></div>
+        <div class="form-group full"><label>Notes</label><textarea id="cu-notes" placeholder="Special Requirements、Credit Limit、Notes..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" id="customerDeleteBtn" style="display:none" onclick="deleteCustomer()">Delete</button>
+      <button class="btn-cancel" onclick="closeModal('customerModal')">Cancel</button>
+      <button class="btn-save" onclick="saveCustomer()">Save</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ══ MODALS ══ -->
+
+<!-- Cargo Modal -->
+<div class="modal-overlay" id="cargoModal" onclick="closeIfOutside(event,'cargoModal')">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="cargoModalTitle">New Shipment</div>
+      <button class="modal-close" onclick="closeModal('cargoModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>House B/L Number</label><input id="c-bolNum" placeholder="SELTSN250078" style="font-family:var(--mono)"></div>
+        <div class="form-group"><label>TransportCompany Carrier</label><select id="c-carrier"></select></div>
+        <div class="form-group"><label>Customer Customer</label><select id="c-customer"></select></div>
+        <div class="form-group"><label>Status</label>
+          <select id="c-status">
+            <option value="Pending Departure">Pending Departure</option>
+            <option value="In Transit">In Transit</option>
+            <option value="Arrived - Pending Customs">Arrived - Pending Customs</option>
+            <option value="Customs Clearance">Customs Clearance</option>
+            <option value="Pending">Pending</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>Container Numbers（one per line，can be filled in later）</label>
+          <textarea id="c-containers-ta" placeholder="MRSU4783132&#10;MRSU6977775&#10;EGHU8506277" style="font-family:var(--mono);min-height:80px;font-size:0.85rem"></textarea>
+        </div>
+        <div class="form-group"><label>POL Port of Loading</label><select id="c-pol"></select></div>
+        <div class="form-group"><label>POD Port of Discharge</label><select id="c-pod"></select></div>
+        <div class="form-group"><label>ETD Departure Date</label><input type="date" id="c-etd"></div>
+        <div class="form-group"><label>ETA日</label><input type="date" id="c-eta"></div>
+        <div class="form-group"><label>Final Delivery Date</label><input type="date" id="c-etaFinal"></div>
+        <div class="form-group"><label>Disc. Type</label><select id="c-disc"></select></div>
+        <div class="form-group"><label>Quantity (QTY)</label><input id="c-qty" placeholder="21 PKGS x 3 Container"></div>
+        <div class="form-group"><label>Sell Price Selling Price (USD)</label><input type="number" id="c-sellPrice" placeholder="0"></div>
+        <div class="form-group"><label>Manufacturing Cost Mfg (USD)</label><input type="number" id="c-mfgCost" placeholder="0"></div>
+        <div class="form-group"><label>Freight Freight (USD)</label><input type="number" id="c-freight" placeholder="0"></div>
+        <div class="form-group"><label>Trucking Trucking (USD)</label><input type="number" id="c-trucking" placeholder="0"></div>
+        <div class="form-group"><label>Customs Fee Customs (USD)</label><input type="number" id="c-customs" placeholder="0"></div>
+        <div class="form-group"><label>ISF (USD)</label><input type="number" id="c-isf" placeholder="0"></div>
+        <div class="form-group"><label>Courier + Handling (USD)</label><input type="number" id="c-courier" placeholder="0"></div>
+        <div class="form-group"><label>Chassis + Tarp (USD)</label><input type="number" id="c-chassis" placeholder="0"></div>
+        <div class="form-group"><label>Bank Charge (USD)</label><input type="number" id="c-bankCharge" placeholder="0"></div>
+        <div class="form-group full"><label>Destination</label><input id="c-dest" placeholder="903 N Tennille Ave, Donaldsonville GA 39845"></div>
+        <div class="form-group full"><label>Notes</label><textarea id="c-notes" placeholder="Special Notes…"></textarea></div>
+      </div>
+
+      <!-- Document Checklist -->
+      <div id="cargoDocSection" style="display:none;margin-top:16px">
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);padding:12px 0 8px;border-top:1px solid var(--border)">Document Checklist</div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_debitNote" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_debitNote" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Debit Note Received</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input id="doc-ref-doc_debitNote" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
+              <input type="date" id="doc-date-doc_debitNote" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_arrivalNotice" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_arrivalNotice" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Arrival Notice Received</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input id="doc-ref-doc_arrivalNotice" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
+              <input type="date" id="doc-date-doc_arrivalNotice" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_carrierFeePaid" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_carrierFeePaid" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Carrier Fee Paid</label>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_packingList" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_packingList" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Packing List Provided</label>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_commercialInv" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_commercialInv" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Commercial Invoice Provided</label>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_entrySummary" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_entrySummary" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Entry Summary Received</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input id="doc-ref-doc_entrySummary" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
+              <input type="date" id="doc-date-doc_entrySummary" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_finalAddress" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_finalAddress" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Final Address Provided</label>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_inlandBOL" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_inlandBOL" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Inland BOL Received</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input id="doc-ref-doc_inlandBOL" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
+              <input type="date" id="doc-date-doc_inlandBOL" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_customerNotified" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_customerNotified" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Customer Notified Enroute</label>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_forwarderInv" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_forwarderInv" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Forwarder Invoice Received</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input id="doc-ref-doc_forwarderInv" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
+              <input type="date" id="doc-date-doc_forwarderInv" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_forwarderPaid" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_forwarderPaid" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Forwarder Fee Paid</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input type="date" id="doc-date-doc_forwarderPaid" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_customerPaid" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_customerPaid" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Customer Payment Received</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input type="date" id="doc-date-doc_customerPaid" style="flex:1;min-width:130px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" id="cargoDeleteBtn" style="display:none" onclick="deleteCargo()">Delete</button>
+      <button class="btn-cancel" onclick="closeModal('cargoModal')">Cancel</button>
+      <button class="btn-save" onclick="saveCargo()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="invoiceModal" onclick="closeIfOutside(event,'invoiceModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="invoiceModalTitle">New Invoice</div>
+      <button class="modal-close" onclick="closeModal('invoiceModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Invoice #</label><input id="i-num" placeholder="10097"></div>
+        <div class="form-group"><label>Date</label><input type="date" id="i-date"></div>
+        <div class="form-group full"><label>Customer Bill To</label><select id="i-billTo"></select></div>
+        <div class="form-group full"><label>ItemDescription</label><select id="i-item"></select></div>
+        <div class="form-group"><label>Quantity (QTY)</label><input type="number" id="i-qty" placeholder="1323"></div>
+        <div class="form-group"><label>Unit</label><input id="i-unit" placeholder="Rolls"></div>
+        <div class="form-group"><label>Unit Price Unit Price (USD)</label><input type="number" id="i-unitPrice" placeholder="485"></div>
+        <div class="form-group"><label>Status</label>
+          <select id="i-status">
+            <option value="Unpaid">Unpaid</option>
+            <option value="Partial">Partial</option>
+            <option value="Paid">Paid</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Amount Paid Paid (USD)</label><input type="number" id="i-paid" placeholder="0"></div>
+        <div class="form-group"><label>Payment Date</label><input type="date" id="i-paidDate"></div>
+        <div class="form-group full"><label>RelatedContainer Numbers（comma-separated）</label><input id="i-containers" placeholder="MRSU4783132, MRSU6977775"></div>
+        <div class="form-group full"><label>Notes</label><textarea id="i-notes"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" id="invoiceDeleteBtn" style="display:none" onclick="deleteInvoice()">🗑 Delete</button>
+      <button class="btn-cancel" onclick="closeModal('invoiceModal')">Cancel</button>
+      <button class="btn-save" onclick="saveInvoice()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delivery Modal -->
+<div class="modal-overlay" id="deliveryModal" onclick="closeIfOutside(event,'deliveryModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="deliveryModalTitle">New DeliveryAddress</div>
+      <button class="modal-close" onclick="closeModal('deliveryModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>House B/L (from existing shipments)</label>
+          <select id="d-bolNum" onchange="onBolSelect()" style="font-family:var(--mono)"></select>
+        </div>
+        <div class="form-group full"><label>Container Numbers (auto-loaded after BOL selection, multi-select)</label>
+          <div id="d-container-checks" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px 0;min-height:32px">
+            <span style="font-size:0.8rem;color:var(--text-dim)">Select BOL first</span>
+          </div>
+        </div>
+        <div class="form-group"><label>Distributor Type</label><select id="d-dist" onchange="onDistChange()"></select></div>
+        <div class="form-group"><label>Company</label><select id="d-business" onchange="onCompanyChange()"></select></div>
+        <div class="form-group full"><label>Address</label>
+          <select id="d-addr-select" onchange="onAddrSelect()"><option value="">— Select existing address —</option></select>
+          <input id="d-addr" placeholder="262 Country Road 12" style="margin-top:6px">
+        </div>
+        <div class="form-group"><label>City, State</label><input id="d-city" placeholder="Headland, AL"></div>
+        <div class="form-group"><label>ZIP Code</label><input id="d-zip" placeholder="36345"></div>
+        <div class="form-group"><label>Contact</label><input id="d-contact" placeholder="Michael DeShazo"></div>
+        <div class="form-group"><label>Phone</label><input type="tel" id="d-phone" placeholder="(334)714-4555"></div>
+        <div class="form-group"><label>Status</label>
+          <select id="d-status">
+            <option value="Pending">Pending</option>
+            <option value="Scheduled">Scheduled</option>
+            <option value="Delivered">Delivered</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Delivery Date</label><input type="date" id="d-delivDate"></div>
+        <div class="form-group"><label>Product Source</label>
+          <select id="d-source">
+            <option value="">— Select source —</option>
+            <option value="Imported">🚢 Imported</option>
+            <option value="Self-produced">🏭 Self-produced</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>Delivery Contents</label><div id="d-items-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div></div>
+        <div class="form-group full"><label>Notes</label><textarea id="d-notes"></textarea></div>
+      </div>
+    </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" id="deliveryDeleteBtn" style="display:none" onclick="deleteDelivery()">🗑 Delete</button>
+      <button class="btn-cancel" onclick="closeModal('deliveryModal')">Cancel</button>
+      <button class="btn-save" onclick="saveDelivery()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Task Modal -->
+<div class="modal-overlay" id="taskModal" onclick="closeIfOutside(event,'taskModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">New Task</div>
+      <button class="modal-close" onclick="closeModal('taskModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Task Description</label><input id="t-text" placeholder="例：Confirm Container MRSU4783132 CustomsStatus"></div>
+        <div class="form-group"><label>Week（Week Starting）</label><input type="date" id="t-week"></div>
+        <div class="form-group"><label>Priority</label>
+          <select id="t-priority">
+            <option value="Normal">Normal</option>
+            <option value="Important">Important</option>
+            <option value="Urgent">Urgent</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>Notes</label><textarea id="t-notes" placeholder="DetailsDescription…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('taskModal')">Cancel</button>
+      <button class="btn-save" onclick="saveTask()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════
+// DATA LAYER — Google Sheets Sync
+// ══════════════════════════════
+const API = 'https://script.google.com/macros/s/AKfycbyt6jYEDSeesF1chOR1oQhRYRZx_1GTNFB79mZpJY2qF7CDu2iDow4A80S8b6Mefpd8/exec';
+
+let cargo       = [];
+let invoices    = [];
+let deliveries  = [];
+let tasks       = [];
+let customers   = [];
+let productions = [];
+let _syncing   = false;
+
+// ── Sync indicator ──
+function showSync(msg, color) {
+  let el = document.getElementById('sync-indicator');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'sync-indicator';
+    el.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:999;padding:8px 16px;border-radius:8px;font-size:0.78rem;font-family:var(--mono);transition:all 0.3s;pointer-events:none;';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.background = color || 'var(--surface2)';
+  el.style.color = 'var(--text)';
+  el.style.border = '1px solid var(--border)';
+  el.style.opacity = '1';
+}
+function hideSync() {
+  const el = document.getElementById('sync-indicator');
+  if (el) { el.style.opacity = '0'; }
+}
+
+// ── Fetch all data from Google Sheets ──
+async function loadAll() {
+  showSync('⟳ Loading...');
+  try {
+    const sheets = ['Shipments','Invoices','Deliveries','Tasks','Customers','Settings','Production'];
+    const results = await Promise.all(sheets.map(s =>
+      fetch(`${API}?sheet=${s}`).then(r => r.json())
+    ));
+    cargo      = results[0].data || [];
+    invoices   = results[1].data || [];
+    deliveries = (results[2].data || []).map(d => {
+      if (d.bolNum !== undefined) d.bolNum = String(d.bolNum).trim();
+      if (!d.source) d.source = 'Imported';
+      ['delivDate'].forEach(f => { d[f] = normalizeDate(d[f]); });
+      return d;
+    });
+    tasks      = results[3].data || [];
+    customers  = results[4].data || [];
+    productions = (results[6]?.data || []).map(p => ({ ...p, date: normalizeDate(p.date) }));
+    // Load settings from Sheets
+    const rawSets = results[5]?.data || [];
+    if (rawSets.length) {
+      const merged = {};
+      rawSets.forEach(r => { try { merged[r.key] = JSON.parse(r.value); } catch{} });
+      Object.keys(DEFAULT_LISTS).forEach(k => { if (!merged[k]) merged[k] = DEFAULT_LISTS[k]; });
+    }
+
+    // normalize booleans for tasks
+    tasks = tasks.map(t => ({ ...t, done: t.done === true || t.done === 'TRUE' || t.done === 'true' }));
+
+    showSync('✓ Synced', 'var(--green-dim)');
+    setTimeout(hideSync, 2000);
+    renderAll();
+  } catch(e) {
+    showSync('⚠ Connection failed', 'var(--red-dim)');
+    console.error(e);
+  }
+}
+
+// ── Save single record to Google Sheets ──
+async function saveToSheet(sheet, record) {
+  showSync('⟳ Save中…');
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      body: JSON.stringify({ sheet, action: 'save', record }),
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+    showSync('✓ 已Save', 'var(--green-dim)');
+    setTimeout(hideSync, 1500);
+    return true;
+  } catch(e) {
+    showSync('⚠ SaveFailed', 'var(--red-dim)');
+    console.error(e);
+    return false;
+  }
+}
+
+// ── Delete record from Google Sheets ──
+async function deleteFromSheet(sheet, id) {
+  showSync('⟳ Deleting...');
+  try {
+    await fetch(API, {
+      method: 'POST',
+      body: JSON.stringify({ sheet, action: 'delete', record: { id } }),
+    });
+    showSync('✓ Deleted', 'var(--green-dim)');
+    setTimeout(hideSync, 1500);
+    return true;
+  } catch(e) {
+    showSync('⚠ Delete failed', 'var(--red-dim)');
+    return false;
+  }
+}
+
+// legacy save() shim — not used anymore but keeps references safe
+function save() {}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+function fmt$(n) { if (!n) return '—'; return '$' + Number(n).toLocaleString('en-US'); }
+function fmtPhone(p) {
+  if (!p) return '';
+  const d = String(p).replace(/\D/g,'');
+  if (d.length === 10) return '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
+  if (d.length === 11 && d[0]==='1') return '+1 (' + d.slice(1,4) + ') ' + d.slice(4,7) + '-' + d.slice(7);
+  return String(p); // return as-is if can't parse
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  const s = String(d).trim();
+  if (!s || s === 'Invalid Date' || s === '0') return '—';
+  try {
+    const dt = new Date(s + (s.includes('T') ? '' : 'T12:00:00'));
+    if (isNaN(dt.getTime())) return '—';
+    return dt.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  } catch(e) { return '—'; }
+}
+function daysFromNow(d) {
+  if (!d) return null;
+  const diff = Math.round((new Date(d+'T12:00:00') - new Date()) / 86400000);
+  return diff;
+}
+
+// ══════════════════════════════
+// NAVIGATION
+// ══════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const pg = document.getElementById('page-'+id);
+  const tb = document.getElementById('tab-'+id);
+  if (pg) pg.classList.add('active');
+  if (tb) tb.classList.add('active');
+  renderAll();
+}
+
+// ══════════════════════════════
+// ==============================
+// SHIPMENT (BOL) TRACKER
+// ==============================
+const SHIP_STATUS = {
+  '\u5f85\u51fa\u6e2f':    { cls:'badge-muted',  step:0 },
+  '\u6d77\u904b\u4e2d':    { cls:'badge-blue',   step:1 },
+  '\u5230\u6e2f\u5f85\u6e05\u95dc': { cls:'badge-amber',  step:2 },
+  '\u6e05\u95dc\u4e2d':    { cls:'badge-amber',  step:3 },
+  '\u5f85\u914d\u9001':    { cls:'badge-purple', step:4 },
+  '\u5df2\u5b8c\u6210':    { cls:'badge-green',  step:5 },
+};
+
+const DOC_STEPS = [
+  { key:'doc_debitNote',       label:'Debit Note \u6536\u5230',           ref:'ref_debitNote',     date:'date_debitNote' },
+  { key:'doc_arrivalNotice',   label:'Arrival Notice \u6536\u5230',       ref:'ref_arrivalNotice', date:'date_arrivalNotice' },
+  { key:'doc_carrierFeePaid',  label:'Carrier Fee \u5df2\u4ed8',          ref:'',                  date:'' },
+  { key:'doc_packingList',     label:'Packing List \u5df2\u63d0\u4f9b',   ref:'',                  date:'' },
+  { key:'doc_commercialInv',   label:'Commercial Invoice \u5df2\u63d0\u4f9b', ref:'',              date:'' },
+  { key:'doc_entrySummary',    label:'Entry Summary \u6536\u5230',        ref:'ref_entrySummary',  date:'date_entrySummary' },
+  { key:'doc_finalAddress',    label:'\u6700\u7d42\u5730\u5740\u5df2\u63d0\u4f9b',               ref:'',                  date:'' },
+  { key:'doc_inlandBOL',       label:'Inland BOL \u6536\u5230',           ref:'ref_inlandBOL',     date:'date_inlandBOL' },
+  { key:'doc_customerNotified',label:'\u5df2\u901a\u77e5\u5ba2\u6236 Enroute',                    ref:'',                  date:'' },
+  { key:'doc_forwarderInv',    label:'Forwarder Invoice \u6536\u5230',    ref:'ref_forwarderInv',  date:'date_forwarderInv' },
+  { key:'doc_forwarderPaid',   label:'\u8ca8\u4ee3\u8cbb\u7528\u5df2\u4ed8\u6b3e',               ref:'',                  date:'date_forwarderPaid' },
+  { key:'doc_customerPaid',    label:'\u5ba2\u6236\u8ca8\u6b3e\u5df2\u6536',                      ref:'',                  date:'date_customerPaid' },
+];
+
+function isTrue(v) { return v===true||v==='TRUE'||v==='true'||v===1||v==='1'; }
+
+// Normalize date values from Google Sheets
+function normalizeDate(v) {
+  if (!v) return '';
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return '';
+    return v.getFullYear() + '-' + String(v.getMonth()+1).padStart(2,'0') + '-' + String(v.getDate()).padStart(2,'0');
+  }
+  const s = String(v).trim();
+  if (!s || s === '0' || s === 'Invalid Date' || s === 'NaN') return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // Google Sheets serial number (days since Dec 30 1899)
+  if (/^\d{5}$/.test(s)) {
+    const epoch = new Date(1899, 11, 30);
+    epoch.setDate(epoch.getDate() + parseInt(s));
+    if (!isNaN(epoch.getTime())) return epoch.getFullYear() + '-' + String(epoch.getMonth()+1).padStart(2,'0') + '-' + String(epoch.getDate()).padStart(2,'0');
+  }
+  try {
+    const d = new Date(s);
+    if (!isNaN(d.getTime()) && d.getFullYear() > 1970) {
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+  } catch(e) {}
+  return '';
+}
+
+
+function renderCargoStats() {
+  const active = cargo.filter(s => s.status !== '\u5df2\u5b8c\u6210').length;
+  const atPort = cargo.filter(s => ['\u5230\u6e2f\u5f85\u6e05\u95dc','\u6e05\u95dc\u4e2d'].includes(s.status)).length;
+  const done   = cargo.filter(s => s.status === '\u5df2\u5b8c\u6210').length;
+  const ctrs   = cargo.reduce((s,sh) => s + (sh.containers||'').split(',').map(x=>x.trim()).filter(Boolean).length, 0);
+  const el = document.getElementById('cargo-stats');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + cargo.length + '</div><div class="stat-card-lbl">\u7e3d\u8ca8\u6279</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + ctrs + '</div><div class="stat-card-lbl">\u7e3d\u8ca8\u6ac3</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + atPort + '</div><div class="stat-card-lbl">\u5230\u6e2f/\u6e05\u95dc\u4e2d</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + done + '</div><div class="stat-card-lbl">\u5df2\u5b8c\u6210</div></div>';
+}
+
+function renderCargo() {
+  renderCargoStats();
+  const el = document.getElementById('cargo-list');
+  if (!cargo.length) { el.innerHTML = emptyState('\U0001f6a2','\u5c1a\u7121\u8ca8\u6279\u8cc7\u6599','\u9ede\u64ca\u65b0\u589e\u8ca8\u6279\u958b\u59cb\u8ffd\u8e64'); return; }
+  const sorted = [...cargo].sort((a,b) => (SHIP_STATUS[a.status]?.step??0)-(SHIP_STATUS[b.status]?.step??0));
+  let html = '';
+  sorted.forEach(s => {
+    const st      = SHIP_STATUS[s.status]||{cls:'badge-muted'};
+    const ctrs    = (s.containers||'').split(',').map(x=>x.trim()).filter(Boolean);
+    const doneN   = DOC_STEPS.filter(d=>isTrue(s[d.key])).length;
+    const pct     = Math.round(doneN/DOC_STEPS.length*100);
+    const etaDays = daysFromNow(s.eta);
+    const profit  = (Number(s.sellPrice)||0)-(Number(s.mfgCost)||0)-(Number(s.freight)||0)
+                   -(Number(s.trucking)||0)-(Number(s.customs)||0)-(Number(s.isf)||0)
+                   -(Number(s.courier)||0)-(Number(s.chassis)||0)-(Number(s.bankCharge)||0);
+    const nextDoc = DOC_STEPS.find(d=>!isTrue(s[d.key]));
+
+    let etaTag = '';
+    if (etaDays!==null && s.status!=='\u5df2\u5b8c\u6210') {
+      if (etaDays<0)      etaTag = '<span class="badge badge-red"   style="font-size:0.68rem">\u9065\u671f '+Math.abs(etaDays)+'\u5929</span>';
+      else if (etaDays<=5) etaTag = '<span class="badge badge-amber" style="font-size:0.68rem">'+etaDays+'\u5929\u5f8c\u5230\u6e2f</span>';
+    }
+
+    // ── Card open ──
+    html += '<div class="card container-card" onclick="openCargoEdit(\''+s.id+'\')">'; // [1]
+
+    // ── Top row ──
+    html += '<div class="card-top">'; // [2]
+      // Left
+      html += '<div style="flex:1">'; // [3]
+        html += '<div class="card-id">'+(s.carrier||'')+' '+(s.customer?'&middot; '+s.customer:'')+'</div>';
+        html += '<div class="card-title" style="font-family:var(--mono)">'+(s.bolNum||'\u2014 BOL \u5f85\u8f38\u5165')+'</div>';
+        // Containers with delivery status dots
+        if (ctrs.length) {
+          html += '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">';
+          ctrs.forEach(ct => {
+            const dr = deliveries.find(dd =>
+              dd.bolNum && String(dd.bolNum).trim()===String(s.bolNum||'').trim() &&
+              dd.containerNum && dd.containerNum.split(',').map(x=>x.trim()).includes(ct)
+            );
+            const ds = dr ? dr.status : null;
+            const dc = ds==='\u5df2\u914d\u9001'?'var(--green)':ds==='\u5df2\u6392\u7a0b'?'var(--blue)':ds?'var(--amber)':'var(--border2)';
+            const tip = ds ? ds+(dr.city?' \xb7 '+dr.city:'') : '\u5c1a\u672a\u5206\u914d';
+            html += '<span title="'+tip+'" style="font-family:var(--mono);font-size:0.7rem;background:var(--surface2);border:1px solid '+dc+';border-radius:4px;padding:2px 6px;color:'+(ds?'var(--text)':'var(--text-muted)')+'">' +
+              '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+dc+';margin-right:4px;vertical-align:middle"></span>'+ct+'</span>';
+          });
+          html += '</div>';
+          const delvd = ctrs.filter(ct => {
+            const dr = deliveries.find(dd => dd.bolNum && String(dd.bolNum).trim()===String(s.bolNum||'').trim() && dd.containerNum && dd.containerNum.split(',').map(x=>x.trim()).includes(ct));
+            return dr && dr.status==='\u5df2\u914d\u9001';
+          }).length;
+          html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">\u914d\u9001: '+delvd+' / '+ctrs.length+'</div>';
+        } else {
+          html += '<div style="font-size:0.72rem;color:var(--text-dim);margin-top:4px">\u8ca8\u6ac3\u865f\u78bc\u5f85\u8f38\u5165</div>';
+        }
+      html += '</div>'; // [3] close left
+      // Right: badge + eta tag
+      html += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'; // [4]
+        html += '<span class="badge '+st.cls+'">'+s.status+'</span>';
+        if (etaTag) html += etaTag;
+      html += '</div>'; // [4] close right
+    html += '</div>'; // [2] close card-top
+
+    // ── Doc progress ──
+    html += '<div style="margin-top:10px">'; // [5]
+      html += '<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px"><span>\u6587\u4ef6\u9032\u5ea6</span><span>'+doneN+' / '+DOC_STEPS.length+'</span></div>';
+      html += '<div style="height:4px;background:var(--surface3);border-radius:2px;overflow:hidden"><div style="height:100%;border-radius:2px;background:'+(pct===100?'var(--green)':'var(--blue)')+';width:'+pct+'%"></div></div>';
+      if (nextDoc && pct<100) html += '<div style="font-size:0.72rem;color:var(--amber);margin-top:4px">\u25b6 '+nextDoc.label+'</div>';
+    html += '</div>'; // [5] close doc progress
+
+    // ── Key numbers ──
+    html += '<div class="card-grid" style="margin-top:10px">'; // [6]
+      if (s.eta)       html += '<div class="card-field"><div class="card-field-lbl">ETA \u5230\u6e2f</div><div class="card-field-val">'+fmtDate(s.eta)+'</div></div>';
+      if (s.etaFinal)  html += '<div class="card-field"><div class="card-field-lbl">\u6700\u7d42\u4ea4\u4ed8</div><div class="card-field-val">'+fmtDate(s.etaFinal)+'</div></div>';
+      if (s.sellPrice) html += '<div class="card-field"><div class="card-field-lbl">\u552e\u50f9</div><div class="card-field-val" style="color:var(--teal)">'+fmt$(s.sellPrice)+'</div></div>';
+      html += '<div class="card-field"><div class="card-field-lbl">\u5229\u6f64</div><div class="card-field-val" style="color:'+(profit>=0?'var(--green)':'var(--red)')+'">'+fmt$(profit)+'</div></div>';
+    html += '</div>'; // [6] close card-grid
+
+    if (s.dest) html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:8px">\U0001f4cd '+s.dest+'</div>';
+
+    html += '</div>'; // [1] close card
+  });
+  el.innerHTML = html;
+}
+
+let editingCargo = null;
+
+function openCargoModal(s) {
+  editingCargo = s || null;
+  document.getElementById('cargoModalTitle').textContent = s ? '\u7de8\u8f2f\u8ca8\u6279' : '\u65b0\u589e\u8ca8\u6279';
+  document.getElementById('cargoDeleteBtn').style.display = s ? 'block' : 'none';
+  const docSec = document.getElementById('cargoDocSection');
+  if (docSec) docSec.style.display = s ? 'block' : 'none';
+  populateCargoDropdowns(s);
+  ['bolNum','status','etd','eta','etaFinal','disc','qty','sellPrice','mfgCost','freight','trucking','customs','isf','courier','chassis','bankCharge','dest','notes'].forEach(k => {
+    const el = document.getElementById('c-'+k);
+    if (el) el.value = s ? (s[k]||'') : (k==='status'?'\u5f85\u51fa\u6e2f':'');
+  });
+  const cta = document.getElementById('c-containers-ta');
+  if (cta) cta.value = s ? (s.containers||'').replace(/,\s*/g,'\n') : '';
+  if (s) {
+    DOC_STEPS.forEach(d => {
+      const cb = document.getElementById('doc-cb-'+d.key);
+      if (cb) cb.checked = isTrue(s[d.key]);
+      if (d.ref)  { const ri = document.getElementById('doc-ref-'+d.key);  if (ri) ri.value = s[d.ref]||''; }
+      if (d.date) { const di = document.getElementById('doc-date-'+d.key); if (di) di.value = s[d.date]||''; }
+    });
+  }
+  document.getElementById('cargoModal').classList.add('open');
+}
+function openCargoEdit(id) { openCargoModal(cargo.find(x => x.id === id)); }
+
+async function saveCargo() {
+  const data = {};
+  ['bolNum','status','etd','eta','etaFinal','disc','qty','sellPrice','mfgCost','freight','trucking','customs','isf','courier','chassis','bankCharge','dest','notes'].forEach(k => {
+    const el = document.getElementById('c-'+k);
+    data[k] = el ? el.value : '';
+  });
+  ['customer','carrier','pol','pod'].forEach(k => {
+    const el = document.getElementById('c-'+k);
+    data[k] = el ? el.value : '';
+  });
+  const cta = document.getElementById('c-containers-ta');
+  data.containers = cta ? cta.value.split(/[\n,]/).map(x=>x.trim()).filter(Boolean).join(', ') : '';
+  if (!data.bolNum && !data.containers) { alert('\u8acb\u8f38\u5165 BOL \u865f\u78bc\u6216\u8ca8\u6ac3\u865f\u78bc'); return; }
+  DOC_STEPS.forEach(d => {
+    const cb = document.getElementById('doc-cb-'+d.key);
+    data[d.key] = cb ? cb.checked : false;
+    if (d.ref)  { const ri = document.getElementById('doc-ref-'+d.key);  data[d.ref]  = ri ? ri.value : ''; }
+    if (d.date) { const di = document.getElementById('doc-date-'+d.key); data[d.date] = di ? di.value : ''; }
+  });
+  const record = editingCargo ? {...editingCargo,...data} : {id:uid(),...data};
+  closeModal('cargoModal');
+  const ok = await saveToSheet('Shipments', record);
+  if (ok) await loadAll();
+}
+
+async function deleteCargo() {
+  if (!editingCargo || !confirm('\u78ba\u5b9a\u522a\u9664\u6b64\u8ca8\u6279\uff1f')) return;
+  closeModal('cargoModal');
+  const ok = await deleteFromSheet('Shipments', editingCargo.id);
+  if (ok) await loadAll();
+}
+
+
+// MODAL HELPERS
+// ══════════════════════════════
+let editingInvoice = null, editingDelivery = null;
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeIfOutside(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+
+
+
+function openInvoiceModal(inv) {
+  editingInvoice = inv || null;
+  document.getElementById('invoiceModalTitle').textContent = inv ? 'Edit Invoice' : 'New Invoice';
+  document.getElementById('invoiceDeleteBtn').style.display = inv ? 'block' : 'none';
+  populateInvoiceDropdowns(inv);
+  ['num','date','qty','unit','unitPrice','status','paid','paidDate','containers','notes'].forEach(k => {
+    const el = document.getElementById('i-'+k);
+    if (el) el.value = inv ? (inv[k] || '') : (k === 'status' ? 'Unpaid' : '');
+  });
+  // Auto-fill unit when item already set
+  const itemSel = document.getElementById('i-item');
+  const unitEl  = document.getElementById('i-unit');
+  if (itemSel && unitEl && itemSel.value && !unitEl.value) {
+    unitEl.value = productUnit(itemSel.value);
+  }
+  if (itemSel) {
+    itemSel.onchange = function() {
+      const u = document.getElementById('i-unit');
+      if (u) u.value = productUnit(this.value);
+    };
+  }
+  document.getElementById('invoiceModal').classList.add('open');
+}
+function openInvoiceEdit(id) { openInvoiceModal(invoices.find(x => x.id === id)); }
+
+async function saveInvoice() {
+  const data = {};
+  ['num','date','billTo','item','qty','unit','unitPrice','status','paid','paidDate','containers','notes'].forEach(k => {
+    data[k] = document.getElementById('i-'+k)?.value || '';
+  });
+  if (!data.billTo) { alert('Please enterCustomerName'); return; }
+  const record = editingInvoice ? { ...editingInvoice, ...data } : { id: uid(), ...data };
+  closeModal('invoiceModal');
+  const ok = await saveToSheet('Invoices', record);
+  if (ok) await loadAll();
+}
+async function deleteInvoice() {
+  if (!editingInvoice || !confirm('ConfirmDeletethis invoice？')) return;
+  closeModal('invoiceModal');
+  const ok = await deleteFromSheet('Invoices', editingInvoice.id);
+  if (ok) await loadAll();
+}
+
+function onBolSelect() {
+  const bolVal = (document.getElementById('d-bolNum')?.value || '').trim();
+  const box = document.getElementById('d-container-checks');
+  if (!box) return;
+  if (!bolVal) { box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">Select BOL first</span>'; return; }
+  const shipment = cargo.find(s => String(s.bolNum||'').trim() === bolVal);
+  const ctrs = shipment ? (shipment.containers||'').split(/[,\n]/).map(x=>x.trim()).filter(Boolean) : [];
+  if (!ctrs.length) { box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">No containers for this BOL（Please go toshipments pageEnter）</span>'; return; }
+  const currentId = editingDelivery ? editingDelivery.id : null;
+  const usedByOthers = new Set(
+    deliveries
+      .filter(del => del.id !== currentId && String(del.bolNum||'').trim() === bolVal && del.containerNum)
+      .flatMap(del => del.containerNum.split(',').map(x=>x.trim()).filter(Boolean))
+  );
+  box.innerHTML = ctrs.map(ct => {
+    const isUsed = usedByOthers.has(ct);
+    return '<label style="display:inline-flex;align-items:center;gap:6px;background:'+(isUsed?'var(--surface3)':'var(--surface2)')+';border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:'+(isUsed?'default':'pointer')+';font-size:0.82rem;font-family:var(--mono);opacity:'+(isUsed?'0.45':'1')+'">' +
+      '<input type="checkbox" name="d-ctr" value="'+ct+'"'+(isUsed?' disabled':'')+' style="accent-color:var(--green);width:14px;height:14px"> ' +
+      ct + (isUsed?' <span style="font-size:0.65rem;color:var(--text-muted)">Delivered</span>':'') + '</label>';
+  }).join('');
+}
+
+function openDeliveryModal(d) {
+  editingDelivery = d || null;
+  document.getElementById('deliveryModalTitle').textContent = d ? 'Edit Delivery' : 'New Delivery';
+  document.getElementById('deliveryDeleteBtn').style.display = d ? 'block' : 'none';
+
+  // BOL dropdown
+  const bolSel = document.getElementById('d-bolNum');
+  if (bolSel) {
+    const bols = [...new Set(cargo.filter(s=>s.bolNum).map(s=>String(s.bolNum).trim()))].filter(Boolean).sort();
+    bolSel.innerHTML = '<option value="">— Select BOL —</option>' +
+      bols.map(b => '<option value="'+b+'"'+(d&&String(d.bolNum||'').trim()===b?' selected':'')+'>'+b+'</option>').join('');
+  }
+
+  // Container checkboxes
+  const box = document.getElementById('d-container-checks');
+  if (box) {
+    if (d && d.bolNum) {
+      const shipment = cargo.find(s => String(s.bolNum||'').trim() === String(d.bolNum||'').trim());
+      const ctrs = shipment ? (shipment.containers||'').split(',').map(x=>x.trim()).filter(Boolean) : [];
+      const selected = (d.containerNum||'').split(',').map(x=>x.trim()).filter(Boolean);
+      box.innerHTML = ctrs.length ? ctrs.map(ct =>
+        '<label style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:0.82rem;font-family:var(--mono)">' +
+        '<input type="checkbox" name="d-ctr" value="'+ct+'"'+(selected.includes(ct)?' checked':'')+' style="accent-color:var(--green);width:14px;height:14px"> '+ct+'</label>'
+      ).join('') : '<span style="font-size:0.8rem;color:var(--text-dim)">No containers for this BOL</span>';
+    } else {
+      box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">Select BOL first</span>';
+    }
+  }
+
+  populateDeliveryDropdowns(d);
+  // Re-populate company dropdown after type is set
+  if (d && d.dist) {
+    const bizSel = document.getElementById('d-business');
+    if (bizSel) {
+      const companies = customers.filter(x => !d.dist || x.type === d.dist).map(x => x.company||x.contact).filter(Boolean).sort();
+      const unique = [...new Set(companies)];
+      bizSel.innerHTML = '<option value="">— Select company —</option>' +
+        unique.map(co => '<option value="'+co+'"'+(d.business===co?' selected':'')+'>'+co+'</option>').join('');
+    }
+  }
+  ['addr','city','zip','contact','phone','status','delivDate','source','wraps','parts','notes'].forEach(k => {
+    const el = document.getElementById('d-'+k);
+    if (el) el.value = d ? (d[k]||'') : (k==='status'?'Pending':'');
+  });
+  const addrSel = document.getElementById('d-addr-select');
+  if (addrSel) addrSel.value = '';
+  // Populate delivery items grid
+  populateDelivItemsGrid(d);
+  document.getElementById('deliveryModal').classList.add('open');
+}
+function openDeliveryEdit(id) { openDeliveryModal(deliveries.find(x => x.id === id)); }
+
+async function saveDelivery() {
+  const data = {};
+  ['dist','business','addr','city','zip','contact','phone','status','delivDate','source','wraps','parts','notes'].forEach(k => {
+    data[k] = document.getElementById('d-'+k)?.value || '';
+  });
+  // BOL and container from their special selects
+  data.bolNum = document.getElementById('d-bolNum')?.value || '';
+  // Collect checked containers
+  const checked = [...document.querySelectorAll('input[name="d-ctr"]:checked')].map(x=>x.value);
+  data.containerNum = checked.join(', ');
+  data.delivItems = JSON.stringify(getDelivItemsData());
+  if (!data.addr && !data.city) { alert('Please enter address or city'); return; }
+  const record = editingDelivery ? { ...editingDelivery, ...data } : { id: uid(), ...data };
+  closeModal('deliveryModal');
+  const ok = await saveToSheet('Deliveries', record);
+  if (ok) await loadAll();
+}
+async function deleteDelivery() {
+  if (!editingDelivery || !confirm('ConfirmDelete此Address？')) return;
+  closeModal('deliveryModal');
+  const ok = await deleteFromSheet('Deliveries', editingDelivery.id);
+  if (ok) await loadAll();
+}
+
+function openTaskModal() {
+  document.getElementById('t-text').value = '';
+  document.getElementById('t-week').value = getWeekMonday(new Date());
+  document.getElementById('t-priority').value = 'Normal';
+  document.getElementById('t-notes').value = '';
+  document.getElementById('taskModal').classList.add('open');
+}
+
+async function saveTask() {
+  const text = document.getElementById('t-text').value.trim();
+  if (!text) { alert('Please enter task description'); return; }
+  const record = {
+    id: uid(),
+    text,
+    week: document.getElementById('t-week').value || getWeekMonday(new Date()),
+    priority: document.getElementById('t-priority').value,
+    notes: document.getElementById('t-notes').value.trim(),
+    done: false,
+  };
+  closeModal('taskModal');
+  const ok = await saveToSheet('Tasks', record);
+  if (ok) await loadAll();
+}
+
+// ══════════════════════════════
+// HELPERS
+// ══════════════════════════════
+function emptyState(icon, text, sub) {
+  return `<div class="empty"><div class="empty-icon">${icon}</div><div class="empty-text">${text}</div><div class="empty-sub">${sub}</div></div>`;
+}
+
+
+// ==============================
+// INVOICE
+// ==============================
+const INV_STATUS = {
+  'Unpaid':   'badge-red',
+  'Partial': 'badge-amber',
+  'Paid':   'badge-green',
+};
+
+function renderInvoiceStats() {
+  const total  = invoices.reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)), 0);
+  const paid   = invoices.reduce((s,i) => s + (Number(i.paid)||0), 0);
+  const unpaid = invoices.filter(i => i.status !== 'Paid').length;
+  const el = document.getElementById('invoice-stats');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + fmt$(total) + '</div><div class="stat-card-lbl">Total Invoiced</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + fmt$(paid) + '</div><div class="stat-card-lbl">Collected</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--red)">' + fmt$(total - paid) + '</div><div class="stat-card-lbl">Outstanding</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + unpaid + '</div><div class="stat-card-lbl">Pending Invoices</div></div>';
+}
+
+function renderInvoices() {
+  renderInvoiceStats();
+  const el = document.getElementById('invoice-list');
+  if (!el) return;
+  if (!invoices.length) { el.innerHTML = emptyState('🧾','No invoices yet','ClickNew InvoiceStart recording'); return; }
+  const sorted = [...invoices].sort((a,b) => {
+    const o = {'Unpaid':0,'Partial':1,'Paid':2};
+    return (o[a.status]||0)-(o[b.status]||0);
+  });
+  let html = '';
+  sorted.forEach(inv => {
+    const total = (Number(inv.qty)||0)*(Number(inv.unitPrice)||0);
+    const balance = total - (Number(inv.paid)||0);
+    const pct = total > 0 ? Math.round((Number(inv.paid)||0)/total*100) : 0;
+    html += '<div class="card invoice-card" onclick="openInvoiceEdit(\'' + inv.id + '\')">';
+    html += '<div class="card-top"><div><div class="card-id">INV #' + (inv.num||'—') + ' · ' + fmtDate(inv.date) + '</div>';
+    html += '<div class="card-title">' + (inv.billTo||'—') + '</div></div>';
+    html += '<span class="badge ' + (INV_STATUS[inv.status]||'badge-muted') + '">' + (inv.status||'—') + '</span></div>';
+    html += '<div class="card-grid">';
+    if (inv.item)    html += '<div class="card-field"><div class="card-field-lbl">Item</div><div class="card-field-val">' + inv.item + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">Qty</div><div class="card-field-val">' + (inv.qty||'—') + ' ' + (inv.unit||'') + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">Total Amount</div><div class="card-field-val" style="color:var(--teal)">' + fmt$(total) + '</div></div>';
+    html += '<div class="card-field"><div class="card-field-lbl">Balance Due</div><div class="card-field-val" style="color:' + (balance>0?'var(--red)':'var(--green)') + '">' + fmt$(balance) + '</div></div>';
+    html += '</div>';
+    if (total > 0) html += '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%;background:' + (pct===100?'var(--green)':'var(--teal)') + '"></div></div>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+// ==============================
+// DELIVERY
+// ==============================
+const DEL_STATUS = {
+  'Pending':  'badge-amber',
+  'Scheduled':  'badge-blue',
+  'Delivered':  'badge-green',
+};
+
+function renderDeliveryStats() {
+  const pending   = deliveries.filter(d => d.status === 'Pending').length;
+  const scheduled = deliveries.filter(d => d.status === 'Scheduled').length;
+  const done      = deliveries.filter(d => d.status === 'Delivered').length;
+  const totalWraps= deliveries.filter(d => d.status !== 'Delivered').reduce((s,d) => s+(Number(d.wraps)||0), 0);
+  const el = document.getElementById('delivery-stats');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + pending + '</div><div class="stat-card-lbl">Pending</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + scheduled + '</div><div class="stat-card-lbl">Scheduled</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + done + '</div><div class="stat-card-lbl">Completed</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + totalWraps + '</div><div class="stat-card-lbl">Wraps Pending</div></div>';
+}
+
+function renderDeliveries() {
+  renderDeliveryStats();
+  const el = document.getElementById('delivery-list');
+  if (!el) return;
+  if (!deliveries.length) { el.innerHTML = emptyState('🚛','NoDeliveredAddress','Click New Delivery to get started'); return; }
+  const sorted = [...deliveries].sort((a,b) => {
+    const o = {'Pending':0,'Scheduled':1,'Delivered':2};
+    return (o[a.status]||0)-(o[b.status]||0);
+  });
+  let html = '';
+  sorted.forEach(d => {
+    html += '<div class="card delivery-card" onclick="openDeliveryEdit(\'' + d.id + '\')">';
+    html += '<div class="card-top"><div>';
+    html += '<div class="card-id">' + (d.dist||'') + (d.business&&d.business!==d.dist?' &middot; '+d.business:'') + '</div>';
+    html += '<div class="card-title">' + (d.city||d.addr||'—') + '</div>';
+    if (d.containerNum || d.bolNum) {
+      const ctrs = (d.containerNum||'').split(',').map(x=>x.trim()).filter(Boolean);
+      html += '<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;align-items:center">';
+      ctrs.forEach(ct => { html += '<span style="font-family:var(--mono);font-size:0.7rem;background:var(--teal-dim);border:1px solid var(--teal);border-radius:4px;padding:2px 6px;color:var(--teal)">'+ct+'</span>'; });
+      if (d.bolNum) html += '<span style="font-size:0.7rem;color:var(--text-dim);padding:2px 4px;font-family:var(--mono)">BOL: '+d.bolNum+'</span>';
+      html += '</div>';
+    }
+
+    html += '</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">';
+    html += '<span class="badge ' + (DEL_STATUS[d.status]||'badge-muted') + '">' + d.status + '</span>';
+    if (d.source) html += '<span style="font-size:0.68rem;padding:2px 7px;border-radius:10px;background:' + (d.source==='Self-produced'?'var(--purple-dim,#3a2d4a)':'var(--blue-dim,#1a2d3d)') + ';color:' + (d.source==='Self-produced'?'var(--purple)':'var(--blue)') + '">' + (d.source==='Self-produced'?'🏭':'🚢') + ' ' + d.source + '</span>';
+    html += '<button onclick="event.stopPropagation();toggleDelivered(\'' + d.id + '\')" class="delivery-check ' + (d.status==='Delivered'?'delivered':'') + '" title="MarkDelivered">' + (d.status==='Delivered'?'✓':'') + '</button>';
+    html += '</div></div>';
+    html += '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px">📍 ' + (d.addr||'') + (d.city?', '+d.city:'') + ' ' + (d.zip||'') + '</div>';
+    const shipRefD = d.bolNum ? cargo.find(s => String(s.bolNum||'').trim() === String(d.bolNum||'').trim()) : null;
+    const inlandBol = shipRefD ? (shipRefD.ref_inlandBOL||'') : '';
+    if (inlandBol) html += '<div style="font-size:0.75rem;color:var(--amber);margin-bottom:6px;font-family:var(--mono)">📄 Inland BOL: ' + inlandBol + '</div>';
+    html += '<div class="card-grid">';
+    if (d.contact)   html += '<div class="card-field"><div class="card-field-lbl">Contact</div><div class="card-field-val">' + d.contact + '</div></div>';
+    if (d.phone)     html += '<div class="card-field"><div class="card-field-lbl">Phone</div><div class="card-field-val">' + fmtPhone(d.phone) + '</div></div>';
+    if (d.delivItems) {
+      try {
+        const items = JSON.parse(d.delivItems);
+        const prods4d = getProducts();
+        const pmap = {}; prods4d.forEach(p => pmap[p.name] = p);
+        Object.entries(items).forEach(([k,v]) => {
+          if (!v || Number(v) <= 0) return;
+          // Fuzzy match: handle 'Cotton Wraps' -> 'Cotton Wrap'
+          const kl = k.toLowerCase().replace(/s$/,'');
+          const pp = pmap[k] || prods4d.find(p => p.name.toLowerCase().replace(/s$/,'') === kl || kl.includes(p.name.toLowerCase().replace(/s$/,'')) || p.name.toLowerCase().replace(/s$/,'').includes(kl));
+          const rpp = pp?.rollsPerPallet||0;
+          const ppc = pp?.palletsPerContainer||0;
+          const unit = pp?.unit || 'units';
+          const qty = Number(v);
+          let displayStr = qty.toLocaleString() + ' ' + unit;
+          if (rpp > 0) {
+            const pals = (qty/rpp).toFixed(1).replace(/\.0$/,'');
+            displayStr = qty.toLocaleString() + ' ' + unit + ' (' + pals + ' pal';
+            if (ppc > 0) displayStr += ' / ' + (qty/rpp/ppc).toFixed(2).replace(/\.?0+$/,'') + ' ctr';
+            displayStr += ')';
+          }
+          html += '<div class="card-field"><div class="card-field-lbl">' + (pp?.name||k) + '</div><div class="card-field-val">' + displayStr + '</div></div>';
+        });
+      } catch(e) {
+        if (d.wraps) html += '<div class="card-field"><div class="card-field-lbl">Wraps</div><div class="card-field-val">' + d.wraps + ' Rolls</div></div>';
+        if (d.parts) html += '<div class="card-field"><div class="card-field-lbl">Parts</div><div class="card-field-val">' + d.parts + ' pcs</div></div>';
+      }
+    } else {
+      if (d.wraps) html += '<div class="card-field"><div class="card-field-lbl">Wraps</div><div class="card-field-val">' + d.wraps + ' Rolls</div></div>';
+      if (d.parts) html += '<div class="card-field"><div class="card-field-lbl">Parts</div><div class="card-field-val">' + d.parts + ' pcs</div></div>';
+    }
+    if (d.delivDate) html += '<div class="card-field"><div class="card-field-lbl">Delivery Date</div><div class="card-field-val">' + fmtDate(d.delivDate) + '</div></div>';
+    html += '</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+async function toggleDelivered(id) {
+  const d = deliveries.find(x => x.id === id);
+  if (!d) return;
+  d.status = d.status === 'Delivered' ? 'Pending' : 'Delivered';
+  if (d.status === 'Delivered' && !d.delivDate) d.delivDate = new Date().toISOString().split('T')[0];
+  renderDeliveries();
+  await saveToSheet('Deliveries', d);
+}
+
+// ==============================
+// TASKS
+// ==============================
+function getWeekMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
+  return d.toISOString().split('T')[0];
+}
+
+function renderTasks() {
+  const el = document.getElementById('tasks-content');
+  if (!el) return;
+  if (!tasks.length) { el.innerHTML = emptyState('✅','No tasks yet','ClickNew TaskStart planning'); return; }
+  const weeks = {};
+  tasks.forEach(t => {
+    const w = t.week || getWeekMonday(new Date());
+    if (!weeks[w]) weeks[w] = [];
+    weeks[w].push(t);
+  });
+  const thisWeek = getWeekMonday(new Date());
+  let html = '';
+  Object.keys(weeks).sort().reverse().forEach(w => {
+    const wDate = new Date(w+'T12:00:00');
+    const wEnd  = new Date(wDate); wEnd.setDate(wEnd.getDate()+6);
+    const label = wDate.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' – ' + wEnd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const wTasks = weeks[w].sort((a,b) => {const po={'Urgent':0,'Important':1,'Normal':2};return (po[a.priority]||2)-(po[b.priority]||2);});
+    const done = wTasks.filter(t=>t.done).length;
+    html += '<div style="font-family:var(--display);font-size:1rem;font-weight:700;color:var(--text);margin:20px 0 10px;display:flex;align-items:center;gap:8px">' + label;
+    if (w === thisWeek) html += '<span style="font-size:0.7rem;font-weight:500;font-family:var(--sans);padding:2px 8px;border-radius:8px;background:var(--green-dim);color:var(--green)">This Week</span>';
+    html += '<span style="font-size:0.7rem;font-weight:500;font-family:var(--sans);padding:2px 8px;border-radius:8px;background:var(--surface3);color:var(--text-muted)">' + done + '/' + wTasks.length + '</span></div>';
+    wTasks.forEach(t => {
+      const pc = {'Normal':'var(--text-muted)','Important':'var(--amber)','Urgent':'var(--red)'};
+      html += '<div class="task-item ' + (t.done?'done':'') + '">';
+      html += '<div class="task-check ' + (t.done?'checked':'') + '" onclick="toggleTask(\'' + t.id + '\')"></div>';
+      html += '<div class="task-content"><div class="task-text">' + t.text + '</div>';
+      if (t.notes) html += '<div class="task-meta">' + t.notes + '</div>';
+      html += '<div class="task-meta" style="color:' + (pc[t.priority]||'var(--text-muted)') + '">● ' + (t.priority||'Normal') + '</div>';
+      html += '</div><button class="task-del" onclick="deleteTask(\'' + t.id + '\')">✕</button></div>';
+    });
+  });
+  el.innerHTML = html;
+}
+
+async function toggleTask(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  renderTasks();
+  await saveToSheet('Tasks', t);
+}
+
+async function deleteTask(id) {
+  tasks = tasks.filter(x => x.id !== id);
+  renderTasks();
+  await deleteFromSheet('Tasks', id);
+}
+
+function openTaskModal() {
+  document.getElementById('t-text').value = '';
+  document.getElementById('t-week').value = getWeekMonday(new Date());
+  document.getElementById('t-priority').value = 'Normal';
+  document.getElementById('t-notes').value = '';
+  document.getElementById('taskModal').classList.add('open');
+}
+
+async function saveTask() {
+  const text = document.getElementById('t-text').value.trim();
+  if (!text) { alert('Please enter task description'); return; }
+  const record = {
+    id: uid(), text,
+    week: document.getElementById('t-week').value || getWeekMonday(new Date()),
+    priority: document.getElementById('t-priority').value,
+    notes: document.getElementById('t-notes').value.trim(),
+    done: false,
+  };
+  closeModal('taskModal');
+  const ok = await saveToSheet('Tasks', record);
+  if (ok) await loadAll();
+}
+
+// ==============================
+// DASHBOARD
+// ==============================
+function renderDashboard() {
+  const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+  const dateEl = document.getElementById('dash-date');
+  if (dateEl) dateEl.textContent = today;
+
+  // ── KPI calculations ──
+  const unpaidAmt   = invoices.filter(i => i.status !== 'Paid').reduce((s,i) => s + ((Number(i.qty)||0)*(Number(i.unitPrice)||0)) - (Number(i.paid)||0), 0);
+  const thisMonth   = new Date().toISOString().slice(0,7);
+  const collectedMo = invoices.filter(i => i.paidDate && i.paidDate.startsWith(thisMonth)).reduce((s,i) => s + (Number(i.paid)||0), 0);
+  const activeCargo = cargo.filter(s => s.status !== 'Completed').length;
+  const pendingDel  = deliveries.filter(d => d.status !== 'Delivered').length;
+  const pendingTask = tasks.filter(t => !t.done).length;
+  // Total remaining inventory (Cotton Wrap)
+  const prods4d = getProducts();
+  const cwProd  = prods4d.find(p => p.name.toLowerCase().includes('cotton'));
+  const cwIn    = cargo.filter(s => s.disc && s.disc.toLowerCase().replace(/s$/,'').includes('cotton')).reduce((s,sh) => s+(Number(sh.qty)||0), 0);
+  let cwDel = 0;
+  deliveries.forEach(d => {
+    if (d.delivItems) { try { const it=JSON.parse(d.delivItems); Object.entries(it).forEach(([k,v])=>{ if(k.toLowerCase().includes('cotton')) cwDel+=Number(v)||0; }); } catch(e){} }
+    else if (d.wraps) cwDel += Number(d.wraps)||0;
+  });
+  let cwProd2 = 0;
+  productions.forEach(pr => { try { const o=JSON.parse(pr.outputs||'{}'); Object.entries(o).forEach(([k,v])=>{ if(k.toLowerCase().includes('cotton')) cwProd2+=Number(v)||0; }); } catch(e){} });
+  const cwRemaining = cwIn + cwProd2 - cwDel;
+
+  // ── Stats row ──
   const statsEl = document.getElementById('dash-stats');
   if (statsEl) statsEl.innerHTML =
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + activeCargo + '</div><div class="stat-card-lbl">Active Shipments</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--red)">' + fmt$(unpaidAmt) + '</div><div class="stat-card-lbl">Outstanding</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + pendingDel + '</div><div class="stat-card-lbl">PendingLocation</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + pendingTasks + '</div><div class="stat-card-lbl">Pending Tasks</div></div>';
-  const urgentCargo    = cargo.filter(c => { const d = daysFromNow(c.eta); return d!==null && d<=5 && c.status!=='Completed'; });
-  const unpaidInv      = invoices.filter(i => i.status !== 'Paid');
-  const urgentTasks    = tasks.filter(t => !t.done && t.priority === 'Urgent');
-  const pendingDelList = deliveries.filter(d => d.status !== 'Delivered');
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + fmt$(collectedMo) + '</div><div class="stat-card-lbl">Collected This Month</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + pendingDel + '</div><div class="stat-card-lbl">Pending Deliveries</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + cwRemaining.toLocaleString() + '</div><div class="stat-card-lbl">Cotton Wrap Stock</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + pendingTask + '</div><div class="stat-card-lbl">Pending Tasks</div></div>';
+
+  // ── Action items ──
+  const actEl = document.getElementById('dash-actions');
+  if (actEl) {
+    const actions = [];
+    // Arriving in ≤3 days
+    cargo.filter(s => { const d=daysFromNow(s.eta); return d!==null && d<=3 && s.status!=='Completed'; })
+      .forEach(s => actions.push({ color:'var(--blue)', icon:'🚢', text: 'Arriving in ' + daysFromNow(s.eta) + ' day(s): BOL ' + (s.bolNum||'?') }));
+    // Overdue invoices
+    invoices.filter(i => i.status !== 'Paid' && i.date && daysFromNow(i.date) < -30)
+      .forEach(i => actions.push({ color:'var(--red)', icon:'🧾', text: 'Invoice #' + (i.num||'?') + ' overdue — ' + (i.billTo||'?') + ' owes ' + fmt$((Number(i.qty)||0)*(Number(i.unitPrice)||0)-(Number(i.paid)||0)) }));
+    // Urgent tasks
+    tasks.filter(t => !t.done && t.priority === 'Urgent')
+      .forEach(t => actions.push({ color:'var(--amber)', icon:'⚡', text: t.text }));
+    if (actions.length) {
+      actEl.innerHTML = '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 16px">' +
+        '<div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:10px">Needs Attention</div>' +
+        actions.map(a => '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:0.83rem">' +
+          '<span style="font-size:14px">' + a.icon + '</span>' +
+          '<span style="flex:1">' + a.text + '</span>' +
+          '<span style="width:6px;height:6px;border-radius:50%;background:' + a.color + ';flex-shrink:0"></span>' +
+          '</div>').join('') +
+        '</div>';
+    } else {
+      actEl.innerHTML = '';
+    }
+  }
+
+  // ── 2-column grid ──
   const gridEl = document.getElementById('dash-grid');
   if (!gridEl) return;
   let grid = '';
-  grid += '<div class="dash-card"><div class="dash-card-title">🚢 Upcoming Arrivals</div>';
-  if (urgentCargo.length) urgentCargo.forEach(c => { grid += '<div class="dash-list-item"><span style="font-family:var(--mono);font-size:0.8rem">' + (c.bolNum||'BOL?') + '</span><span class="badge badge-blue" style="font-size:0.68rem">' + daysFromNow(c.eta) + 'days</span></div>'; });
-  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">No upcoming arrivals</div>';
-  grid += '</div>';
-  grid += '<div class="dash-card"><div class="dash-card-title">🧾 Unpaid Invoices</div>';
-  if (unpaidInv.length) unpaidInv.slice(0,5).forEach(i => {
-    const bal = ((Number(i.qty)||0)*(Number(i.unitPrice)||0))-(Number(i.paid)||0);
-    grid += '<div class="dash-list-item"><span>' + (i.billTo||'—') + ' #' + (i.num||'?') + '</span><span style="color:var(--red);font-family:var(--mono);font-size:0.8rem">' + fmt$(bal) + '</span></div>';
+
+  // Shipment pipeline
+  const activeSh = cargo.filter(s => s.status !== 'Completed').sort((a,b) => {
+    const da = daysFromNow(a.eta); const db = daysFromNow(b.eta);
+    return (da===null?999:da) - (db===null?999:db);
   });
-  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">All invoices paid ✓</div>';
+  grid += '<div class="dash-card"><div class="dash-card-title">🚢 Shipment Pipeline</div>';
+  if (activeSh.length) {
+    activeSh.slice(0,6).forEach(s => {
+      const d = daysFromNow(s.eta);
+      const eta = d===null ? '—' : d < 0 ? '<span style="color:var(--red)">Overdue ' + Math.abs(d) + 'd</span>' : d <= 3 ? '<span style="color:var(--amber)">' + d + 'd</span>' : '<span style="color:var(--text-muted)">' + d + 'd</span>';
+      grid += '<div class="dash-list-item">' +
+        '<div><div style="font-family:var(--mono);font-size:0.78rem">' + (s.bolNum||'—') + '</div>' +
+        '<div style="font-size:0.7rem;color:var(--text-muted)">' + (s.status||'') + '</div></div>' +
+        '<div style="text-align:right;font-size:0.78rem">' + eta + '</div></div>';
+    });
+  } else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">No active shipments</div>';
   grid += '</div>';
-  grid += '<div class="dash-card"><div class="dash-card-title">⚡ UrgentTask</div>';
-  if (urgentTasks.length) urgentTasks.slice(0,5).forEach(t => { grid += '<div class="dash-list-item"><span style="font-size:0.82rem">' + t.text + '</span><span class="badge badge-red" style="font-size:0.65rem">Urgent</span></div>'; });
-  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">無UrgentTask</div>';
+
+  // Pending deliveries
+  const pendDels = deliveries.filter(d => d.status !== 'Delivered')
+    .sort((a,b) => (a.delivDate||'9999') > (b.delivDate||'9999') ? 1 : -1);
+  grid += '<div class="dash-card"><div class="dash-card-title">🚛 Pending Deliveries</div>';
+  if (pendDels.length) {
+    pendDels.slice(0,6).forEach(d => {
+      grid += '<div class="dash-list-item">' +
+        '<div><div style="font-size:0.82rem;font-weight:500">' + (d.city||d.addr||'—') + '</div>' +
+        '<div style="font-size:0.7rem;color:var(--text-muted)">' + (d.business||d.dist||'') + (d.bolNum?' · BOL '+d.bolNum:'') + '</div></div>' +
+        '<span class="badge ' + (DEL_STATUS[d.status]||'badge-muted') + '" style="font-size:0.65rem">' + d.status + '</span></div>';
+    });
+    if (pendDels.length > 6) grid += '<div style="font-size:0.75rem;color:var(--text-muted);padding:6px 0">+ ' + (pendDels.length-6) + ' more</div>';
+  } else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">All deliveries done ✓</div>';
   grid += '</div>';
-  grid += '<div class="dash-card"><div class="dash-card-title">🚛 PendingLocation</div>';
-  if (pendingDelList.length) pendingDelList.slice(0,5).forEach(d => { grid += '<div class="dash-list-item"><span style="font-size:0.82rem">' + (d.city||d.addr||'—') + (d.bolNum?' <span style="font-size:0.7rem;color:var(--blue)">'+d.bolNum+'</span>':'') + '</span><span class="badge ' + (DEL_STATUS[d.status]||'badge-muted') + '" style="font-size:0.65rem">' + d.status + '</span></div>'; });
-  else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">無PendingLocation</div>';
+
+  // Outstanding invoices
+  const unpaidInvs = invoices.filter(i => i.status !== 'Paid').sort((a,b) => {
+    const ba = ((Number(a.qty)||0)*(Number(a.unitPrice)||0))-(Number(a.paid)||0);
+    const bb = ((Number(b.qty)||0)*(Number(b.unitPrice)||0))-(Number(b.paid)||0);
+    return bb - ba;
+  });
+  grid += '<div class="dash-card"><div class="dash-card-title">🧾 Outstanding Invoices</div>';
+  if (unpaidInvs.length) {
+    unpaidInvs.slice(0,5).forEach(i => {
+      const bal = ((Number(i.qty)||0)*(Number(i.unitPrice)||0))-(Number(i.paid)||0);
+      grid += '<div class="dash-list-item"><div><div style="font-size:0.82rem">' + (i.billTo||'—') + '</div>' +
+        '<div style="font-size:0.7rem;color:var(--text-muted)">INV #' + (i.num||'?') + ' · ' + fmtDate(i.date) + '</div></div>' +
+        '<span style="color:var(--red);font-family:var(--mono);font-size:0.8rem">' + fmt$(bal) + '</span></div>';
+    });
+    if (unpaidInvs.length > 5) grid += '<div style="font-size:0.75rem;color:var(--text-muted);padding:6px 0">+ ' + (unpaidInvs.length-5) + ' more</div>';
+  } else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">All invoices paid ✓</div>';
   grid += '</div>';
+
+  // Pending tasks
+  const pendTasks = tasks.filter(t => !t.done).sort((a,b) => {
+    const po = {'Urgent':0,'Important':1,'Normal':2};
+    return (po[a.priority]||2)-(po[b.priority]||2);
+  });
+  grid += '<div class="dash-card"><div class="dash-card-title">✅ Tasks</div>';
+  if (pendTasks.length) {
+    pendTasks.slice(0,5).forEach(t => {
+      const pc = {'Normal':'var(--text-dim)','Important':'var(--amber)','Urgent':'var(--red)'};
+      grid += '<div class="dash-list-item"><span style="font-size:0.82rem">' + t.text + '</span>' +
+        '<span style="font-size:0.65rem;color:' + (pc[t.priority]||'var(--text-dim)') + '">' + (t.priority||'Normal') + '</span></div>';
+    });
+    if (pendTasks.length > 5) grid += '<div style="font-size:0.75rem;color:var(--text-muted);padding:6px 0">+ ' + (pendTasks.length-5) + ' more</div>';
+  } else grid += '<div style="color:var(--text-dim);font-size:0.82rem;padding:8px 0">No pending tasks ✓</div>';
+  grid += '</div>';
+
   gridEl.innerHTML = grid;
 }
+
 
 
 function renderAll() {
