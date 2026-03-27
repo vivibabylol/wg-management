@@ -7,30 +7,32 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0d1117;
-  --surface: #161b22;
-  --surface2: #1c2128;
-  --surface3: #21262d;
-  --border: #30363d;
-  --border2: #3d444d;
-  --text: #e6edf3;
-  --text-muted: #7d8590;
-  --text-dim: #484f58;
-  --green: #3fb950;
-  --green-dim: #1a3a22;
-  --green-glow: rgba(63,185,80,0.15);
-  --blue: #58a6ff;
-  --blue-dim: #1a2a40;
-  --amber: #d29922;
-  --amber-dim: #2d2208;
-  --red: #f85149;
-  --red-dim: #3a1a1a;
-  --purple: #a371f7;
-  --purple-dim: #1e1530;
-  --teal: #39d3c3;
-  --teal-dim: #0d2825;
-  --orange: #f0883e;
-  --orange-dim: #2d1a08;
+  --bg: #f0f4f8;
+  --surface: #ffffff;
+  --surface2: #f8fafc;
+  --surface3: #edf2f7;
+  --border: #e2e8f0;
+  --border2: #cbd5e1;
+  --text: #1a202c;
+  --text-muted: #718096;
+  --text-dim: #a0aec0;
+  --green: #276749;
+  --green-dim: #c6f6d5;
+  --green-glow: rgba(39,103,73,0.1);
+  --blue: #2b6cb0;
+  --blue-dim: #bee3f8;
+  --amber: #b7791f;
+  --amber-dim: #fefcbf;
+  --red: #c53030;
+  --red-dim: #fed7d7;
+  --purple: #6b46c1;
+  --purple-dim: #e9d8fd;
+  --teal: #2c7a7b;
+  --teal-dim: #b2f5ea;
+  --orange: #c05621;
+  --orange-dim: #feebc8;
+  --nav-bg: #1e3a5f;
+  --primary: #2b6cb0;
   --mono: 'JetBrains Mono', monospace;
   --sans: 'Noto Sans TC', sans-serif;
   --display: 'Syne', sans-serif;
@@ -49,23 +51,23 @@ body {
 /* ── NAV ── */
 nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  background: rgba(13,17,23,0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
+  background: var(--nav-bg);
+  border-bottom: 1px solid #162e4d;
   display: flex; align-items: center;
   height: 56px; padding: 0 20px; gap: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }
 
 .nav-logo {
   font-family: var(--display);
   font-size: 0.95rem; font-weight: 800;
-  color: var(--green);
+  color: #ffffff;
   letter-spacing: -0.02em;
   margin-right: 20px;
   white-space: nowrap;
 }
 
-.nav-logo span { color: var(--text-muted); font-weight: 400; }
+.nav-logo span { color: #93c5fd; font-weight: 400; }
 
 .nav-tabs { display: flex; gap: 2px; flex: 1; overflow-x: auto; scrollbar-width: none; }
 .nav-tabs::-webkit-scrollbar { display: none; }
@@ -75,14 +77,14 @@ nav {
   border-radius: 6px;
   font-family: var(--sans);
   font-size: 0.8rem; font-weight: 500;
-  color: var(--text-muted);
+  color: #93c5fd;
   background: none; border: none;
   cursor: pointer; white-space: nowrap;
   transition: all 0.15s;
   display: flex; align-items: center; gap: 6px;
 }
-.nav-tab:hover { background: var(--surface3); color: var(--text); }
-.nav-tab.active { background: var(--surface2); color: var(--text); }
+.nav-tab:hover { background: rgba(255,255,255,0.1); color: #ffffff; }
+.nav-tab.active { background: rgba(255,255,255,0.18); color: #ffffff; }
 .nav-tab .tab-dot {
   width: 6px; height: 6px; border-radius: 50%;
 }
@@ -106,8 +108,8 @@ main { padding-top: 56px; }
 .page-title span { color: var(--text-muted); font-weight: 400; font-size: 0.9rem; display: block; margin-top: 4px; }
 
 .btn-add {
-  background: var(--green);
-  color: #000;
+  background: var(--primary);
+  color: #ffffff;
   border: none; border-radius: 8px;
   padding: 9px 18px;
   font-family: var(--sans); font-size: 0.85rem; font-weight: 700;
@@ -116,7 +118,7 @@ main { padding-top: 56px; }
   display: flex; align-items: center; gap: 6px;
   flex-shrink: 0;
 }
-.btn-add:hover { background: #4cc95e; transform: translateY(-1px); }
+.btn-add:hover { background: #2c5282; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(43,108,176,0.3); }
 
 /* ── STAT CARDS ── */
 .stats-row {
@@ -129,6 +131,7 @@ main { padding-top: 56px; }
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
 }
 .stat-card-val {
   font-family: var(--mono);
@@ -153,13 +156,14 @@ main { padding-top: 56px; }
   transition: all 0.15s;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
 }
 .card::before {
   content: '';
   position: absolute; left: 0; top: 0; bottom: 0;
   width: 3px; border-radius: 0 2px 2px 0;
 }
-.card:hover { border-color: var(--border2); background: var(--surface2); transform: translateX(2px); }
+.card:hover { border-color: var(--border2); background: var(--surface2); transform: translateX(2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 
 .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
 .card-id {
@@ -194,7 +198,7 @@ main { padding-top: 56px; }
 /* ── MODAL ── */
 .modal-overlay {
   display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7); z-index: 200;
+  background: rgba(0,0,0,0.45); z-index: 200;
   align-items: flex-end; justify-content: center;
   padding: 0;
 }
@@ -209,6 +213,7 @@ main { padding-top: 56px; }
   border-radius: 16px 16px 0 0;
   width: 100%; max-height: 92vh; overflow-y: auto;
   animation: slideUp 0.2s ease;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
 }
 @media (min-width: 640px) {
   .modal { border-radius: 16px; max-width: 560px; }
@@ -252,17 +257,17 @@ input, select, textarea {
   font-family: var(--sans); font-size: 0.875rem; color: var(--text);
   outline: none; transition: border-color 0.15s; width: 100%;
 }
-input:focus, select:focus, textarea:focus { border-color: var(--green); }
+input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(43,108,176,0.12); }
 textarea { resize: vertical; min-height: 70px; }
 select option { background: var(--surface2); }
 
 .btn-save {
-  background: var(--green); color: #000; border: none;
+  background: var(--primary); color: #ffffff; border: none;
   padding: 9px 22px; border-radius: 8px;
   font-family: var(--sans); font-size: 0.875rem; font-weight: 700;
   cursor: pointer; transition: all 0.15s;
 }
-.btn-save:hover { background: #4cc95e; }
+.btn-save:hover { background: #2c5282; }
 .btn-cancel {
   background: none; border: 1px solid var(--border); color: var(--text-muted);
   padding: 9px 18px; border-radius: 8px;
@@ -309,8 +314,8 @@ select option { background: var(--surface2); }
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s;
 }
-.task-check.checked { background: var(--green); border-color: var(--green); }
-.task-check.checked::after { content: '✓'; font-size: 0.7rem; color: #000; font-weight: 700; }
+.task-check.checked { background: var(--primary); border-color: var(--primary); }
+.task-check.checked::after { content: '✓'; font-size: 0.7rem; color: #fff; font-weight: 700; }
 .task-content { flex: 1; }
 .task-text { font-size: 0.9rem; margin-bottom: 3px; }
 .task-item.done .task-text { text-decoration: line-through; color: var(--text-muted); }
@@ -348,6 +353,7 @@ select option { background: var(--surface2); }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px; padding: 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
 }
 .dash-card-title {
   font-family: var(--display); font-size: 0.85rem; font-weight: 700;
@@ -364,8 +370,9 @@ select option { background: var(--surface2); }
 
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-track { background: var(--surface2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 
 /* ── INVOICE SPECIFIC ── */
 .invoice-card::before { background: var(--teal); }
@@ -386,7 +393,7 @@ select option { background: var(--surface2); }
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s; font-size: 0.8rem;
 }
-.delivery-check.delivered { background: var(--green); border-color: var(--green); color: #000; }
+.delivery-check.delivered { background: var(--green); border-color: var(--green); color: #fff; }
 
 /* mobile grid fix */
 @media (max-width: 480px) {
@@ -399,17 +406,17 @@ select option { background: var(--surface2); }
 </head>
 <body>
 
-<div id="auth-overlay" style="position:fixed;inset:0;background:#0d1117;z-index:9999;display:flex;align-items:center;justify-content:center">
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:16px;padding:40px;width:100%;max-width:360px;text-align:center">
-    <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:#3fb950;margin-bottom:6px">WG LLC</div>
-    <div style="font-size:0.82rem;color:#7d8590;margin-bottom:28px">Operations Management</div>
+<div id="auth-overlay" style="position:fixed;inset:0;background:#f0f4f8;z-index:9999;display:flex;align-items:center;justify-content:center">
+  <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:40px;width:100%;max-width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.12)">
+    <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:#1e3a5f;margin-bottom:6px">WG LLC</div>
+    <div style="font-size:0.82rem;color:#718096;margin-bottom:28px">Operations Management</div>
     <input type="password" id="auth-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkAuth()"
-      style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;padding:11px 14px;font-size:0.95rem;color:#e6edf3;outline:none;text-align:center;margin-bottom:12px;box-sizing:border-box">
+      style="width:100%;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:11px 14px;font-size:0.95rem;color:#1a202c;outline:none;text-align:center;margin-bottom:12px;box-sizing:border-box">
     <button onclick="checkAuth()"
-      style="width:100%;background:#3fb950;color:#000;border:none;border-radius:8px;padding:11px;font-size:0.9rem;font-weight:700;cursor:pointer">
+      style="width:100%;background:#2b6cb0;color:#fff;border:none;border-radius:8px;padding:11px;font-size:0.9rem;font-weight:700;cursor:pointer">
       Login
     </button>
-    <div id="auth-error" style="color:#f85149;font-size:0.8rem;margin-top:10px;display:none">Incorrect password, please try again</div>
+    <div id="auth-error" style="color:#c53030;font-size:0.8rem;margin-top:10px;display:none">Incorrect password, please try again</div>
   </div>
 </div>
 
@@ -439,28 +446,28 @@ select option { background: var(--surface2); }
   <div class="nav-logo">WG <span>LLC</span></div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('dashboard')" id="tab-dashboard">
-      <span class="tab-dot" style="background:#3fb950"></span>Dashboard
+      <span class="tab-dot" style="background:#68d391"></span>Dashboard
     </button>
     <button class="nav-tab" onclick="showPage('tasks')" id="tab-tasks">
-      <span class="tab-dot" style="background:#d29922"></span>Tasks
+      <span class="tab-dot" style="background:#f6e05e"></span>Tasks
     </button>
     <button class="nav-tab" onclick="showPage('cargo')" id="tab-cargo">
-      <span class="tab-dot" style="background:#58a6ff"></span>Shipments
+      <span class="tab-dot" style="background:#90cdf4"></span>Shipments
     </button>
     <button class="nav-tab" onclick="showPage('delivery')" id="tab-delivery">
-      <span class="tab-dot" style="background:#a371f7"></span>Delivery
+      <span class="tab-dot" style="background:#d6bcfa"></span>Delivery
     </button>
     <button class="nav-tab" onclick="showPage('invoice')" id="tab-invoice">
-      <span class="tab-dot" style="background:#39d3c3"></span>Invoices
+      <span class="tab-dot" style="background:#81e6d9"></span>Invoices
     </button>
     <button class="nav-tab" onclick="showPage('customers')" id="tab-customers">
-      <span class="tab-dot" style="background:#f0883e"></span>Customers
+      <span class="tab-dot" style="background:#fbd38d"></span>Customers
     </button>
     <button class="nav-tab" onclick="showPage('inventory')" id="tab-inventory">
-      <span class="tab-dot" style="background:#39d3c3"></span>Inventory
+      <span class="tab-dot" style="background:#81e6d9"></span>Inventory
     </button>
     <button class="nav-tab" onclick="showPage('settings')" id="tab-settings">
-      <span class="tab-dot" style="background:#8b949e"></span>Settings
+      <span class="tab-dot" style="background:#cbd5e0"></span>Settings
     </button>
   </div>
 </nav>
@@ -497,7 +504,7 @@ select option { background: var(--surface2); }
 
 <div class="page" id="page-delivery">
   <div class="page-header">
-    <div class="page-title">DeliveredManagement <span>Delivery Tracking</span></div>
+    <div class="page-title">Delivery Management <span>Delivery Tracking</span></div>
     <button class="btn-add" onclick="openDeliveryModal()">+ New Delivery</button>
   </div>
   <div class="stats-row" id="delivery-stats"></div>
