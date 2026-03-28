@@ -614,6 +614,38 @@ select option { background: var(--surface2); }
   </div>
 </div>
 
+<div class="modal-overlay" id="productModal" onclick="closeIfOutside(event,'productModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="productModalTitle">New Product</div>
+      <button class="modal-close" onclick="closeModal('productModal')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Product Name</label><input id="prod-name" placeholder="e.g. Cotton Wrap, Raw Film, Spindle"></div>
+        <div class="form-group"><label>Unit</label><input id="prod-unit" placeholder="Rolls, Pieces, Units..."></div>
+        <div class="form-group"><label>Category</label>
+          <select id="prod-category">
+            <option value="Finished Good">Finished Good</option>
+            <option value="Raw Material">Raw Material</option>
+            <option value="Parts">Parts</option>
+            <option value="Equipment">Equipment</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Units per Pallet <span style="font-weight:400;text-transform:none">(0 if not applicable)</span></label><input type="number" id="prod-rpp" placeholder="0" min="0"></div>
+        <div class="form-group"><label>Pallets per Container <span style="font-weight:400;text-transform:none">(0 if not applicable)</span></label><input type="number" id="prod-ppc" placeholder="0" min="0"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" id="productDeleteBtn" style="display:none" onclick="deleteProductModal()">Delete</button>
+      <button class="btn-cancel" onclick="closeModal('productModal')">Cancel</button>
+      <button class="btn-save" onclick="saveProductModal()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="productionModal" onclick="closeIfOutside(event,'productionModal')">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -2251,7 +2283,7 @@ function renderSettings() {
     html += '</div>';
     html += '<div style="display:flex;gap:8px">';
     html += "<input id=\"new-" + cfg.key + "\" placeholder=\"Type new option, then press Enter or click Add\" style=\"flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--sans);font-size:0.875rem;color:var(--text);outline:none\" onkeydown=\"if(event.key==='Enter')addListItem('" + cfg.key + "')\">";
-    html += "<button onclick=\"addListItem('" + cfg.key + "')\" style=\"background:var(--green);color:#000;border:none;border-radius:8px;padding:8px 16px;font-family:var(--sans);font-size:0.82rem;font-weight:700;cursor:pointer\">Add</button>";
+    html += "<button onclick=\"addListItem('" + cfg.key + "')\" style=\"background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:var(--sans);font-size:0.82rem;font-weight:700;cursor:pointer\">Add</button>";
     html += '</div></div>';
   });
 
@@ -2259,26 +2291,34 @@ function renderSettings() {
 
   // Products section
   const prods = getProducts();
-  html += '<div style="margin-top:24px"><div style="font-family:var(--display);font-size:0.95rem;font-weight:700;margin-bottom:4px">Product List</div>';
-  html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">Manage product names, units, and categories used across Shipments, Invoices, and Deliveries</div>';
-  html += '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">';
+  const CAT_COLORS = { 'Finished Good':'var(--blue)', 'Raw Material':'var(--teal)', 'Parts':'var(--orange)', 'Equipment':'var(--purple)', 'Other':'var(--text-muted)' };
+  const CAT_BG     = { 'Finished Good':'var(--blue-dim)', 'Raw Material':'var(--teal-dim)', 'Parts':'var(--orange-dim)', 'Equipment':'var(--purple-dim)', 'Other':'var(--surface3)' };
+  html += '<div style="margin-top:28px;border-top:1px solid var(--border);padding-top:24px">';
+  html += '<div style="font-family:var(--display);font-size:0.95rem;font-weight:700;margin-bottom:4px">Product List</div>';
+  html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">Products used across Shipments, Invoices, Production, and Deliveries. Set category correctly so items appear in the right sections.</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">';
   prods.forEach((p,i) => {
-    html += '<div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px">';
-    html += '<div><div style="font-size:0.88rem;font-weight:600">' + p.name + '</div>';
-    html += '<div style="font-size:0.72rem;color:var(--text-muted)">' + p.unit + ' &middot; ' + p.category;
-    if (p.rollsPerPallet > 0)      html += ' &middot; ' + p.rollsPerPallet + '/pallet';
-    if (p.palletsPerContainer > 0) html += ' &middot; ' + p.palletsPerContainer + 'p/ctr';
+    const col = CAT_COLORS[p.category] || 'var(--text-muted)';
+    const bg  = CAT_BG[p.category]    || 'var(--surface3)';
+    html += '<div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px">';
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div style="font-size:0.88rem;font-weight:600;display:flex;align-items:center;gap:8px">' + p.name;
+    html += '<span style="font-size:0.68rem;font-weight:600;padding:2px 7px;border-radius:10px;background:' + bg + ';color:' + col + '">' + (p.category||'Other') + '</span></div>';
+    html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">' + p.unit;
+    if (p.rollsPerPallet > 0)      html += ' &middot; ' + p.rollsPerPallet + ' per pallet';
+    if (p.palletsPerContainer > 0) html += ' &middot; ' + p.palletsPerContainer + ' pallets/ctr';
     html += '</div></div>';
-    if (i > 0)            html += '<button onclick="moveProduct(' + i + ',-1)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:4px 6px" title="Move up">▲</button>';
-    else                  html += '<span style="display:inline-block;width:28px"></span>';
-    if (i < prods.length-1) html += '<button onclick="moveProduct(' + i + ',1)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:4px 6px" title="Move down">▼</button>';
-    else                  html += '<span style="display:inline-block;width:28px"></span>';
-    html += '<button onclick="editProduct(' + i + ')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:4px 8px">✎ Edit</button>';
-    html += '<button onclick="deleteProduct(' + i + ')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.8rem;padding:4px 8px">×</button>';
-    html += '</div>';
+    html += '<div style="display:flex;align-items:center;gap:2px;flex-shrink:0">';
+    if (i > 0) html += '<button onclick="moveProduct(' + i + ',-1)" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.75rem;padding:4px 5px" title="Move up">▲</button>';
+    else       html += '<span style="width:24px"></span>';
+    if (i < prods.length-1) html += '<button onclick="moveProduct(' + i + ',1)" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.75rem;padding:4px 5px" title="Move down">▼</button>';
+    else                    html += '<span style="width:24px"></span>';
+    html += '<button onclick="openProductModal(' + i + ')" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:0.8rem;padding:4px 10px;font-family:var(--sans)">Edit</button>';
+    html += '</div></div>';
   });
+  if (!prods.length) html += '<div style="color:var(--text-dim);font-size:0.85rem;padding:12px 0">No products yet. Add your first product below.</div>';
   html += '</div>';
-  html += '<button onclick="addProduct()" style="background:var(--green);color:#000;border:none;border-radius:8px;padding:8px 18px;font-family:var(--sans);font-size:0.82rem;font-weight:700;cursor:pointer">＋ Add Product</button>';
+  html += '<button onclick="openProductModal()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-family:var(--sans);font-size:0.82rem;font-weight:700;cursor:pointer">+ Add Product</button>';
   html += '</div>';
   html += '</div>';
   el.innerHTML = html;
@@ -2308,47 +2348,48 @@ function moveProduct(idx, dir) {
   renderSettings();
 }
 
-function addProduct() {
-  const name = prompt('Product Name:');
-  if (!name || !name.trim()) return;
-  const unit = prompt('Unit (e.g. Rolls, Pieces, Units):', 'Units');
-  if (unit === null) return;
-  const cat  = prompt('Category (Finished Good/Raw Material/Parts/Other):', 'Other');
-  if (cat === null) return;
-  const rpp  = prompt('Units per pallet (' + (unit||'').trim() + ')? Enter 0 if not applicable.', '0');
-  if (rpp === null) return;
-  const ppc  = prompt('Pallets per container? (0 = not applicable)', '0');
-  if (ppc === null) return;
+let editingProductIdx = null;
+
+function openProductModal(idx) {
+  editingProductIdx = (idx !== undefined && idx !== null) ? idx : null;
   const prods = getProducts();
-  prods.push({ name: name.trim(), unit: (unit||'Units').trim(), category: (cat||'Other').trim(), rollsPerPallet: Number(rpp)||0, palletsPerContainer: Number(ppc)||0 });
+  const p = editingProductIdx !== null ? prods[editingProductIdx] : null;
+  document.getElementById('productModalTitle').textContent = p ? 'Edit Product' : 'New Product';
+  document.getElementById('productDeleteBtn').style.display = p ? 'block' : 'none';
+  document.getElementById('prod-name').value     = p ? p.name : '';
+  document.getElementById('prod-unit').value     = p ? (p.unit||'') : '';
+  document.getElementById('prod-category').value = p ? (p.category||'Other') : 'Other';
+  document.getElementById('prod-rpp').value      = p ? (p.rollsPerPallet||'') : '';
+  document.getElementById('prod-ppc').value      = p ? (p.palletsPerContainer||'') : '';
+  document.getElementById('productModal').classList.add('open');
+  setTimeout(() => document.getElementById('prod-name').focus(), 100);
+}
+
+function saveProductModal() {
+  const name = document.getElementById('prod-name').value.trim();
+  if (!name) { alert('Please enter a product name.'); return; }
+  const prod = {
+    name,
+    unit:               document.getElementById('prod-unit').value.trim() || 'Units',
+    category:           document.getElementById('prod-category').value,
+    rollsPerPallet:     Number(document.getElementById('prod-rpp').value) || 0,
+    palletsPerContainer:Number(document.getElementById('prod-ppc').value) || 0,
+  };
+  const prods = getProducts();
+  if (editingProductIdx !== null) prods[editingProductIdx] = prod;
+  else prods.push(prod);
   saveProducts(prods);
+  closeModal('productModal');
   renderSettings();
 }
 
-function editProduct(idx) {
+function deleteProductModal() {
+  if (editingProductIdx === null) return;
   const prods = getProducts();
-  const p = prods[idx];
-  if (!p) return;
-  const name = prompt('Product Name:', p.name);
-  if (name === null) return;
-  const unit = prompt('Unit:', p.unit);
-  if (unit === null) return;
-  const cat  = prompt('Category:', p.category);
-  if (cat === null) return;
-  const rpp  = prompt('Units per pallet (' + (unit||'').trim() + ')? Enter 0 if not applicable.', String(p.rollsPerPallet||0));
-  if (rpp === null) return;
-  const ppc  = prompt('Pallets per container? (0 = not applicable)', String(p.palletsPerContainer||0));
-  if (ppc === null) return;
-  prods[idx] = { name: name.trim()||p.name, unit: unit.trim()||p.unit, category: cat.trim()||p.category, rollsPerPallet: Number(rpp)||0, palletsPerContainer: Number(ppc)||0 };
+  if (!confirm('Delete product "' + prods[editingProductIdx]?.name + '"?')) return;
+  prods.splice(editingProductIdx, 1);
   saveProducts(prods);
-  renderSettings();
-}
-
-function deleteProduct(idx) {
-  const prods = getProducts();
-  if (!confirm('Delete product "' + prods[idx]?.name + '"?')) return;
-  prods.splice(idx, 1);
-  saveProducts(prods);
+  closeModal('productModal');
   renderSettings();
 }
 
@@ -2624,124 +2665,179 @@ function renderInventory() {
   const cEl = document.getElementById('inventory-content');
   if (!sEl || !cEl) return;
 
-  // Top stats
-  const totalInQty  = cargo.reduce((s,sh) => s + (Number(sh.qty)||0), 0);
-  const inTransit   = cargo.filter(s => s.status !== 'Completed').length;
-  const arrived     = cargo.filter(s => s.status === 'Completed').length;
+  const inTransit    = cargo.filter(s => s.status !== 'Completed').length;
+  const arrived      = cargo.filter(s => s.status === 'Completed').length;
   const pendingDeliv = deliveries.filter(d => d.status !== 'Delivered').length;
+  const rmInStock    = rawMaterialLots.filter(l => lotRemaining(l) > 0).length;
   sEl.innerHTML =
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + totalInQty.toLocaleString() + '</div><div class="stat-card-lbl">Total Received</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + inTransit + '</div><div class="stat-card-lbl">In Transit</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + inTransit + '</div><div class="stat-card-lbl">Shipments In Transit</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + arrived + '</div><div class="stat-card-lbl">Completed Shipments</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + rmInStock + '</div><div class="stat-card-lbl">Raw Material Lots In Stock</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + pendingDeliv + '</div><div class="stat-card-lbl">Pending Deliveries</div></div>';
 
-  let html = '';
-  prods.forEach(prod => {
+  if (!prods.length) {
+    cEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Go to Settings to configure your product list</div>';
+    return;
+  }
+
+  // Helper: per-product cargo/delivery calculation (used for Finished Goods & Parts)
+  function calcProduct(prod) {
     const pnl = prod.name.toLowerCase();
-
-    // Incoming: cargo QTY where disc contains product name (fuzzy)
     const relCargo = cargo.filter(s => s.disc && s.disc.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,'')));
-    const cargoQty = relCargo.reduce((s,sh) => s + (Number(sh.qty)||0), 0);
-    const importedQty = cargoQty;
-    const inTransitQty = relCargo.filter(s=>s.status!=='Completed').reduce((s,sh)=>s+(Number(sh.qty)||0),0);
-    const arrivedQty   = relCargo.filter(s=>s.status==='Completed').reduce((s,sh)=>s+(Number(sh.qty)||0),0);
-    // Production outputs (this product was produced)
+    const cargoQty    = relCargo.reduce((s,sh) => s+(Number(sh.qty)||0), 0);
+    const inTransitQ  = relCargo.filter(s=>s.status!=='Completed').reduce((s,sh)=>s+(Number(sh.qty)||0),0);
     let prodOutputQty = 0;
-    // Production inputs (this product was consumed as raw material)
-    let prodInputQty = 0;
-    productions.forEach(pr => {
-      try { const o = JSON.parse(pr.outputs||'{}'); Object.entries(o).forEach(([k,v])=>{ if(k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) prodOutputQty+=Number(v)||0; }); } catch(e){}
-      try { const i = JSON.parse(pr.inputs||'{}');  Object.entries(i).forEach(([k,v])=>{ if(k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) prodInputQty +=Number(v)||0; }); } catch(e){}
-    });
-    const inQty = cargoQty + prodOutputQty; // total available = imported + produced
-    const consumedQty = prodInputQty;        // consumed as raw material in production
-
-    // Delivered: split by source
-    let delivImportedQty = 0, delivSelfQty = 0;
+    productions.forEach(pr => { try { const o=JSON.parse(pr.outputs||'{}'); Object.entries(o).forEach(([k,v])=>{ if(k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) prodOutputQty+=Number(v)||0; }); } catch(e){} });
+    let delivImportedQty=0, delivSelfQty=0;
     deliveries.forEach(d => {
-      let qty = 0;
-      if (d.delivItems) {
-        try {
-          const it = JSON.parse(d.delivItems);
-          Object.entries(it).forEach(([k,v]) => { if (k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) qty += Number(v)||0; });
-        } catch(e) {}
-      } else if (pnl.includes('cotton') && d.wraps) { qty += Number(d.wraps)||0; }
-      if (d.source === 'Self-produced') delivSelfQty += qty;
-      else delivImportedQty += qty;
+      let qty=0;
+      if (d.delivItems) { try { const it=JSON.parse(d.delivItems); Object.entries(it).forEach(([k,v])=>{ if(k.toLowerCase().replace(/s$/,'').includes(pnl.replace(/s$/,''))) qty+=Number(v)||0; }); } catch(e){} }
+      else if (pnl.includes('cotton') && d.wraps) qty+=Number(d.wraps)||0;
+      if (d.source==='Self-produced') delivSelfQty+=qty; else delivImportedQty+=qty;
     });
     const delivQty = delivImportedQty + delivSelfQty;
+    const inQty = cargoQty + prodOutputQty;
+    const remaining = inQty - delivQty;
+    const pct = inQty > 0 ? Math.min(100, Math.round(delivQty/inQty*100)) : 0;
+    return { relCargo, cargoQty, inTransitQ, prodOutputQty, delivImportedQty, delivSelfQty, delivQty, inQty, remaining, pct };
+  }
 
-    const remainImported = importedQty   - delivImportedQty;
-    const remainSelf     = prodOutputQty - delivSelfQty;
-    const totalOut = delivQty + consumedQty;
-    const remaining = inQty - totalOut;
-    const pct = inQty > 0 ? Math.min(100, Math.round(totalOut/inQty*100)) : 0;
+  function sectionHeader(title, color) {
+    return '<div style="display:flex;align-items:center;gap:12px;margin:28px 0 14px">' +
+      '<div style="width:4px;height:20px;background:' + color + ';border-radius:2px"></div>' +
+      '<div style="font-family:var(--display);font-size:1rem;font-weight:800;letter-spacing:-0.02em">' + title + '</div>' +
+      '<div style="flex:1;height:1px;background:var(--border)"></div></div>';
+  }
 
-    html += '<div class="card" style="margin-bottom:12px">';
-    html += '<div class="card-top"><div>';
-    html += '<div class="card-title">' + prod.name + '</div>';
-    html += '<div class="card-id">' + prod.unit + ' &middot; ' + prod.category + '</div>';
-    html += '</div></div>';
+  let html = '';
 
-    html += '<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">';
-    html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid var(--blue);border-radius:10px;padding:10px 12px">';
-    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">🚢 Imported</div>';
-    html += '<div style="font-size:1rem;font-weight:700;color:var(--blue)">' + importedQty.toLocaleString() + ' ' + prod.unit + '</div>';
-    if (inTransitQty>0) html += '<div style="font-size:0.7rem;color:var(--amber)">In Transit: '+inTransitQty.toLocaleString()+'</div>';
-    html += '<div style="font-size:0.7rem;color:var(--text-dim);border-top:1px solid var(--border);padding-top:3px;margin-top:4px">Delivered: '+delivImportedQty.toLocaleString()+'</div>';
-    html += '<div style="font-size:0.85rem;font-weight:700;color:' + (remainImported>=0?'var(--teal)':'var(--red)') + '">Rem:: '+remainImported.toLocaleString()+'</div>';
-    html += '</div>';
-    html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid var(--purple);border-radius:10px;padding:10px 12px">';
-    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">🏭 Self-produced</div>';
-    html += '<div style="font-size:1rem;font-weight:700;color:var(--purple)">' + prodOutputQty.toLocaleString() + ' ' + prod.unit + '</div>';
-    html += '<div style="font-size:0.7rem;color:var(--text-dim);border-top:1px solid var(--border);padding-top:3px;margin-top:4px">Delivered: '+delivSelfQty.toLocaleString()+'</div>';
-    html += '<div style="font-size:0.85rem;font-weight:700;color:' + (remainSelf>=0?'var(--teal)':'var(--red)') + '">Rem:: '+remainSelf.toLocaleString()+'</div>';
-    html += '</div>';
-    html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid ' + (remaining>0?'var(--teal)':remaining===0?'var(--border)':'var(--red)') + ';border-radius:10px;padding:10px 12px">';
-    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">Total Remaining</div>';
-    html += '<div style="font-size:1.3rem;font-weight:800;color:' + (remaining>0?'var(--teal)':remaining===0?'var(--text-muted)':'var(--red)') + '">' + remaining.toLocaleString() + ' ' + prod.unit + '</div>';
-    html += '</div>';
-    html += '</div>';
-    html += '<div class="card-grid" style="margin-top:8px">';
-    html += '<div class="card-field"><div class="card-field-lbl">Delivered</div><div class="card-field-val" style="color:var(--green)">' + delivQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
-    if (consumedQty > 0) html += '<div class="card-field"><div class="card-field-lbl">Production Consumed</div><div class="card-field-val" style="color:var(--amber)">' + consumedQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
-    html += '<div class="card-field"><div class="card-field-lbl">Total Available</div><div class="card-field-val">' + inQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
-    if (prod.rollsPerPallet > 0) {
-      const rpp2 = prod.rollsPerPallet;
-      const ppc2 = prod.palletsPerContainer||0;
-      html += '<div class="card-field"><div class="card-field-lbl">= Pallets</div><div class="card-field-val" style="color:var(--text-muted)">' + (inQty/rpp2).toFixed(1).replace(/\.0$/,'') + ' pal</div></div>';
-      if (ppc2>0) html += '<div class="card-field"><div class="card-field-lbl">= Containers</div><div class="card-field-val" style="color:var(--text-muted)">' + (inQty/rpp2/ppc2).toFixed(2).replace(/\.?0+$/,'') + ' ctr</div></div>';
-    }
-    html += '</div>';
-
-    // Progress bar
-    if (inQty > 0) {
-      html += '<div style="margin-top:10px">';
-      const barLabel = consumedQty > 0 ? 'Delivered + Consumed' : 'Delivered';
-      html += '<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px"><span>' + barLabel + '</span><span>' + pct + '% (' + totalOut.toLocaleString() + ' / ' + inQty.toLocaleString() + ' ' + prod.unit + ')</span></div>';
-      html += '<div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;background:' + (pct>=100?'var(--green)':'var(--teal)') + ';width:' + pct + '%;transition:width 0.3s"></div></div>';
+  // ── FINISHED GOODS ──
+  const finishedGoods = prods.filter(p => p.category === 'Finished Good' || (!p.category && (p.name.toLowerCase().includes('cotton')||p.name.toLowerCase().includes('wrap'))));
+  if (finishedGoods.length) {
+    html += sectionHeader('Finished Goods', 'var(--blue)');
+    finishedGoods.forEach(prod => {
+      const { relCargo, cargoQty, inTransitQ, prodOutputQty, delivImportedQty, delivSelfQty, delivQty, inQty, remaining, pct } = calcProduct(prod);
+      const remainImported = cargoQty - delivImportedQty;
+      const remainSelf = prodOutputQty - delivSelfQty;
+      html += '<div class="card" style="margin-bottom:12px">';
+      html += '<div class="card-top"><div><div class="card-title">' + prod.name + '</div><div class="card-id">' + prod.unit + '</div></div></div>';
+      html += '<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">';
+      html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid var(--blue);border-radius:10px;padding:10px 12px">';
+      html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">Imported</div>';
+      html += '<div style="font-size:1rem;font-weight:700;color:var(--blue)">' + cargoQty.toLocaleString() + ' ' + prod.unit + '</div>';
+      if (inTransitQ>0) html += '<div style="font-size:0.7rem;color:var(--amber)">In Transit: '+inTransitQ.toLocaleString()+'</div>';
+      html += '<div style="font-size:0.7rem;color:var(--text-dim);border-top:1px solid var(--border);padding-top:3px;margin-top:4px">Delivered: '+delivImportedQty.toLocaleString()+'</div>';
+      html += '<div style="font-size:0.82rem;font-weight:700;color:'+(remainImported>=0?'var(--teal)':'var(--red)')+'">Rem: '+remainImported.toLocaleString()+'</div></div>';
+      html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid var(--purple);border-radius:10px;padding:10px 12px">';
+      html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">Self-produced</div>';
+      html += '<div style="font-size:1rem;font-weight:700;color:var(--purple)">' + prodOutputQty.toLocaleString() + ' ' + prod.unit + '</div>';
+      html += '<div style="font-size:0.7rem;color:var(--text-dim);border-top:1px solid var(--border);padding-top:3px;margin-top:4px">Delivered: '+delivSelfQty.toLocaleString()+'</div>';
+      html += '<div style="font-size:0.82rem;font-weight:700;color:'+(remainSelf>=0?'var(--teal)':'var(--red)')+'">Rem: '+remainSelf.toLocaleString()+'</div></div>';
+      const remCol = remaining>0?'var(--teal)':remaining===0?'var(--text-muted)':'var(--red)';
+      html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid '+(remaining>0?'var(--teal)':'var(--border)')+';border-radius:10px;padding:10px 12px">';
+      html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">Total Remaining</div>';
+      html += '<div style="font-size:1.3rem;font-weight:800;color:'+remCol+'">' + remaining.toLocaleString() + ' ' + prod.unit + '</div>';
+      if (prod.rollsPerPallet>0) html += '<div style="font-size:0.7rem;color:var(--text-dim)">' + (remaining/prod.rollsPerPallet).toFixed(1).replace(/\.0$/,'') + ' pallets</div>';
+      html += '</div></div>';
+      if (inQty>0) {
+        html += '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px"><span>Delivered</span><span>'+pct+'% ('+delivQty.toLocaleString()+' / '+inQty.toLocaleString()+' '+prod.unit+')</span></div>';
+        html += '<div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden"><div style="height:100%;border-radius:3px;background:'+(pct>=100?'var(--green)':'var(--teal)')+';width:'+pct+'%;transition:width 0.3s"></div></div></div>';
+      }
+      if (relCargo.length) {
+        html += '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px"><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Related Shipments</div>';
+        relCargo.forEach(sh => {
+          html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:0.82rem">';
+          html += '<span style="font-family:var(--mono);color:var(--text-muted);min-width:110px">'+(sh.bolNum||'—')+'</span>';
+          html += '<span style="flex:1">'+(Number(sh.qty)||0).toLocaleString()+' '+prod.unit+'</span>';
+          html += '<span style="font-size:0.75rem;color:'+(sh.status==='Completed'?'var(--green)':sh.status&&sh.status.includes('Transit')?'var(--blue)':'var(--amber)')+'">'+sh.status+'</span></div>';
+        });
+        html += '</div>';
+      }
       html += '</div>';
-    }
+    });
+  }
 
-    // Related shipments
-    if (relCargo.length) {
-      html += '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">';
-      html += '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Related Shipments</div>';
-      relCargo.forEach(sh => {
-        const stC = sh.status==='Completed'?'var(--green)':sh.status==='Arrived - Pending Customs)'?'var(--amber)':'var(--blue)';
-        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:0.82rem">';
-        html += '<span style="font-family:var(--mono);color:var(--text-muted);min-width:110px">' + (sh.bolNum||'—') + '</span>';
-        html += '<span style="flex:1;color:var(--text)">' + (Number(sh.qty)||0).toLocaleString() + ' ' + prod.unit + '</span>';
-        html += '<span style="color:' + (sh.status==='Completed'?'var(--green)':sh.status&&sh.status.includes('Arrival')?'var(--amber)':'var(--blue)') + ';font-size:0.75rem">' + (sh.status||'—') + '</span>';
+  // ── RAW MATERIALS ──
+  const rawMats = prods.filter(p => p.category === 'Raw Material');
+  if (rawMats.length || rawMaterialLots.length) {
+    html += sectionHeader('Raw Materials', 'var(--teal)');
+    if (!rawMaterialLots.length) {
+      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;color:var(--text-muted);font-size:0.85rem">No raw material lots recorded yet. Go to <strong onclick="showPage(\'rawmaterials\')" style="color:var(--primary);cursor:pointer">Raw Materials</strong> to add your first lot.</div>';
+    } else {
+      rawMats.forEach(prod => {
+        const prodLots = rawMaterialLots.filter(l => (l.material||'').toLowerCase().replace(/s$/,'') === prod.name.toLowerCase().replace(/s$/,''));
+        const totalRec = prodLots.reduce((s,l)=>s+l.qty,0);
+        const totalRem = prodLots.reduce((s,l)=>s+lotRemaining(l),0);
+        const totalCon = totalRec - totalRem;
+        const pct = totalRec > 0 ? Math.min(100, Math.round(totalCon/totalRec*100)) : 0;
+        const remCol = totalRem>0?'var(--teal)':totalRem===0&&totalRec>0?'var(--red)':'var(--text-muted)';
+        html += '<div class="card" style="margin-bottom:12px" onclick="showPage(\'rawmaterials\')">';
+        html += '<div class="card-top"><div><div class="card-title">' + prod.name + '</div><div class="card-id">' + prod.unit + ' &middot; ' + prodLots.length + ' lot' + (prodLots.length!==1?'s':'') + ' &middot; Click to view details</div></div>';
+        html += '<div style="text-align:right"><div style="font-family:var(--mono);font-size:1.1rem;font-weight:700;color:'+remCol+'">' + totalRem.toLocaleString() + '</div><div style="font-size:0.7rem;color:var(--text-muted)">' + prod.unit + ' remaining</div></div></div>';
+        html += '<div class="card-grid" style="margin-top:10px">';
+        html += '<div class="card-field"><div class="card-field-lbl">Total Received</div><div class="card-field-val">' + totalRec.toLocaleString() + ' ' + prod.unit + '</div></div>';
+        html += '<div class="card-field"><div class="card-field-lbl">Consumed in Production</div><div class="card-field-val" style="color:var(--purple)">' + totalCon.toLocaleString() + ' ' + prod.unit + '</div></div>';
+        html += '</div>';
+        if (totalRec>0) {
+          html += '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px"><span>Consumed</span><span>'+pct+'%</span></div>';
+          html += '<div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden"><div style="height:100%;border-radius:3px;background:var(--purple);width:'+pct+'%;transition:width 0.3s"></div></div></div>';
+        }
         html += '</div>';
       });
-      html += '</div>';
+      // Show any lots whose material isn't in product list
+      const unlistedMaterials = [...new Set(rawMaterialLots.map(l=>l.material).filter(m => m && !rawMats.find(p=>p.name.toLowerCase().replace(/s$/,'')===(m||'').toLowerCase().replace(/s$/,''))))];
+      if (unlistedMaterials.length) {
+        unlistedMaterials.forEach(mat => {
+          const matLots = rawMaterialLots.filter(l=>l.material===mat);
+          const totalRem = matLots.reduce((s,l)=>s+lotRemaining(l),0);
+          const unit = matLots[0]?.unit||'';
+          html += '<div class="card" style="margin-bottom:12px;opacity:0.8" onclick="showPage(\'rawmaterials\')">';
+          html += '<div class="card-top"><div><div class="card-title">' + mat + '</div><div class="card-id">' + matLots.length + ' lot' + (matLots.length!==1?'s':'') + ' &middot; Add to product list to track properly</div></div>';
+          html += '<div style="font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--teal)">' + totalRem.toLocaleString() + ' ' + unit + '</div></div></div>';
+        });
+      }
     }
+  }
 
+  // ── PARTS ──
+  const parts = prods.filter(p => p.category === 'Parts');
+  if (parts.length) {
+    html += sectionHeader('Parts', 'var(--orange)');
+    parts.forEach(prod => {
+      const { relCargo, cargoQty, inTransitQ, delivQty, inQty, remaining, pct } = calcProduct(prod);
+      html += '<div class="card" style="margin-bottom:12px">';
+      html += '<div class="card-top"><div><div class="card-title">' + prod.name + '</div><div class="card-id">' + prod.unit + '</div></div>';
+      const remCol = remaining>0?'var(--teal)':remaining===0?'var(--text-muted)':'var(--red)';
+      html += '<div style="text-align:right"><div style="font-family:var(--mono);font-size:1.1rem;font-weight:700;color:'+remCol+'">' + remaining.toLocaleString() + '</div><div style="font-size:0.7rem;color:var(--text-muted)">' + prod.unit + ' remaining</div></div></div>';
+      html += '<div class="card-grid" style="margin-top:10px">';
+      html += '<div class="card-field"><div class="card-field-lbl">Imported</div><div class="card-field-val" style="color:var(--blue)">' + cargoQty.toLocaleString() + (inTransitQ>0?' <span style="font-size:0.7rem;color:var(--amber)">('+inTransitQ+' in transit)</span>':'') + '</div></div>';
+      html += '<div class="card-field"><div class="card-field-lbl">Delivered / Used</div><div class="card-field-val" style="color:var(--green)">' + delivQty.toLocaleString() + ' ' + prod.unit + '</div></div>';
+      html += '</div>';
+      if (relCargo.length) {
+        html += '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px"><div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Shipments</div>';
+        relCargo.slice(0,3).forEach(sh => {
+          html += '<div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;margin-bottom:4px"><span style="font-family:var(--mono);color:var(--text-muted);min-width:110px">'+(sh.bolNum||'—')+'</span><span style="flex:1">'+(Number(sh.qty)||0).toLocaleString()+' '+prod.unit+'</span><span style="font-size:0.75rem;color:'+(sh.status==='Completed'?'var(--green)':'var(--blue)')+'">'+sh.status+'</span></div>';
+        });
+        html += '</div>';
+      }
+      html += '</div>';
+    });
+  }
+
+  // ── EQUIPMENT ──
+  const equip = prods.filter(p => p.category === 'Equipment');
+  if (equip.length) {
+    html += sectionHeader('Equipment', 'var(--purple)');
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px">';
+    html += '<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px">Equipment is tracked as fixed assets. Full asset management coming soon.</div>';
+    equip.forEach(prod => {
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.85rem">';
+      html += '<span style="font-weight:600">' + prod.name + '</span><span style="color:var(--text-muted)">' + prod.unit + '</span></div>';
+    });
     html += '</div>';
-  });
+  }
 
-  cEl.innerHTML = html || '<div style="text-align:center;padding:40px;color:var(--text-muted)">Please go to Settings to configure your product list</div>';
+  cEl.innerHTML = html;
 }
 
 
