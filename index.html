@@ -1110,6 +1110,26 @@ async function deleteFromSheet(sheet, id) {
 function save() {}
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+
+// ── Auto-format helpers ──
+function titleCase(s) {
+  if (!s) return '';
+  const t = s.trim();
+  // Only reformat if all-upper or all-lower; leave mixed case (intentional) as-is
+  if (t !== t.toUpperCase() && t !== t.toLowerCase()) return t;
+  return t.toLowerCase().replace(/\b([a-z])/g, c => c.toUpperCase());
+}
+function fmtCityState(s) {
+  if (!s) return '';
+  const t = s.trim();
+  const comma = t.lastIndexOf(',');
+  if (comma >= 0) {
+    return titleCase(t.slice(0, comma)) + ', ' + t.slice(comma + 1).trim().toUpperCase();
+  }
+  return titleCase(t);
+}
+function fmtEmail(s) { return (s || '').trim().toLowerCase(); }
+function fmtZip(s)   { return (s || '').trim(); }
 function fmt$(n) { if (!n) return '—'; return '$' + Number(n).toLocaleString('en-US'); }
 function fmtPhone(p) {
   if (!p) return '';
@@ -1500,6 +1520,13 @@ async function saveDelivery() {
   data.containerNum = checked.join(', ');
   data.delivItems = JSON.stringify(getDelivItemsData());
   if (!data.addr && !data.city) { alert('Please enter address or city'); return; }
+  // Auto-format
+  data.business = titleCase(data.business);
+  data.contact  = titleCase(data.contact);
+  data.addr     = titleCase(data.addr);
+  data.city     = fmtCityState(data.city);
+  data.zip      = fmtZip(data.zip);
+  data.phone    = fmtPhone(data.phone);
   const record = editingDelivery ? { ...editingDelivery, ...data } : { id: uid(), ...data };
   closeModal('deliveryModal');
   const ok = await saveToSheet('Deliveries', record);
@@ -2191,6 +2218,14 @@ async function saveCustomer() {
     data[k] = document.getElementById("cu-"+k)?.value || "";
   });
   if (!data.company && !data.contact) { alert('Please enter company name or contact'); return; }
+  // Auto-format
+  data.company = titleCase(data.company);
+  data.contact = titleCase(data.contact);
+  data.addr    = titleCase(data.addr);
+  data.city    = fmtCityState(data.city);
+  data.zip     = fmtZip(data.zip);
+  data.phone   = fmtPhone(data.phone);
+  data.email   = fmtEmail(data.email);
   const record = editingCustomer ? {...editingCustomer,...data} : {id:uid(),...data};
   closeModal("customerModal");
   const ok = await saveToSheet("Customers", record);
