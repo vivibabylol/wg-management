@@ -759,8 +759,7 @@ select option { background: var(--surface2); }
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group full"><label>Full Name</label><input id="em-name" placeholder="Jane Smith"></div>
-        <div class="form-group"><label>Role / Title</label><input id="em-role" placeholder="Warehouse Associate"></div>
+        <div class="form-group"><label>Employee # <span style="font-weight:400;text-transform:none">(optional)</span></label><input id="em-empnum" placeholder="EMP-001" style="font-family:var(--mono)"></div>
         <div class="form-group"><label>Status</label>
           <select id="em-status">
             <option value="Active">Active</option>
@@ -768,10 +767,25 @@ select option { background: var(--surface2); }
             <option value="Terminated">Terminated</option>
           </select>
         </div>
+        <div class="form-group full"><label>Full Name</label><input id="em-name" placeholder="Jane Smith"></div>
+        <div class="form-group"><label>Role / Title</label><input id="em-role" placeholder="Warehouse Associate"></div>
+        <div class="form-group"><label>Pay Type</label>
+          <select id="em-pay-type" onchange="onPayTypeChange()">
+            <option value="Hourly">Hourly</option>
+            <option value="Salary">Salary</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label id="em-rate-lbl">Hourly Rate (USD)</label>
+          <input type="number" id="em-rate" placeholder="18.00" min="0" step="0.01" oninput="onRateInput()">
+        </div>
+        <div class="form-group">
+          <label id="em-salary-lbl">Annual Salary (USD) <span style="font-weight:400;text-transform:none">= rate × 2080</span></label>
+          <input type="number" id="em-salary" placeholder="37440" min="0" step="1" oninput="onSalaryInput()">
+        </div>
         <div class="form-group"><label>Phone</label><input type="tel" id="em-phone" placeholder="(404) 555-0000"></div>
         <div class="form-group"><label>Email</label><input type="email" id="em-email" placeholder="email@example.com"></div>
         <div class="form-group"><label>Start Date (Hire Date)</label><input type="date" id="em-start"></div>
-        <div class="form-group"><label>Hourly Rate (USD)</label><input type="number" id="em-rate" placeholder="18.00" min="0" step="0.01"></div>
         <div class="form-group full"><label>Notes</label><textarea id="em-notes" placeholder="Additional notes..."></textarea></div>
       </div>
     </div>
@@ -1152,7 +1166,7 @@ async function loadAll() {
     customers  = results[4].data || [];
     productions = (results[6]?.data || []).map(p => ({ ...p, date: normalizeDate(p.date) }));
     rawMaterialLots = (results[7]?.data || []).map(l => ({ ...l, dateReceived: normalizeDate(l.dateReceived), qty: Number(l.qty)||0 }));
-    employees     = (results[8]?.data || []).map(e => ({ ...e, start_date: normalizeDate(e.start_date), hourly_rate: Number(e.hourly_rate)||0 }));
+    employees     = (results[8]?.data || []).map(e => ({ ...e, start_date: normalizeDate(e.start_date), hourly_rate: Number(e.hourly_rate)||0, annual_salary: Number(e.annual_salary)||0 }));
     leaveRequests = (results[9]?.data || []).map(r => ({ ...r, start_date: normalizeDate(r.start_date), end_date: normalizeDate(r.end_date), days: Number(r.days)||0 }));
     ptoBalances   = (results[10]?.data || []).map(b => ({ ...b, year: Number(b.year)||0, pto_rollover_in: Number(b.pto_rollover_in)||0, pto_cashout_amount: Number(b.pto_cashout_amount)||0 }));
     // Load settings from Sheets
@@ -3299,6 +3313,44 @@ let editingEmployee = null;
 let editingLeave    = null;
 let _empView        = 'roster';
 
+// ── Pay type auto-calc (2080 hrs/year = 52 wks × 40 hrs) ──
+const WORK_HRS_YEAR = 2080;
+
+function onPayTypeChange() {
+  const type   = document.getElementById('em-pay-type').value;
+  const rateLbl   = document.getElementById('em-rate-lbl');
+  const salLbl    = document.getElementById('em-salary-lbl');
+  const rateIn    = document.getElementById('em-rate');
+  const salIn     = document.getElementById('em-salary');
+  if (type === 'Hourly') {
+    rateLbl.innerHTML = 'Hourly Rate (USD) <span style="font-size:0.68rem;background:var(--blue-dim);color:var(--blue);padding:1px 6px;border-radius:4px;font-weight:700;text-transform:none">Primary</span>';
+    salLbl.innerHTML  = 'Annual Salary (USD) <span style="font-weight:400;text-transform:none;font-size:0.7rem">auto = rate × 2080</span>';
+    rateIn.style.borderColor = 'var(--blue)';
+    salIn.style.borderColor  = '';
+    salIn.style.color        = 'var(--text-muted)';
+    rateIn.style.color       = '';
+  } else {
+    salLbl.innerHTML  = 'Annual Salary (USD) <span style="font-size:0.68rem;background:var(--blue-dim);color:var(--blue);padding:1px 6px;border-radius:4px;font-weight:700;text-transform:none">Primary</span>';
+    rateLbl.innerHTML = 'Hourly Rate (USD) <span style="font-weight:400;text-transform:none;font-size:0.7rem">auto = salary ÷ 2080</span>';
+    salIn.style.borderColor  = 'var(--blue)';
+    rateIn.style.borderColor = '';
+    rateIn.style.color       = 'var(--text-muted)';
+    salIn.style.color        = '';
+  }
+}
+
+function onRateInput() {
+  const rate = Number(document.getElementById('em-rate').value);
+  if (rate > 0) document.getElementById('em-salary').value = Math.round(rate * WORK_HRS_YEAR);
+  updatePtoWarning();
+}
+
+function onSalaryInput() {
+  const sal = Number(document.getElementById('em-salary').value);
+  if (sal > 0) document.getElementById('em-rate').value = (sal / WORK_HRS_YEAR).toFixed(2);
+  updatePtoWarning();
+}
+
 // ── PTO Calculation ──
 
 // Returns PTO allotment for an employee in a given calendar year.
@@ -3391,10 +3443,15 @@ function renderEmpRoster() {
     const ptoFillColor = ptoPct > 80 ? 'var(--red)' : ptoPct > 50 ? 'var(--amber)' : 'var(--green)';
     const ptoTextColor = bal.totalRemaining <= 1 ? 'var(--red)' : bal.totalRemaining <= 2 ? 'var(--amber)' : 'var(--green)';
 
+    const payLabel = e.pay_type === 'Salary'
+      ? (e.annual_salary ? '$' + Number(e.annual_salary).toLocaleString('en-US') + '/yr' : '')
+      : (e.hourly_rate   ? '$' + Number(e.hourly_rate).toFixed(2) + '/hr' : '');
+
     let h = `<div class="card" onclick="openEmployeeModal('${e.id}')" style="border-left:3px solid #f687b3">`;
     h += `<div class="card-top"><div>`;
-    h += `<div class="card-id">${e.role || '—'}${ten ? ' &middot; ' + ten : ''}</div>`;
+    h += `<div class="card-id">${e.emp_num ? '<span style="font-family:var(--mono)">' + e.emp_num + '</span> &middot; ' : ''}${e.role || '—'}${ten ? ' &middot; ' + ten : ''}</div>`;
     h += `<div class="card-title">${e.name || '—'}</div>`;
+    if (payLabel) h += `<div style="margin-top:3px;display:inline-flex;align-items:center;gap:5px"><span style="font-size:0.72rem;background:${e.pay_type==='Salary'?'var(--purple-dim)':'var(--teal-dim)'};color:${e.pay_type==='Salary'?'var(--purple)':'var(--teal)'};padding:1px 7px;border-radius:4px;font-weight:600">${e.pay_type||'Hourly'}</span><span style="font-family:var(--mono);font-size:0.78rem;color:var(--text-muted)">${payLabel}</span></div>`;
     h += `</div><span class="badge ${EMP_STATUS_CLS[e.status] || 'badge-muted'}">${e.status || 'Active'}</span></div>`;
 
     // PTO progress bar
@@ -3413,6 +3470,8 @@ function renderEmpRoster() {
     if (sick > 0) h += `<div class="card-field"><div class="card-field-lbl">Sick Used</div><div class="card-field-val">${sick} days</div></div>`;
     if (pers > 0) h += `<div class="card-field"><div class="card-field-lbl">Personal Used</div><div class="card-field-val">${pers} days</div></div>`;
     if (e.start_date) h += `<div class="card-field"><div class="card-field-lbl">Start Date</div><div class="card-field-val">${fmtDate(e.start_date)}</div></div>`;
+    if (e.hourly_rate && e.pay_type === 'Salary') h += `<div class="card-field"><div class="card-field-lbl">Hourly Rate</div><div class="card-field-val">$${Number(e.hourly_rate).toFixed(2)}</div></div>`;
+    if (e.annual_salary && e.pay_type === 'Hourly') h += `<div class="card-field"><div class="card-field-lbl">Annual Equiv.</div><div class="card-field-val">$${Number(e.annual_salary).toLocaleString('en-US')}</div></div>`;
     h += `</div>`;
 
     h += `<div style="margin-top:10px;text-align:right">`;
@@ -3498,34 +3557,43 @@ function openEmployeeModal(id) {
   editingEmployee = rec || null;
   document.getElementById('empModalTitle').textContent = rec ? 'Edit Employee' : 'New Employee';
   document.getElementById('empDeleteBtn').style.display = rec ? 'block' : 'none';
-  document.getElementById('em-name').value   = rec ? (rec.name || '') : '';
-  document.getElementById('em-role').value   = rec ? (rec.role || '') : '';
-  document.getElementById('em-phone').value  = rec ? (rec.phone || '') : '';
-  document.getElementById('em-email').value  = rec ? (rec.email || '') : '';
-  document.getElementById('em-start').value  = rec ? (rec.start_date || '') : '';
-  document.getElementById('em-rate').value   = rec ? (rec.hourly_rate || '') : '';
-  document.getElementById('em-notes').value  = rec ? (rec.notes || '') : '';
-  document.getElementById('em-status').value = rec ? (rec.status || 'Active') : 'Active';
+  document.getElementById('em-empnum').value   = rec ? (rec.emp_num || '') : '';
+  document.getElementById('em-name').value     = rec ? (rec.name || '') : '';
+  document.getElementById('em-role').value     = rec ? (rec.role || '') : '';
+  document.getElementById('em-phone').value    = rec ? (rec.phone || '') : '';
+  document.getElementById('em-email').value    = rec ? (rec.email || '') : '';
+  document.getElementById('em-start').value    = rec ? (rec.start_date || '') : '';
+  document.getElementById('em-notes').value    = rec ? (rec.notes || '') : '';
+  document.getElementById('em-status').value   = rec ? (rec.status || 'Active') : 'Active';
+  document.getElementById('em-pay-type').value = rec ? (rec.pay_type || 'Hourly') : 'Hourly';
+  document.getElementById('em-rate').value     = rec ? (rec.hourly_rate || '') : '';
+  document.getElementById('em-salary').value   = rec ? (rec.annual_salary || '') : '';
+  onPayTypeChange();
   document.getElementById('employeeModal').classList.add('open');
 }
 
 async function saveEmployee() {
   const name = document.getElementById('em-name').value.trim();
   if (!name) { alert('Please enter the employee name.'); return; }
+  const payType      = document.getElementById('em-pay-type').value;
+  const hourlyRate   = Number(document.getElementById('em-rate').value) || 0;
+  const annualSalary = Number(document.getElementById('em-salary').value) || 0;
   const record = {
-    id:          editingEmployee ? editingEmployee.id : uid(),
-    name:        titleCase(name),
-    role:        document.getElementById('em-role').value.trim(),
-    phone:       fmtPhone(document.getElementById('em-phone').value),
-    email:       fmtEmail(document.getElementById('em-email').value),
-    start_date:  document.getElementById('em-start').value,
-    hourly_rate: Number(document.getElementById('em-rate').value) || 0,
-    status:      document.getElementById('em-status').value,
-    notes:       document.getElementById('em-notes').value.trim(),
+    id:            editingEmployee ? editingEmployee.id : uid(),
+    emp_num:       document.getElementById('em-empnum').value.trim(),
+    name:          titleCase(name),
+    role:          document.getElementById('em-role').value.trim(),
+    pay_type:      payType,
+    hourly_rate:   hourlyRate,
+    annual_salary: annualSalary,
+    phone:         fmtPhone(document.getElementById('em-phone').value),
+    email:         fmtEmail(document.getElementById('em-email').value),
+    start_date:    document.getElementById('em-start').value,
+    status:        document.getElementById('em-status').value,
+    notes:         document.getElementById('em-notes').value.trim(),
   };
-  closeModal('employeeModal');
   const ok = await saveToSheet('Employees', record);
-  if (ok) await loadAll();
+  if (ok) { closeModal('employeeModal'); await loadAll(); }
 }
 
 async function deleteEmployee() {
