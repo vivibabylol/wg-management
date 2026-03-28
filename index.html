@@ -1203,7 +1203,9 @@ async function saveToSheet(sheet, record) {
     setTimeout(hideSync, 1500);
     return true;
   } catch(e) {
-    showSync('⚠ Save failed', 'var(--red-dim)');
+    const msg = e.message && e.message !== 'undefined' ? e.message : 'Save failed';
+    showSync('⚠ ' + msg, 'var(--red-dim)');
+    setTimeout(hideSync, 8000);
     console.error(e);
     return false;
   }
