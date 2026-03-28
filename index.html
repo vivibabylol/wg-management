@@ -2611,7 +2611,7 @@ function onDelivUnitChange(prodName) {
 function populateDelivItemsGrid(d) {
   const grid = document.getElementById('d-items-grid');
   if (!grid) return;
-  const prods = getProducts();
+  const prods = getProducts().filter(p => p.category === 'Finished Good' || p.category === 'Parts');
   let saved = {};
   if (d && d.delivItems) {
     try { saved = JSON.parse(d.delivItems); } catch(e) { saved = {}; }
@@ -2653,7 +2653,7 @@ function populateDelivItemsGrid(d) {
 }
 
 function getDelivItemsData() {
-  const prods = getProducts();
+  const prods = getProducts().filter(p => p.category === 'Finished Good' || p.category === 'Parts');
   const result = {};
   prods.forEach(p => {
     const sid = 'ditem-' + p.name.replace(/[^a-zA-Z0-9]/g,'_');
