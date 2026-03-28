@@ -599,7 +599,10 @@ select option { background: var(--surface2); }
             <option value="Local">Local Supplier</option>
           </select>
         </div>
-        <div class="form-group full"><label>Supplier</label><input id="rm-supplier" placeholder="Supplier name"></div>
+        <div class="form-group full"><label>Supplier</label>
+          <input id="rm-supplier" placeholder="Type or select supplier..." list="rm-supplier-list" autocomplete="off">
+          <datalist id="rm-supplier-list"></datalist>
+        </div>
         <div class="form-group full"><label>Notes</label><textarea id="rm-notes" placeholder="Additional notes..."></textarea></div>
       </div>
     </div>
@@ -2844,11 +2847,20 @@ function openRawMaterialLotModal(rec) {
   document.getElementById('rm-source').value = rec ? (rec.source||'Import') : 'Import';
   document.getElementById('rm-supplier').value = rec ? (rec.supplier||'') : '';
   document.getElementById('rm-notes').value = rec ? (rec.notes||'') : '';
-  const prods = getProducts().filter(p => p.category === 'Raw Material' || p.category === 'Parts' || p.category === 'Other' || !p.category);
+  // Populate supplier datalist from existing lots
+  const suppliers = [...new Set(rawMaterialLots.map(l => l.supplier).filter(Boolean))].sort();
+  const dl = document.getElementById('rm-supplier-list');
+  if (dl) dl.innerHTML = suppliers.map(s => '<option value="' + s + '">').join('');
+
+  const prods = getProducts().filter(p => p.category === 'Raw Material');
   const matSel = document.getElementById('rm-material');
-  matSel.innerHTML = '<option value="">Select material...</option>' +
-    prods.map(p => '<option value="' + p.name + '"' + (rec?.material === p.name ? ' selected' : '') + '>' + p.name + '</option>').join('');
-  if (rec?.material && !prods.find(p => p.name === rec.material)) matSel.innerHTML += '<option value="' + rec.material + '" selected>' + rec.material + '</option>';
+  if (!prods.length) {
+    matSel.innerHTML = '<option value="">No raw materials in Settings yet</option>';
+  } else {
+    matSel.innerHTML = '<option value="">Select material...</option>' +
+      prods.map(p => '<option value="' + p.name + '"' + (rec?.material === p.name ? ' selected' : '') + '>' + p.name + '</option>').join('');
+    if (rec?.material && !prods.find(p => p.name === rec.material)) matSel.innerHTML += '<option value="' + rec.material + '" selected>' + rec.material + '</option>';
+  }
   matSel.onchange = () => { const p = prods.find(x => x.name === matSel.value); if (p) document.getElementById('rm-unit').value = p.unit || ''; };
   document.getElementById('rawMaterialLotModal').classList.add('open');
 }
