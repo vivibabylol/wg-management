@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>WG LLC — Leave Request</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: #f0f4f8;
+  min-height: 100vh;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 32px 16px 60px;
+}
+.card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  padding: 36px 28px;
+  width: 100%; max-width: 480px;
+}
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.1rem; font-weight: 800; color: #1e3a5f;
+  margin-bottom: 20px;
+}
+.logo span { color: #93c5fd; font-weight: 400; }
+h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.45rem; font-weight: 700; color: #1a202c;
+  margin-bottom: 6px;
+}
+.subtitle { font-size: 0.82rem; color: #718096; margin-bottom: 28px; line-height: 1.5; }
+.form-group { margin-bottom: 16px; }
+label {
+  display: block; font-size: 0.72rem; font-weight: 600;
+  color: #718096; text-transform: uppercase; letter-spacing: 0.07em;
+  margin-bottom: 6px;
+}
+input, select, textarea {
+  width: 100%; background: #f8fafc; border: 1px solid #e2e8f0;
+  border-radius: 8px; padding: 10px 12px;
+  font-family: 'Noto Sans TC', sans-serif; font-size: 0.9rem; color: #1a202c;
+  outline: none; transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: #2b6cb0;
+  box-shadow: 0 0 0 3px rgba(43,108,176,0.12);
+}
+textarea { resize: vertical; min-height: 70px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.days-note { font-size: 0.75rem; color: #718096; margin-top: 5px; }
+.btn {
+  width: 100%; background: #2b6cb0; color: #fff; border: none;
+  border-radius: 10px; padding: 13px;
+  font-family: 'Noto Sans TC', sans-serif; font-size: 0.95rem; font-weight: 700;
+  cursor: pointer; margin-top: 8px; transition: all 0.15s;
+}
+.btn:hover { background: #2c5282; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(43,108,176,0.3); }
+.btn:disabled { background: #a0aec0; cursor: not-allowed; transform: none; box-shadow: none; }
+.error-box {
+  display: none; margin-top: 14px; padding: 10px 14px;
+  background: #fed7d7; color: #c53030; border-radius: 8px; font-size: 0.82rem;
+}
+/* Success view */
+.success { text-align: center; padding: 20px 0; display: none; }
+.success-icon { font-size: 3.5rem; margin-bottom: 16px; }
+.success h2 { font-family: 'Syne', sans-serif; color: #276749; margin-bottom: 10px; }
+.success p { color: #718096; font-size: 0.88rem; line-height: 1.7; }
+@media (max-width: 420px) {
+  .row { grid-template-columns: 1fr; }
+  .card { padding: 28px 20px; }
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">WG <span>LLC</span></div>
+
+  <!-- Form -->
+  <div id="form-view">
+    <h1>Leave Request</h1>
+    <p class="subtitle">Fill in the form below and click Submit. Your manager will be notified and you'll receive an email once it's reviewed.</p>
+
+    <div class="row">
+      <div class="form-group">
+        <label>Employee #</label>
+        <input id="f-empnum" placeholder="EMP-001">
+      </div>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input id="f-name" placeholder="Jane Smith">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Your Email <span style="font-weight:400;text-transform:none">(to receive the result)</span></label>
+      <input type="email" id="f-email" placeholder="your@email.com">
+    </div>
+
+    <div class="form-group">
+      <label>Leave Type</label>
+      <select id="f-type">
+        <option value="PTO">PTO (Paid Time Off)</option>
+        <option value="Sick">Sick Leave</option>
+        <option value="Personal">Personal Leave</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>Start Date</label>
+        <input type="date" id="f-start" oninput="calcDays()">
+      </div>
+      <div class="form-group">
+        <label>End Date</label>
+        <input type="date" id="f-end" oninput="calcDays()">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Days</label>
+      <input type="number" id="f-days" placeholder="1" min="0.5" step="0.5">
+      <div class="days-note" id="days-note"></div>
+    </div>
+
+    <div class="form-group">
+      <label>Reason <span style="font-weight:400;text-transform:none">(optional)</span></label>
+      <textarea id="f-notes" placeholder="Brief reason or details..."></textarea>
+    </div>
+
+    <div id="error-box" class="error-box"></div>
+    <button class="btn" id="submit-btn" onclick="submitLeave()">Submit Request</button>
+  </div>
+
+  <!-- Success -->
+  <div id="success-view" class="success">
+    <div class="success-icon">✅</div>
+    <h2>Request Submitted!</h2>
+    <p>Your leave request has been sent to your manager.<br>You'll receive an email once it's reviewed.</p>
+  </div>
+</div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbyt6jYEDSeesF1chOR1oQhRYRZx_1GTNFB79mZpJY2qF7CDu2iDow4A80S8b6Mefpd8/exec';
+
+function calcDays() {
+  const s = document.getElementById('f-start').value;
+  const e = document.getElementById('f-end').value;
+  const note = document.getElementById('days-note');
+  if (s && e && e >= s) {
+    const d = Math.round((new Date(e+'T12:00:00') - new Date(s+'T12:00:00')) / 86400000) + 1;
+    document.getElementById('f-days').value = d;
+    note.textContent = d + ' calendar day' + (d !== 1 ? 's' : '');
+  } else {
+    note.textContent = '';
+  }
+}
+
+async function submitLeave() {
+  const empNum = document.getElementById('f-empnum').value.trim();
+  const name   = document.getElementById('f-name').value.trim();
+  const email  = document.getElementById('f-email').value.trim();
+  const type   = document.getElementById('f-type').value;
+  const start  = document.getElementById('f-start').value;
+  const end    = document.getElementById('f-end').value;
+  const days   = Number(document.getElementById('f-days').value) || 1;
+  const notes  = document.getElementById('f-notes').value.trim();
+
+  hideError();
+  if (!empNum)  { showError('Please enter your Employee #.'); return; }
+  if (!name)    { showError('Please enter your full name.'); return; }
+  if (!email)   { showError('Please enter your email address.'); return; }
+  if (!start)   { showError('Please select a start date.'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  try {
+    const record = {
+      id:          Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+      employee_id: empNum,
+      emp_num:     empNum,
+      emp_name:    name,
+      emp_email:   email,
+      leave_type:  type,
+      start_date:  start,
+      end_date:    end || start,
+      days:        days,
+      status:      'Pending',
+      approved_by: '',
+      notes:       notes,
+    };
+    const res  = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'submitLeave', record }) });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Submission failed');
+    document.getElementById('form-view').style.display  = 'none';
+    document.getElementById('success-view').style.display = 'block';
+  } catch(e) {
+    showError('Submission failed — ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'Submit Request';
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-box');
+  el.textContent = msg; el.style.display = 'block';
+}
+function hideError() {
+  document.getElementById('error-box').style.display = 'none';
+}
+</script>
+</body>
+</html>
