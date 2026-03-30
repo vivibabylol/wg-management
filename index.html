@@ -1159,31 +1159,29 @@ function hideSync() {
 async function loadAll() {
   showSync('⟳ Loading...');
   try {
-    const sheets = ['Shipments','Invoices','Deliveries','Tasks','Customers','Settings','Production','RawMaterialLots','Employees','LeaveRequests','PTOBalances'];
-    const results = await Promise.all(sheets.map(s =>
-      fetch(`${API}?sheet=${s}`).then(r => r.json())
-    ));
+    const res = await fetch(`${API}?sheet=ALL`).then(r => r.json());
+    const d = res.data || {};
     const CARGO_DATE_FIELDS = ['etd','eta','etaFinal','date_debitNote','date_arrivalNotice','date_carrierFeePaid','date_entrySummary','date_customsPaid','date_inlandBOL','date_forwarderInv','date_forwarderPaid','date_customerPaid'];
-    cargo = (results[0].data || []).map(s => {
+    cargo = (d.Shipments || []).map(s => {
       CARGO_DATE_FIELDS.forEach(f => { s[f] = normalizeDate(s[f]); });
       return s;
     });
-    invoices   = results[1].data || [];
-    deliveries = (results[2].data || []).map(d => {
-      if (d.bolNum !== undefined) d.bolNum = String(d.bolNum).trim();
-      if (!d.source) d.source = 'Imported';
-      ['delivDate'].forEach(f => { d[f] = normalizeDate(d[f]); });
-      return d;
+    invoices   = d.Invoices || [];
+    deliveries = (d.Deliveries || []).map(del => {
+      if (del.bolNum !== undefined) del.bolNum = String(del.bolNum).trim();
+      if (!del.source) del.source = 'Imported';
+      del.delivDate = normalizeDate(del.delivDate);
+      return del;
     });
-    tasks      = results[3].data || [];
-    customers  = results[4].data || [];
-    productions = (results[6]?.data || []).map(p => ({ ...p, date: normalizeDate(p.date) }));
-    rawMaterialLots = (results[7]?.data || []).map(l => ({ ...l, dateReceived: normalizeDate(l.dateReceived), qty: Number(l.qty)||0 }));
-    employees     = (results[8]?.data || []).map(e => ({ ...e, start_date: normalizeDate(e.start_date), hourly_rate: Number(e.hourly_rate)||0, annual_salary: Number(e.annual_salary)||0 }));
-    leaveRequests = (results[9]?.data || []).map(r => ({ ...r, start_date: normalizeDate(r.start_date), end_date: normalizeDate(r.end_date), days: Number(r.days)||0 }));
-    ptoBalances   = (results[10]?.data || []).map(b => ({ ...b, year: Number(b.year)||0, pto_rollover_in: Number(b.pto_rollover_in)||0, pto_cashout_amount: Number(b.pto_cashout_amount)||0 }));
+    tasks           = d.Tasks || [];
+    customers       = d.Customers || [];
+    productions     = (d.Production || []).map(p => ({ ...p, date: normalizeDate(p.date) }));
+    rawMaterialLots = (d.RawMaterialLots || []).map(l => ({ ...l, dateReceived: normalizeDate(l.dateReceived), qty: Number(l.qty)||0 }));
+    employees       = (d.Employees || []).map(e => ({ ...e, start_date: normalizeDate(e.start_date), hourly_rate: Number(e.hourly_rate)||0, annual_salary: Number(e.annual_salary)||0 }));
+    leaveRequests   = (d.LeaveRequests || []).map(r => ({ ...r, start_date: normalizeDate(r.start_date), end_date: normalizeDate(r.end_date), days: Number(r.days)||0 }));
+    ptoBalances     = (d.PTOBalances || []).map(b => ({ ...b, year: Number(b.year)||0, pto_rollover_in: Number(b.pto_rollover_in)||0, pto_cashout_amount: Number(b.pto_cashout_amount)||0 }));
     // Load settings from Sheets
-    const rawSets = results[5]?.data || [];
+    const rawSets = d.Settings || [];
     if (rawSets.length) {
       const merged = {};
       rawSets.forEach(r => { try { merged[r.key] = JSON.parse(r.value); } catch{} });

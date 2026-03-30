@@ -47,7 +47,15 @@ function doGet(e) {
   }
   // Normal data fetch
   try {
-    const data = getSheetData(e.parameter.sheet);
+    const sheetName = e.parameter.sheet;
+    if (sheetName === 'ALL') {
+      const all = {};
+      Object.keys(SHEET_HEADERS).forEach(function(name) {
+        all[name] = getSheetData(name);
+      });
+      return buildCorsResponse(JSON.stringify({ ok: true, data: all }));
+    }
+    const data = getSheetData(sheetName);
     return buildCorsResponse(JSON.stringify({ ok: true, data }));
   } catch(err) {
     return buildCorsResponse(JSON.stringify({ ok: false, error: err.message }));
