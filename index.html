@@ -1805,6 +1805,15 @@ function renderDeliveryStats() {
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + totalWraps + '</div><div class="stat-card-lbl">Wraps Pending</div></div>';
 }
 
+function toggleDelivDetail(id) {
+  const el = document.getElementById('dd-' + id);
+  const arrow = document.getElementById('dd-arrow-' + id);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.textContent = open ? '▼' : '▲';
+}
+
 function renderDeliveries() {
   renderDeliveryStats();
   const el = document.getElementById('delivery-list');
@@ -1816,8 +1825,14 @@ function renderDeliveries() {
   });
   let html = '';
   sorted.forEach(d => {
-    html += '<div class="card delivery-card" onclick="openDeliveryEdit(\'' + d.id + '\')">';
-    html += '<div class="card-top"><div>';
+    const shipRefD = d.bolNum ? cargo.find(s => String(s.bolNum||'').trim() === String(d.bolNum||'').trim()) : null;
+    const inlandBol = shipRefD ? (shipRefD.ref_inlandBOL||'') : '';
+
+    html += '<div class="card delivery-card">';
+
+    // ── Collapsible header ──
+    html += '<div style="cursor:pointer" onclick="toggleDelivDetail(\'' + d.id + '\')">';
+    html += '<div class="card-top"><div style="flex:1">';
     html += '<div class="card-id">' + (d.dist||'') + (d.business&&d.business!==d.dist?' &middot; '+d.business:'') + '</div>';
     html += '<div class="card-title">' + (d.city||d.addr||'—') + '</div>';
     if (d.containerNum || d.bolNum) {
@@ -1827,15 +1842,17 @@ function renderDeliveries() {
       if (d.bolNum) html += '<span style="font-size:0.7rem;color:var(--text-dim);padding:2px 4px;font-family:var(--mono)">BOL: '+d.bolNum+'</span>';
       html += '</div>';
     }
-
-    html += '</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">';
+    html += '</div>';
+    html += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">';
     html += '<span class="badge ' + (DEL_STATUS[d.status]||'badge-muted') + '">' + d.status + '</span>';
     if (d.source) html += '<span style="font-size:0.68rem;padding:2px 7px;border-radius:10px;background:' + (d.source==='Self-produced'?'var(--purple-dim,#3a2d4a)':'var(--blue-dim,#1a2d3d)') + ';color:' + (d.source==='Self-produced'?'var(--purple)':'var(--blue)') + '">' + (d.source==='Self-produced'?'🏭':'🚢') + ' ' + d.source + '</span>';
-    html += '<button onclick="event.stopPropagation();toggleDelivered(\'' + d.id + '\')" class="delivery-check ' + (d.status==='Delivered'?'delivered':'') + '" title="MarkDelivered">' + (d.status==='Delivered'?'✓':'') + '</button>';
+    html += '<span id="dd-arrow-' + d.id + '" style="font-size:0.7rem;color:var(--text-muted)">▼</span>';
     html += '</div></div>';
+    html += '</div>'; // end header
+
+    // ── Expandable details ──
+    html += '<div id="dd-' + d.id + '" style="display:none;border-top:1px solid var(--border);margin-top:8px;padding-top:8px">';
     html += '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px">📍 ' + (d.addr||'') + (d.city?', '+d.city:'') + ' ' + (d.zip||'') + '</div>';
-    const shipRefD = d.bolNum ? cargo.find(s => String(s.bolNum||'').trim() === String(d.bolNum||'').trim()) : null;
-    const inlandBol = shipRefD ? (shipRefD.ref_inlandBOL||'') : '';
     if (inlandBol) html += '<div style="font-size:0.75rem;color:var(--amber);margin-bottom:6px;font-family:var(--mono)">📄 Inland BOL: ' + inlandBol + '</div>';
     html += '<div class="card-grid">';
     if (d.contact)   html += '<div class="card-field"><div class="card-field-lbl">Contact</div><div class="card-field-val">' + d.contact + '</div></div>';
@@ -1847,7 +1864,6 @@ function renderDeliveries() {
         const pmap = {}; prods4d.forEach(p => pmap[p.name] = p);
         Object.entries(items).forEach(([k,v]) => {
           if (!v || Number(v) <= 0) return;
-          // Fuzzy match: handle 'Cotton Wraps' -> 'Cotton Wrap'
           const kl = k.toLowerCase().replace(/s$/,'');
           const pp = pmap[k] || prods4d.find(p => p.name.toLowerCase().replace(/s$/,'') === kl || kl.includes(p.name.toLowerCase().replace(/s$/,'')) || p.name.toLowerCase().replace(/s$/,'').includes(kl));
           const rpp = pp?.rollsPerPallet||0;
@@ -1872,7 +1888,14 @@ function renderDeliveries() {
       if (d.parts) html += '<div class="card-field"><div class="card-field-lbl">Parts</div><div class="card-field-val">' + d.parts + ' pcs</div></div>';
     }
     if (d.delivDate) html += '<div class="card-field"><div class="card-field-lbl">Delivery Date</div><div class="card-field-val">' + fmtDate(d.delivDate) + '</div></div>';
-    html += '</div></div>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px;margin-top:10px">';
+    html += '<button onclick="toggleDelivered(\'' + d.id + '\')" class="delivery-check ' + (d.status==='Delivered'?'delivered':'') + '" style="flex:0" title="Mark Delivered">' + (d.status==='Delivered'?'✓ Delivered':'Mark Delivered') + '</button>';
+    html += '<button onclick="openDeliveryEdit(\'' + d.id + '\')" style="flex:1;background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:0.8rem;color:var(--text-muted);font-family:var(--sans);cursor:pointer">Edit</button>';
+    html += '</div>';
+    html += '</div>'; // end details
+
+    html += '</div>'; // end card
   });
   el.innerHTML = html;
 }
@@ -2968,7 +2991,12 @@ function renderInventory() {
       html += '<div style="flex:1;min-width:110px;background:var(--surface2);border:1.5px solid '+(remaining>0?'var(--teal)':'var(--border)')+';border-radius:10px;padding:10px 12px">';
       html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px">Total Remaining</div>';
       html += '<div style="font-size:1.3rem;font-weight:800;color:'+remCol+'">' + remaining.toLocaleString() + ' ' + prod.unit + '</div>';
-      if (prod.rollsPerPallet>0) html += '<div style="font-size:0.7rem;color:var(--text-dim)">' + (remaining/prod.rollsPerPallet).toFixed(1).replace(/\.0$/,'') + ' pallets</div>';
+      if (prod.rollsPerPallet>0) {
+        const remPallets = remaining/prod.rollsPerPallet;
+        let palletStr = remPallets.toFixed(1).replace(/\.0$/,'') + ' pallets';
+        if (prod.palletsPerContainer>0) palletStr += ' / ' + (remPallets/prod.palletsPerContainer).toFixed(1).replace(/\.0$/,'') + ' ctrs';
+        html += '<div style="font-size:0.7rem;color:var(--text-dim)">' + palletStr + '</div>';
+      }
       html += '</div></div>';
       if (inQty>0) {
         html += '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px"><span>Delivered</span><span>'+pct+'% ('+delivQty.toLocaleString()+' / '+inQty.toLocaleString()+' '+prod.unit+')</span></div>';
