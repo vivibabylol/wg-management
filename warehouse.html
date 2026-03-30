@@ -259,16 +259,58 @@ nav {
   padding:10px 0 6px; margin-top:8px;
   border-bottom:1px solid var(--border); margin-bottom:10px;
 }
-.inv-row {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:10px 14px; background:var(--surface); border:1px solid var(--border);
-  border-radius:8px; margin-bottom:8px;
+.inv-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r); margin-bottom:10px; overflow:hidden;
 }
-.inv-name { font-size:0.9rem; font-weight:600; }
-.inv-lot  { font-family:var(--mono); font-size:0.7rem; color:var(--muted); margin-top:2px; }
-.inv-qty  { font-size:1rem; font-weight:700; text-align:right; }
-.inv-unit { font-size:0.72rem; color:var(--muted); }
+.inv-card-low { border-color:var(--red); }
+.inv-card-top {
+  display:flex; align-items:center; gap:10px;
+  padding:12px 14px; cursor:pointer;
+}
+.inv-name { font-size:0.92rem; font-weight:600; flex:1; }
+.inv-qty-wrap { text-align:right; }
+.inv-qty  { font-size:1.2rem; font-weight:800; line-height:1; }
+.inv-unit { font-size:0.7rem; color:var(--muted); margin-top:1px; }
 .inv-low  { color:var(--red); }
+.inv-adj-btns {
+  display:flex; gap:6px; padding:0 14px 12px;
+}
+.inv-btn-minus, .inv-btn-plus {
+  flex:1; border:none; border-radius:8px; padding:9px;
+  font-size:1.1rem; font-weight:700; cursor:pointer;
+}
+.inv-btn-minus { background:var(--red-bg); color:var(--red); }
+.inv-btn-plus  { background:var(--green-bg); color:var(--green); }
+.inv-lots-detail {
+  display:none; border-top:1px solid var(--border);
+  padding:10px 14px; background:var(--surface2);
+}
+.inv-lots-detail.open { display:block; }
+.inv-lot-row {
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:0.8rem; padding:4px 0; border-bottom:0.5px solid var(--border);
+}
+.inv-lot-row:last-child { border-bottom:none; }
+.inv-lot-num { font-family:var(--mono); color:var(--amber); font-size:0.72rem; }
+.inv-low-badge {
+  font-size:0.62rem; font-weight:700; background:var(--red-bg);
+  color:var(--red); border:1px solid var(--red);
+  border-radius:4px; padding:2px 6px; margin-left:6px;
+}
+/* Settings panel */
+.inv-settings {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:var(--r); padding:14px; margin-bottom:14px;
+  display:none;
+}
+.inv-settings.open { display:block; }
+.inv-settings-row {
+  display:flex; align-items:center; gap:10px;
+  margin-bottom:8px; font-size:0.85rem;
+}
+.inv-settings-row label { flex:1; font-size:0.82rem; color:var(--text); text-transform:none; letter-spacing:0; margin:0; }
+.inv-settings-row input { width:80px; flex:none; text-align:center; }
 </style>
 </head>
 <body>
@@ -422,7 +464,16 @@ nav {
 
   <!-- Inventory tab -->
   <div class="tab-pane" id="tab-inventory">
-    <div class="section-title">Current Inventory</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;margin-top:2px">
+      <div class="section-title" style="margin:0">Current Inventory</div>
+      <button onclick="toggleInvSettings()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:0.75rem;color:var(--muted);cursor:pointer">⚙ Thresholds</button>
+    </div>
+    <!-- Settings panel -->
+    <div class="inv-settings" id="inv-settings">
+      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:10px">Low Stock Thresholds</div>
+      <div id="inv-threshold-list"></div>
+      <button class="btn-primary" style="margin-top:4px" onclick="saveThresholds()">Save Thresholds</button>
+    </div>
     <div id="inv-list"></div>
   </div>
 
@@ -444,6 +495,30 @@ nav {
       <span class="nav-icon">📊</span>Stock
     </button>
   </nav>
+</div>
+
+<!-- Adjustment modal -->
+<div id="adj-modal" style="display:none;position:fixed;inset:0;z-index:60">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.55)" onclick="closeAdjModal()"></div>
+  <div style="position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-radius:16px 16px 0 0;padding:20px 16px 32px">
+    <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px"></div>
+    <div id="adj-title" style="font-size:1rem;font-weight:700;margin-bottom:16px"></div>
+    <div class="form-group">
+      <label>Quantity</label>
+      <input type="number" id="adj-qty" placeholder="0" min="1" step="1">
+    </div>
+    <div class="form-group">
+      <label>Reason</label>
+      <select id="adj-reason">
+        <option value="Physical count adjustment">Physical count adjustment</option>
+        <option value="Damaged / Waste">Damaged / Waste</option>
+        <option value="Returned to supplier">Returned to supplier</option>
+        <option value="Production correction">Production correction</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <button class="btn-primary" id="adj-confirm" onclick="submitAdj()">Confirm</button>
+  </div>
 </div>
 
 <!-- Toast -->
@@ -470,22 +545,41 @@ nav {
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbyt6jYEDSeesF1chOR1oQhRYRZx_1GTNFB79mZpJY2qF7CDu2iDow4A80S8b6Mefpd8/exec';
 
-let employees = [], rawMaterialLots = [], productions = [];
+let employees = [], rawMaterialLots = [], productions = [], inventoryAdj = [];
 let currentWorker = localStorage.getItem('wg_worker') || '';
 let productionInputs = [];
 let pickerSelectedLot = null;
+let _adjMaterial = '', _adjDir = 1; // +1 or -1
+
+// Low stock thresholds (per material, stored in localStorage)
+const DEFAULT_THRESHOLDS = {
+  '雙面膠':10,'單面膠':10,'黏膜':5,'不黏膜':5,
+  'RFID':200,'大標籤':200,'小標籤':200,
+  '100kg貼紙':100,'LEFT貼紙':100,'合格證':100,
+  '成品膜管芯':50,'單面捲墊':20,'雙面捲墊':20,
+  '滑石粉':20,
+};
+function getThresholds() {
+  try { return JSON.parse(localStorage.getItem('wg_thresholds') || '{}'); } catch(e) { return {}; }
+}
+function threshold(mat) {
+  const t = getThresholds();
+  return t[mat] !== undefined ? t[mat] : (DEFAULT_THRESHOLDS[mat] !== undefined ? DEFAULT_THRESHOLDS[mat] : 0);
+}
 
 // ── Init ──────────────────────────────────────────────────
 async function init() {
   try {
-    const [empRes, lotRes, prodRes] = await Promise.all([
+    const [empRes, lotRes, prodRes, adjRes] = await Promise.all([
       fetch(API + '?sheet=Employees').then(r => r.json()),
       fetch(API + '?sheet=RawMaterialLots').then(r => r.json()),
       fetch(API + '?sheet=Production').then(r => r.json()),
+      fetch(API + '?sheet=Inventory_Adj').then(r => r.json()),
     ]);
     employees       = empRes.data  || [];
     rawMaterialLots = (lotRes.data || []).map(l => ({ ...l, qty: Number(l.qty)||0 }));
     productions     = prodRes.data || [];
+    inventoryAdj    = (adjRes.data || []).map(a => ({ ...a, qty: Number(a.qty)||0 }));
   } catch(e) {
     showToast('Failed to load data — check connection', 'error');
   }
@@ -955,6 +1049,14 @@ function buildTraceCard(p) {
 }
 
 // ── Inventory ─────────────────────────────────────────────
+function adjTotal(mat) {
+  return inventoryAdj.filter(a => a.material === mat).reduce((s, a) => s + a.qty, 0);
+}
+function effectiveQty(mat) {
+  const lots = rawMaterialLots.filter(l => l.material === mat);
+  return lots.reduce((s, l) => s + lotRemaining(l), 0) + adjTotal(mat);
+}
+
 function renderInventory() {
   const el = document.getElementById('inv-list');
   let html = '';
@@ -966,47 +1068,130 @@ function renderInventory() {
   if (!materials.length) {
     html += '<div style="font-size:0.85rem;color:var(--muted);padding:8px 0">No raw material lots recorded yet.</div>';
   } else {
+    const lowCount = materials.filter(m => { const q = effectiveQty(m); return q <= threshold(m); }).length;
+    if (lowCount) html += `<div style="background:var(--red-bg);border:1px solid var(--red);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:0.82rem;color:var(--red);font-weight:600">⚠ ${lowCount} material${lowCount>1?'s':''} below threshold</div>`;
+
     materials.forEach(mat => {
-      const lots = rawMaterialLots.filter(l => l.material === mat);
-      const totalRem = lots.reduce((s, l) => s + lotRemaining(l), 0);
-      const unit = lots[0]?.unit || '';
-      const isLow = totalRem < 50;
+      const lots       = rawMaterialLots.filter(l => l.material === mat);
+      const unit       = lots[0]?.unit || '';
+      const qty        = Math.max(0, effectiveQty(mat));
+      const thresh     = threshold(mat);
+      const isLow      = thresh > 0 && qty <= thresh;
       const activeLots = lots.filter(l => lotRemaining(l) > 0);
-      html += `<div class="inv-row">
-        <div>
-          <div class="inv-name">${mat}</div>
-          <div class="inv-lot">${activeLots.length} active lot${activeLots.length!==1?'s':''}</div>
-        </div>
-        <div style="text-align:right">
-          <div class="inv-qty ${isLow?'inv-low':''}">${totalRem.toLocaleString()}</div>
-          <div class="inv-unit">${unit}</div>
-        </div>
-      </div>`;
+      const adjSum     = adjTotal(mat);
+      const matId      = mat.replace(/[^a-z0-9]/gi,'_');
+
+      html += `<div class="inv-card ${isLow?'inv-card-low':''}">`;
+      // Header row — tap to expand lots
+      html += `<div class="inv-card-top" onclick="toggleInvDetail('${matId}')">`;
+      html += `<div><div class="inv-name">${mat}${isLow?'<span class="inv-low-badge">LOW</span>':''}</div>`;
+      html += `<div style="font-size:0.72rem;color:var(--muted);margin-top:2px">${activeLots.length} lot${activeLots.length!==1?'s':''}${adjSum?` · adj: ${adjSum>0?'+':''}${adjSum}`:''}  ▾</div></div>`;
+      html += `<div class="inv-qty-wrap"><div class="inv-qty ${isLow?'inv-low':''}">${qty.toLocaleString()}</div><div class="inv-unit">${unit}</div></div>`;
+      html += `</div>`;
+      // +/- buttons
+      html += `<div class="inv-adj-btns">`;
+      html += `<button class="inv-btn-minus" onclick="openAdjModal('${mat}','${unit}',-1)">−</button>`;
+      html += `<button class="inv-btn-plus"  onclick="openAdjModal('${mat}','${unit}',1)">+</button>`;
+      html += `</div>`;
+      // Lot detail (collapsible)
+      html += `<div class="inv-lots-detail" id="invd-${matId}">`;
+      html += `<div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px">Lot Breakdown</div>`;
+      activeLots.forEach(l => {
+        const rem = lotRemaining(l);
+        html += `<div class="inv-lot-row">`;
+        html += `<div><div class="inv-lot-num">${l.lotNum}</div><div style="font-size:0.78rem;color:var(--text)">${l.supplier||'—'} · ${l.dateReceived||'—'}</div></div>`;
+        html += `<div style="font-family:var(--mono);font-size:0.85rem;font-weight:600">${rem.toLocaleString()} ${unit}</div>`;
+        html += `</div>`;
+      });
+      if (adjSum) {
+        html += `<div class="inv-lot-row" style="border-top:1px dashed var(--border);margin-top:4px;padding-top:4px">`;
+        html += `<div style="font-size:0.78rem;color:var(--muted)">Manual adjustments</div>`;
+        html += `<div style="font-family:var(--mono);font-size:0.85rem;font-weight:600;color:${adjSum>=0?'var(--green)':'var(--red)'}">${adjSum>0?'+':''}${adjSum} ${unit}</div>`;
+        html += `</div>`;
+      }
+      html += `</div></div>`;
     });
   }
 
-  // ── Finished Goods ──
-  html += '<div class="inv-section-title" style="margin-top:16px">Finished Goods — Stretch Wrap</div>';
-  let produced = 0;
-  productions.forEach(pr => {
-    try {
-      JSON.parse(pr.outputs||'[]').forEach(o => {
-        if ((o.product||'').toLowerCase().includes('wrap')) produced += Number(o.qty)||0;
-      });
-    } catch(e) {}
-  });
-  html += `<div class="inv-row">
-    <div>
-      <div class="inv-name">Stretch Wrap</div>
-      <div class="inv-lot">Total produced (all time)</div>
-    </div>
-    <div style="text-align:right">
-      <div class="inv-qty">${produced.toLocaleString()}</div>
-      <div class="inv-unit">Rolls</div>
-    </div>
-  </div>`;
-
   el.innerHTML = html;
+}
+
+function toggleInvDetail(matId) {
+  const el = document.getElementById('invd-' + matId);
+  if (el) el.classList.toggle('open');
+}
+
+// ── Adjustment modal ───────────────────────────────────────
+function openAdjModal(mat, unit, dir) {
+  _adjMaterial = mat;
+  _adjDir = dir;
+  document.getElementById('adj-title').textContent = (dir > 0 ? '+ Add Stock' : '− Remove Stock') + ' — ' + mat;
+  document.getElementById('adj-qty').value = '';
+  document.getElementById('adj-reason').selectedIndex = dir < 0 ? 1 : 0;
+  document.getElementById('adj-modal').style.display = 'block';
+  setTimeout(() => document.getElementById('adj-qty').focus(), 100);
+}
+
+function closeAdjModal() {
+  document.getElementById('adj-modal').style.display = 'none';
+}
+
+async function submitAdj() {
+  const qty = Number(document.getElementById('adj-qty').value);
+  if (!qty || qty <= 0) { showToast('Enter a quantity', 'error'); return; }
+  const reason = document.getElementById('adj-reason').value;
+  const record = {
+    id: uid(), date: todayStr(),
+    material: _adjMaterial, qty: _adjDir * qty,
+    reason, by: currentWorker,
+  };
+  const btn = document.getElementById('adj-confirm');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  const ok = await saveToSheet('Inventory_Adj', record);
+  if (ok) {
+    inventoryAdj.push(record);
+    closeAdjModal();
+    renderInventory();
+    showToast((_adjDir > 0 ? '+' : '−') + qty + ' ' + _adjMaterial, 'success');
+  }
+  btn.disabled = false; btn.textContent = 'Confirm';
+}
+
+// ── Threshold settings ─────────────────────────────────────
+function toggleInvSettings() {
+  const el = document.getElementById('inv-settings');
+  if (!el) return;
+  const opening = !el.classList.contains('open');
+  el.classList.toggle('open');
+  if (opening) renderThresholdForm();
+}
+
+function renderThresholdForm() {
+  const materials = [...new Set(rawMaterialLots.map(l => l.material).filter(Boolean))].sort();
+  const el = document.getElementById('inv-threshold-list');
+  if (!el) return;
+  const saved = getThresholds();
+  el.innerHTML = materials.map(mat => {
+    const val = saved[mat] !== undefined ? saved[mat] : (DEFAULT_THRESHOLDS[mat] !== undefined ? DEFAULT_THRESHOLDS[mat] : 0);
+    const unit = rawMaterialLots.find(l => l.material === mat)?.unit || '';
+    return `<div class="inv-settings-row">
+      <label>${mat} <span style="color:var(--muted);font-size:0.75rem">(${unit})</span></label>
+      <input type="number" id="thr-${mat.replace(/[^a-z0-9]/gi,'_')}" value="${val}" min="0" placeholder="0">
+    </div>`;
+  }).join('');
+}
+
+function saveThresholds() {
+  const materials = [...new Set(rawMaterialLots.map(l => l.material).filter(Boolean))].sort();
+  const result = {};
+  materials.forEach(mat => {
+    const el = document.getElementById('thr-' + mat.replace(/[^a-z0-9]/gi,'_'));
+    if (el) result[mat] = Number(el.value) || 0;
+  });
+  localStorage.setItem('wg_thresholds', JSON.stringify(result));
+  document.getElementById('inv-settings').classList.remove('open');
+  renderInventory();
+  showToast('Thresholds saved', 'success');
 }
 
 init();
