@@ -725,6 +725,30 @@ function removeReceiveItem(idx) {
   renderReceiveItems();
 }
 
+function editReceiveItem(idx) {
+  const item = receiveItems[idx];
+  // Populate form fields
+  const matSel = document.getElementById('r-material');
+  const knownOptions = Array.from(matSel.options).map(o => o.value);
+  if (knownOptions.includes(item.material)) {
+    matSel.value = item.material;
+    document.getElementById('r-other-wrap').style.display = 'none';
+  } else {
+    matSel.value = 'Other';
+    document.getElementById('r-other-wrap').style.display = 'block';
+    document.getElementById('r-material-other').value = item.material;
+  }
+  document.getElementById('r-lot').value  = item.lotNum;
+  document.getElementById('r-qty').value  = item.qty;
+  document.getElementById('r-unit').value = item.unit;
+  // Remove from list so user re-adds after editing
+  receiveItems.splice(idx, 1);
+  renderReceiveItems();
+  // Scroll to add-item form
+  document.getElementById('r-material').closest('[style*="background:var(--surface2)"]')?.scrollIntoView({ behavior:'smooth', block:'center' });
+  showToast('Edit the item and tap + Add to List', 'success');
+}
+
 function renderReceiveItems() {
   const el  = document.getElementById('r-items-list');
   const btn = document.getElementById('r-submit');
@@ -736,10 +760,10 @@ function renderReceiveItems() {
   btn.style.display = 'block';
   el.innerHTML = receiveItems.map((item, i) => `
     <div class="lot-chip" style="border-color:var(--amber)">
-      <div>
+      <div style="flex:1;cursor:pointer" onclick="editReceiveItem(${i})">
         <div class="lot-chip-num">${item.lotNum || '—'}</div>
         <div class="lot-chip-mat">${item.material}</div>
-        <div class="lot-chip-qty">${item.qty.toLocaleString()} ${item.unit}</div>
+        <div class="lot-chip-qty">${item.qty.toLocaleString()} ${item.unit} &nbsp;<span style="color:var(--amber);font-size:0.7rem">✎ tap to edit</span></div>
       </div>
       <button class="btn-remove" onclick="removeReceiveItem(${i})">Remove</button>
     </div>`).join('');
