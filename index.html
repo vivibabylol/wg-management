@@ -513,6 +513,7 @@ select option { background: var(--surface2); }
         <option value="docs">Sort: Documents</option>
         <option value="bol">Sort: BOL #</option>
       </select>
+      <button id="cargo-sort-dir" onclick="toggleCargoSortDir()" title="Reverse order" style="font-size:0.78rem;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer">↑↓</button>
       <button class="btn-add" onclick="openCargoModal()">+ New Shipment</button>
     </div>
   </div>
@@ -581,7 +582,7 @@ select option { background: var(--surface2); }
   </div>
   <div class="stats-row" id="emp-stats"></div>
   <div style="display:flex;gap:8px;margin-bottom:16px">
-    <button id="emp-btn-roster" onclick="showEmpView('roster')">Roster</button>
+    <button id="emp-btn-roster" onclick="showEmpView('roster')">Employees</button>
     <button id="emp-btn-leave" onclick="showEmpView('leave')">Leave Log</button>
     <button id="emp-btn-yearend" onclick="runYearEndRollover()" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:8px;padding:7px 14px;font-family:var(--sans);font-size:0.78rem;cursor:pointer" title="Run on Dec 31 each year">Year-End Rollover</button>
   </div>
@@ -690,7 +691,7 @@ select option { background: var(--surface2); }
         <div class="form-group full"><label>Raw Material Lots Used</label>
           <div id="p-input-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div>
         </div>
-        <div class="form-group full"><label>Finished Goods Produced</label>
+        <div class="form-group full"><label>Product Output</label>
           <div id="p-output-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div>
         </div>
         <div class="form-group full"><label>Notes</label><textarea id="p-notes"></textarea></div>
@@ -795,6 +796,10 @@ select option { background: var(--surface2); }
         <div class="form-group"><label>Phone</label><input type="tel" id="em-phone" placeholder="(404) 555-0000"></div>
         <div class="form-group"><label>Email</label><input type="email" id="em-email" placeholder="email@example.com"></div>
         <div class="form-group"><label>Start Date (Hire Date)</label><input type="date" id="em-start"></div>
+        <div class="form-group full" style="display:flex;align-items:center;gap:10px;padding:6px 0">
+          <input type="checkbox" id="em-pto-exempt" style="width:auto;margin:0;cursor:pointer">
+          <label for="em-pto-exempt" style="text-transform:none;font-size:0.85rem;letter-spacing:0;color:var(--text);cursor:pointer;margin:0">PTO Exempt — Discretionary (managers, no PTO tracking)</label>
+        </div>
         <div class="form-group full"><label>Notes</label><textarea id="em-notes" placeholder="Additional notes..."></textarea></div>
       </div>
     </div>
@@ -1133,6 +1138,7 @@ select option { background: var(--surface2); }
 const API = 'https://script.google.com/macros/s/AKfycbyt6jYEDSeesF1chOR1oQhRYRZx_1GTNFB79mZpJY2qF7CDu2iDow4A80S8b6Mefpd8/exec';
 
 let cargo            = [];
+let _cargoSortReverse = false;
 let invoices         = [];
 let deliveries       = [];
 let tasks            = [];
@@ -1183,7 +1189,8 @@ async function loadAll() {
       return del;
     });
     tasks           = d.Tasks || [];
-    customers       = d.Customers || [];
+    const STATUS_ZH = {'活躍':'Active','活动':'Active','暫停':'Paused','潛在客戶':'Prospect','非活躍':'Inactive'};
+    customers       = (d.Customers || []).map(c => ({ ...c, status: STATUS_ZH[c.status] || c.status }));
     productions     = (d.Production || []).map(p => ({ ...p, date: normalizeDate(p.date) }));
     rawMaterialLots = (d.RawMaterialLots || []).map(l => ({ ...l, dateReceived: normalizeDate(l.dateReceived), qty: Number(l.qty)||0 }));
     employees       = (d.Employees || []).map(e => ({ ...e, start_date: normalizeDate(e.start_date), hourly_rate: Number(e.hourly_rate)||0, annual_salary: Number(e.annual_salary)||0 }));
@@ -1379,6 +1386,13 @@ function renderCargoStats() {
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + done + '</div><div class="stat-card-lbl">Completed</div></div>';
 }
 
+function toggleCargoSortDir() {
+  _cargoSortReverse = !_cargoSortReverse;
+  const btn = document.getElementById('cargo-sort-dir');
+  if (btn) btn.textContent = _cargoSortReverse ? '↓↑' : '↑↓';
+  renderCargo();
+}
+
 function renderCargo() {
   renderCargoStats();
   const el = document.getElementById('cargo-list');
@@ -1399,6 +1413,7 @@ function renderCargo() {
     if (sortBy === 'bol') return (a.bolNum||'').localeCompare(b.bolNum||'');
     return (SHIP_STATUS[a.status]?.step??0)-(SHIP_STATUS[b.status]?.step??0);
   });
+  if (_cargoSortReverse) sorted.reverse();
   let html = '';
   sorted.forEach(s => {
     const st      = SHIP_STATUS[s.status]||{cls:'badge-muted'};
@@ -1425,7 +1440,7 @@ function renderCargo() {
       // Left
       html += '<div style="flex:1">'; // [3]
         html += '<div class="card-id">'+(s.carrier||'')+' '+(s.customer?'&middot; '+s.customer:'')+'</div>';
-        html += '<div class="card-title" style="font-family:var(--mono)">'+(s.bolNum||'\u2014 BOL \u5f85\u8f38\u5165')+'</div>';
+        html += '<div class="card-title" style="font-family:var(--mono)">'+(s.bolNum||'— BOL Pending')+'</div>';
         // Containers with delivery status dots
         if (ctrs.length) {
           html += '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">';
@@ -1500,7 +1515,7 @@ function openCargoModal(s) {
   populateCargoDropdowns(s);
   ['bolNum','status','etd','eta','etaFinal','disc','qty','sellPrice','mfgCost','freight','trucking','customs','isf','courier','chassis','bankCharge','dest','notes'].forEach(k => {
     const el = document.getElementById('c-'+k);
-    if (el) el.value = s ? (s[k]||'') : (k==='status'?'\u5f85\u51fa\u6e2f':'');
+    if (el) el.value = s ? (s[k]||'') : (k==='status'?'Pending Departure':'');
   });
   const cta = document.getElementById('c-containers-ta');
   if (cta) cta.value = s ? (s.containers||'').replace(/,\s*/g,'\n') : '';
@@ -1609,7 +1624,7 @@ function onBolSelect() {
   if (!bolVal) { box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">Select BOL first</span>'; return; }
   const shipment = cargo.find(s => String(s.bolNum||'').trim() === bolVal);
   const ctrs = shipment ? (shipment.containers||'').split(/[,\n]/).map(x=>x.trim()).filter(Boolean) : [];
-  if (!ctrs.length) { box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">No containers for this BOL（Please go toshipments pageEnter）</span>'; return; }
+  if (!ctrs.length) { box.innerHTML = '<span style="font-size:0.8rem;color:var(--text-dim)">No containers for this BOL — enter them in the Shipments page first.</span>'; return; }
   const currentId = editingDelivery ? editingDelivery.id : null;
   const usedByOthers = new Set(
     deliveries
@@ -2202,8 +2217,20 @@ function renderDistributorSummary() {
       html += '<div style="margin-top:8px;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">' + thisYear + ' deliveries</div>';
       html += '<div style="display:flex;flex-wrap:wrap;gap:4px">';
       Object.entries(annualQty).sort((a,b)=>b[1]-a[1]).forEach(([prod,qty]) => {
-        const unit = prodMap4d[prod]?.unit || '';
-        html += '<span style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:0.75rem">' + prod + ': <b>' + qty.toLocaleString() + '</b> ' + unit + '</span>';
+        const pp   = prodMap4d[prod];
+        const unit = pp?.unit || '';
+        const rpp  = pp?.rollsPerPallet || 0;
+        const ppc  = pp?.palletsPerContainer || 0;
+        let extra  = '';
+        if (rpp > 0) {
+          const pallets = Math.ceil(qty / rpp);
+          extra += ' · ' + pallets + ' pallet' + (pallets !== 1 ? 's' : '');
+          if (ppc > 0) {
+            const ctrs = Math.ceil(pallets / ppc);
+            extra += ' / ' + ctrs + ' ctr' + (ctrs !== 1 ? 's' : '');
+          }
+        }
+        html += '<span style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:0.75rem">' + prod + ': <b>' + qty.toLocaleString() + '</b> ' + unit + (extra ? '<span style="color:var(--text-muted)">' + extra + '</span>' : '') + '</span>';
       });
       html += '</div>';
     }
@@ -2918,7 +2945,7 @@ function renderInventory() {
   // ── FINISHED GOODS ──
   const finishedGoods = prods.filter(p => p.category === 'Finished Good' || (!p.category && (p.name.toLowerCase().includes('cotton')||p.name.toLowerCase().includes('wrap'))));
   if (finishedGoods.length) {
-    html += sectionHeader('Finished Goods', 'var(--blue)');
+    html += sectionHeader('Products', 'var(--blue)');
     finishedGoods.forEach(prod => {
       const { relCargo, cargoQty, inTransitQ, prodOutputQty, delivImportedQty, delivSelfQty, delivQty, inQty, remaining, pct } = calcProduct(prod);
       const remainImported = cargoQty - delivImportedQty;
@@ -3245,7 +3272,7 @@ function renderProduction() {
     html += '</div>';
     html += '<div class="card-grid" style="margin-top:10px">';
     if (inStr)  html += '<div class="card-field"><div class="card-field-lbl">Raw Material Used</div><div class="card-field-val" style="color:var(--purple)">' + inStr + '</div></div>';
-    if (outStr) html += '<div class="card-field"><div class="card-field-lbl">Finished Goods Produced</div><div class="card-field-val" style="color:var(--teal)">' + outStr + '</div></div>';
+    if (outStr) html += '<div class="card-field"><div class="card-field-lbl">Product Output</div><div class="card-field-val" style="color:var(--teal)">' + outStr + '</div></div>';
     if (pr.notes) html += '<div class="card-field full" style="grid-column:1/-1"><div class="card-field-lbl">Notes</div><div class="card-field-val" style="color:var(--text-muted)">' + pr.notes + '</div></div>';
     html += '</div>';
     html += '</div>';
@@ -3502,25 +3529,40 @@ function renderEmpRoster() {
     if (payLabel) h += `<div style="margin-top:3px;display:inline-flex;align-items:center;gap:5px"><span style="font-size:0.72rem;background:${e.pay_type==='Salary'?'var(--purple-dim)':'var(--teal-dim)'};color:${e.pay_type==='Salary'?'var(--purple)':'var(--teal)'};padding:1px 7px;border-radius:4px;font-weight:600">${e.pay_type||'Hourly'}</span><span style="font-family:var(--mono);font-size:0.78rem;color:var(--text-muted)">${payLabel}</span></div>`;
     h += `</div><span class="badge ${EMP_STATUS_CLS[e.status] || 'badge-muted'}">${e.status || 'Active'}</span></div>`;
 
-    // PTO progress bar
-    h += `<div style="margin:10px 0 4px">`;
-    h += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">`;
-    h += `<span style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em">PTO ${year}</span>`;
-    h += `<span style="font-size:0.8rem;font-family:var(--mono);font-weight:600;color:${ptoTextColor}">${bal.totalRemaining} days left</span>`;
-    h += `</div>`;
-    h += `<div class="progress-bar"><div class="progress-fill" style="width:${ptoPct}%;background:${ptoFillColor}"></div></div>`;
-    h += `</div>`;
+    const isPtoExempt = e.pto_exempt === 'true' || e.pto_exempt === true;
 
-    h += `<div class="card-grid" style="margin-top:8px">`;
-    h += `<div class="card-field"><div class="card-field-lbl">Allotment</div><div class="card-field-val">${bal.allotment} days</div></div>`;
-    if (bal.rolloverIn > 0) h += `<div class="card-field"><div class="card-field-lbl">Rollover In</div><div class="card-field-val">${bal.rolloverIn} days</div></div>`;
-    h += `<div class="card-field"><div class="card-field-lbl">PTO Used</div><div class="card-field-val">${bal.ptoUsed} days</div></div>`;
-    if (sick > 0) h += `<div class="card-field"><div class="card-field-lbl">Sick Used</div><div class="card-field-val">${sick} days</div></div>`;
-    if (pers > 0) h += `<div class="card-field"><div class="card-field-lbl">Personal Used</div><div class="card-field-val">${pers} days</div></div>`;
-    if (e.start_date) h += `<div class="card-field"><div class="card-field-lbl">Start Date</div><div class="card-field-val">${fmtDate(e.start_date)}</div></div>`;
-    if (e.hourly_rate && e.pay_type === 'Salary') h += `<div class="card-field"><div class="card-field-lbl">Hourly Rate</div><div class="card-field-val">$${Number(e.hourly_rate).toFixed(2)}</div></div>`;
-    if (e.annual_salary && e.pay_type === 'Hourly') h += `<div class="card-field"><div class="card-field-lbl">Annual Equiv.</div><div class="card-field-val">$${Number(e.annual_salary).toLocaleString('en-US')}</div></div>`;
-    h += `</div>`;
+    if (isPtoExempt) {
+      // Exempt employees: no PTO tracking
+      h += `<div style="margin:10px 0 4px;display:inline-flex;align-items:center;gap:6px">`;
+      h += `<span style="font-size:0.72rem;background:var(--purple-dim);color:var(--purple);padding:2px 8px;border-radius:4px;font-weight:600">PTO Exempt</span>`;
+      h += `<span style="font-size:0.75rem;color:var(--text-muted)">Discretionary — no limit</span>`;
+      h += `</div>`;
+      h += `<div class="card-grid" style="margin-top:8px">`;
+      if (sick > 0) h += `<div class="card-field"><div class="card-field-lbl">Sick Used</div><div class="card-field-val">${sick} days</div></div>`;
+      if (pers > 0) h += `<div class="card-field"><div class="card-field-lbl">Personal Used</div><div class="card-field-val">${pers} days</div></div>`;
+      if (e.start_date) h += `<div class="card-field"><div class="card-field-lbl">Start Date</div><div class="card-field-val">${fmtDate(e.start_date)}</div></div>`;
+      h += `</div>`;
+    } else {
+      // PTO progress bar
+      h += `<div style="margin:10px 0 4px">`;
+      h += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">`;
+      h += `<span style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em">PTO ${year}</span>`;
+      h += `<span style="font-size:0.8rem;font-family:var(--mono);font-weight:600;color:${ptoTextColor}">${bal.totalRemaining} days left</span>`;
+      h += `</div>`;
+      h += `<div class="progress-bar"><div class="progress-fill" style="width:${ptoPct}%;background:${ptoFillColor}"></div></div>`;
+      h += `</div>`;
+
+      h += `<div class="card-grid" style="margin-top:8px">`;
+      h += `<div class="card-field"><div class="card-field-lbl">Allotment</div><div class="card-field-val">${bal.allotment} days</div></div>`;
+      if (bal.rolloverIn > 0) h += `<div class="card-field"><div class="card-field-lbl">Rollover In</div><div class="card-field-val">${bal.rolloverIn} days</div></div>`;
+      h += `<div class="card-field"><div class="card-field-lbl">PTO Used</div><div class="card-field-val">${bal.ptoUsed} days</div></div>`;
+      if (sick > 0) h += `<div class="card-field"><div class="card-field-lbl">Sick Used</div><div class="card-field-val">${sick} days</div></div>`;
+      if (pers > 0) h += `<div class="card-field"><div class="card-field-lbl">Personal Used</div><div class="card-field-val">${pers} days</div></div>`;
+      if (e.start_date) h += `<div class="card-field"><div class="card-field-lbl">Start Date</div><div class="card-field-val">${fmtDate(e.start_date)}</div></div>`;
+      if (e.hourly_rate && e.pay_type === 'Salary') h += `<div class="card-field"><div class="card-field-lbl">Hourly Rate</div><div class="card-field-val">$${Number(e.hourly_rate).toFixed(2)}</div></div>`;
+      if (e.annual_salary && e.pay_type === 'Hourly') h += `<div class="card-field"><div class="card-field-lbl">Annual Equiv.</div><div class="card-field-val">$${Number(e.annual_salary).toLocaleString('en-US')}</div></div>`;
+      h += `</div>`;
+    }
 
     h += `<div style="margin-top:10px;text-align:right">`;
     h += `<button onclick="event.stopPropagation();openLeaveModal(null,'${e.id}')" style="background:var(--teal);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:0.75rem;font-family:var(--sans);font-weight:600;cursor:pointer">+ Log Leave</button>`;
@@ -3613,6 +3655,7 @@ function openEmployeeModal(id) {
   document.getElementById('em-start').value    = rec ? (rec.start_date || '') : '';
   document.getElementById('em-notes').value    = rec ? (rec.notes || '') : '';
   document.getElementById('em-status').value   = rec ? (rec.status || 'Active') : 'Active';
+  document.getElementById('em-pto-exempt').checked = rec ? (rec.pto_exempt === 'true' || rec.pto_exempt === true) : false;
   document.getElementById('em-pay-type').value = rec ? (rec.pay_type || 'Hourly') : 'Hourly';
   document.getElementById('em-rate').value     = rec ? (rec.hourly_rate || '') : '';
   document.getElementById('em-salary').value   = rec ? (rec.annual_salary || '') : '';
@@ -3638,6 +3681,7 @@ async function saveEmployee() {
     email:         fmtEmail(document.getElementById('em-email').value),
     start_date:    document.getElementById('em-start').value,
     status:        document.getElementById('em-status').value,
+    pto_exempt:    document.getElementById('em-pto-exempt').checked ? 'true' : 'false',
     notes:         document.getElementById('em-notes').value.trim(),
   };
   const ok = await saveToSheet('Employees', record);

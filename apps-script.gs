@@ -29,7 +29,7 @@ const SHEET_HEADERS = {
   Customers:  ['id','company','contact','type','phone','email','addr','city','zip','terms','status','notes'],
   Settings:   ['id','key','value'],
   RawMaterialLots: ['id','lotNum','material','unit','qty','source','supplier','dateReceived','notes'],
-  Employees:       ['id','emp_num','name','role','pay_type','hourly_rate','annual_salary','phone','email','start_date','status','notes'],
+  Employees:       ['id','emp_num','name','role','pay_type','hourly_rate','annual_salary','phone','email','start_date','status','pto_exempt','notes'],
   LeaveRequests:   ['id','employee_id','leave_type','start_date','end_date','days','approved_by','status','notes','token','emp_name','emp_num','emp_email'],
   PTOBalances:     ['id','employee_id','year','pto_rollover_in','pto_cashout_amount'],
 };
