@@ -330,7 +330,28 @@ nav {
     </div>
     <div class="form-group">
       <label>Material</label>
-      <input id="r-material" placeholder="e.g. Base Film, Tape, Core">
+      <select id="r-material" onchange="onMaterialChange()">
+        <option value="">— Select Material —</option>
+        <option value="雙面膠">雙面膠</option>
+        <option value="單面膠">單面膠</option>
+        <option value="RFID">RFID</option>
+        <option value="大標籤">大標籤</option>
+        <option value="小標籤">小標籤</option>
+        <option value="滑石粉">滑石粉</option>
+        <option value="100kg貼紙">100kg貼紙</option>
+        <option value="LEFT貼紙">LEFT貼紙</option>
+        <option value="合格證">合格證</option>
+        <option value="成品膜管芯">成品膜管芯</option>
+        <option value="單面捲墊">單面捲墊</option>
+        <option value="雙面捲墊">雙面捲墊</option>
+        <option value="黏膜">黏膜</option>
+        <option value="不黏膜">不黏膜</option>
+        <option value="Other">Other...</option>
+      </select>
+    </div>
+    <div class="form-group" id="r-other-wrap" style="display:none">
+      <label>Specify Material</label>
+      <input id="r-material-other" placeholder="Enter material name">
     </div>
     <div class="row2" style="margin-bottom:14px">
       <div class="form-group" style="margin-bottom:0">
@@ -339,7 +360,7 @@ nav {
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label>Unit</label>
-        <input id="r-unit" placeholder="Rolls / kg">
+        <input id="r-unit" placeholder="Rolls / kg / Pcs">
       </div>
     </div>
     <div class="form-group">
@@ -644,11 +665,28 @@ async function submitProduction() {
   btn.disabled = false; btn.textContent = 'Submit Production Log';
 }
 
+// ── Material change ───────────────────────────────────────
+const MATERIAL_UNITS = {
+  '雙面膠':'Rolls', '單面膠':'Rolls', '黏膜':'Rolls', '不黏膜':'Rolls',
+  '滑石粉':'kg',
+  'RFID':'Pcs', '大標籤':'Pcs', '小標籤':'Pcs',
+  '100kg貼紙':'Pcs', 'LEFT貼紙':'Pcs', '合格證':'Pcs',
+  '成品膜管芯':'Pcs', '單面捲墊':'Pcs', '雙面捲墊':'Pcs',
+};
+function onMaterialChange() {
+  const val = document.getElementById('r-material').value;
+  document.getElementById('r-other-wrap').style.display = val === 'Other' ? 'block' : 'none';
+  if (MATERIAL_UNITS[val]) document.getElementById('r-unit').value = MATERIAL_UNITS[val];
+}
+
 // ── Submit receive ────────────────────────────────────────
 async function submitReceive() {
   const date     = document.getElementById('r-date').value;
   const lotNum   = document.getElementById('r-lot').value.trim();
-  const material = document.getElementById('r-material').value.trim();
+  const matSel   = document.getElementById('r-material').value;
+  const material = matSel === 'Other'
+    ? document.getElementById('r-material-other').value.trim()
+    : matSel;
   const qty      = Number(document.getElementById('r-qty').value);
   const unit     = document.getElementById('r-unit').value.trim();
   const source   = document.getElementById('r-source').value;
@@ -667,7 +705,10 @@ async function submitReceive() {
   if (ok) {
     rawMaterialLots.push({ ...record, qty });
     showToast('✓ Received: ' + lotNum, 'success');
-    ['r-qty','r-material','r-unit','r-supplier','r-notes'].forEach(id => document.getElementById(id).value = '');
+    ['r-qty','r-unit','r-supplier','r-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('r-material').value = '';
+    document.getElementById('r-material-other').value = '';
+    document.getElementById('r-other-wrap').style.display = 'none';
     document.getElementById('r-lot').value = generateLotNum();
   }
   btn.disabled = false; btn.textContent = 'Confirm Receipt';
