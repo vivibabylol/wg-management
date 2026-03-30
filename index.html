@@ -1098,7 +1098,7 @@ select option { background: var(--surface2); }
     </div>
     <div class="modal-body">
       <div class="form-grid">
-        <div class="form-group full"><label>Task Description</label><input id="t-text" placeholder="例：Confirm Container MRSU4783132 CustomsStatus"></div>
+        <div class="form-group full"><label>Task Description</label><input id="t-text" placeholder="e.g.: Confirm Container MRSU4783132 Customs Status"></div>
         <div class="form-group"><label>Week（Week Starting）</label><input type="date" id="t-week"></div>
         <div class="form-group"><label>Priority</label>
           <select id="t-priority">
@@ -1314,18 +1314,18 @@ const SHIP_STATUS = {
 };
 
 const DOC_STEPS = [
-  { key:'doc_debitNote',       label:'Debit Note \u6536\u5230',           ref:'ref_debitNote',     date:'date_debitNote' },
-  { key:'doc_arrivalNotice',   label:'Arrival Notice \u6536\u5230',       ref:'ref_arrivalNotice', date:'date_arrivalNotice' },
-  { key:'doc_carrierFeePaid',  label:'Carrier Fee \u5df2\u4ed8',          ref:'',                  date:'date_carrierFeePaid' },
+  { key:'doc_debitNote',       label:'Debit Note Received',               ref:'ref_debitNote',     date:'date_debitNote' },
+  { key:'doc_arrivalNotice',   label:'Arrival Notice Received',           ref:'ref_arrivalNotice', date:'date_arrivalNotice' },
+  { key:'doc_carrierFeePaid',  label:'Carrier Fee Paid',                  ref:'',                  date:'date_carrierFeePaid' },
   { key:'doc_packingList',     label:'Packing List / Commercial Invoice', ref:'ref_packingList',   date:'' },
-  { key:'doc_entrySummary',    label:'Entry Summary \u6536\u5230',        ref:'ref_entrySummary',  date:'date_entrySummary' },
-  { key:'doc_customsPaid',     label:'Customs Paid',                       ref:'',                  date:'date_customsPaid' },
-  { key:'doc_finalAddress',    label:'\u6700\u7d42\u5730\u5740\u5df2\u63d0\u4f9b',               ref:'',                  date:'' },
-  { key:'doc_inlandBOL',       label:'Inland BOL \u6536\u5230',           ref:'ref_inlandBOL',     date:'date_inlandBOL' },
-  { key:'doc_customerNotified',label:'\u5df2\u901a\u77e5\u5ba2\u6236 Enroute',                    ref:'',                  date:'' },
-  { key:'doc_forwarderInv',    label:'Forwarder Invoice \u6536\u5230',    ref:'ref_forwarderInv',  date:'date_forwarderInv' },
-  { key:'doc_forwarderPaid',   label:'\u8ca8\u4ee3\u8cbb\u7528\u5df2\u4ed8\u6b3e',               ref:'',                  date:'date_forwarderPaid' },
-  { key:'doc_customerPaid',    label:'\u5ba2\u6236\u8ca8\u6b3e\u5df2\u6536',                      ref:'',                  date:'date_customerPaid' },
+  { key:'doc_entrySummary',    label:'Entry Summary Received',            ref:'ref_entrySummary',  date:'date_entrySummary' },
+  { key:'doc_customsPaid',     label:'Customs Paid',                      ref:'',                  date:'date_customsPaid' },
+  { key:'doc_finalAddress',    label:'Final Address Provided',            ref:'',                  date:'' },
+  { key:'doc_inlandBOL',       label:'Inland BOL Received',               ref:'ref_inlandBOL',     date:'date_inlandBOL' },
+  { key:'doc_customerNotified',label:'Customer Notified Enroute',         ref:'',                  date:'' },
+  { key:'doc_forwarderInv',    label:'Forwarder Invoice Received',        ref:'ref_forwarderInv',  date:'date_forwarderInv' },
+  { key:'doc_forwarderPaid',   label:'Forwarder Fee Paid',                ref:'',                  date:'date_forwarderPaid' },
+  { key:'doc_customerPaid',    label:'Customer Payment Received',         ref:'',                  date:'date_customerPaid' },
 ];
 
 function isTrue(v) { return v===true||v==='TRUE'||v==='true'||v===1||v==='1'; }
@@ -1437,7 +1437,17 @@ function renderCargo() {
     html += '<div style="margin-top:10px">'; // [5]
       html += '<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-bottom:4px"><span>Documents</span><span>'+doneN+' / '+DOC_STEPS.length+'</span></div>';
       html += '<div style="height:4px;background:var(--surface3);border-radius:2px;overflow:hidden"><div style="height:100%;border-radius:2px;background:'+(pct===100?'var(--green)':'var(--blue)')+';width:'+pct+'%"></div></div>';
-      if (nextDoc && pct<100) html += '<div style="font-size:0.72rem;color:var(--amber);margin-top:4px">▶ '+nextDoc.label+'</div>';
+      if (pct < 100) {
+        const missingDocs = DOC_STEPS.filter(d => !isTrue(s[d.key]));
+        const show = missingDocs.slice(0, 3);
+        const extra = missingDocs.length - show.length;
+        html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">';
+        show.forEach(d => {
+          html += '<span style="font-size:0.68rem;padding:2px 8px;border-radius:4px;background:var(--amber-dim);border:1px solid var(--amber);color:var(--amber);font-family:var(--mono);white-space:nowrap">'+d.label+'</span>';
+        });
+        if (extra > 0) html += '<span style="font-size:0.68rem;padding:2px 8px;border-radius:4px;background:var(--surface3);border:1px solid var(--border);color:var(--text-muted)">+'+extra+' more</span>';
+        html += '</div>';
+      }
     html += '</div>'; // [5] close doc progress
 
     // ── Key numbers ──
