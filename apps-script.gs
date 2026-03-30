@@ -29,7 +29,7 @@ const SHEET_HEADERS = {
   Customers:  ['id','company','contact','type','phone','email','addr','city','zip','terms','status','notes'],
   Settings:   ['id','key','value'],
   RawMaterialLots: ['id','lotNum','material','unit','qty','source','supplier','dateReceived','notes'],
-  Employees:       ['id','emp_num','name','role','pay_type','hourly_rate','annual_salary','phone','email','start_date','status','pto_exempt','notes'],
+  Employees:       ['id','emp_num','name','role','pay_type','hourly_rate','annual_salary','phone','email','start_date','status','notes','pto_exempt'],
   LeaveRequests:   ['id','employee_id','leave_type','start_date','end_date','days','approved_by','status','notes','token','emp_name','emp_num','emp_email'],
   PTOBalances:     ['id','employee_id','year','pto_rollover_in','pto_cashout_amount'],
 };
@@ -229,12 +229,14 @@ function getSheetData(name) {
   if (!ws) return [];
   const headers = SHEET_HEADERS[name];
   if (!headers) return [];
-  const lastRow = ws.getLastRow();
+  const lastRow  = ws.getLastRow();
   if (lastRow <= 1) return [];
-  const rows = ws.getRange(1, 1, lastRow, headers.length).getValues();
+  const sheetCols = ws.getLastColumn();
+  const readCols  = Math.min(headers.length, sheetCols);
+  const rows = ws.getRange(1, 1, lastRow, readCols).getValues();
   return rows.slice(1).map(function(row) {
     const obj = {};
-    headers.forEach(function(h, i) { obj[h] = row[i] !== undefined ? row[i] : ''; });
+    headers.forEach(function(h, i) { obj[h] = (i < readCols && row[i] !== undefined) ? row[i] : ''; });
     return obj;
   }).filter(function(r) { return r.id && r.id !== ''; });
 }
