@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WG — Warehouse</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+:root {
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --surface2: #1c2333;
+  --border:   #30363d;
+  --text:     #e6edf3;
+  --muted:    #8b949e;
+  --amber:    #d29922;
+  --amber-bg: rgba(210,153,34,0.12);
+  --green:    #3fb950;
+  --green-bg: rgba(63,185,80,0.12);
+  --red:      #f85149;
+  --red-bg:   rgba(248,81,73,0.10);
+  --blue:     #58a6ff;
+  --blue-bg:  rgba(88,166,255,0.10);
+  --mono:     'SF Mono','Courier New',monospace;
+  --r:        10px;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: 80px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Worker screen ───────────────────────────────────────── */
+#worker-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+}
+.logo-mark { font-size:1.1rem; font-weight:800; color:var(--text); margin-bottom:6px; }
+.logo-mark span { color:var(--amber); font-weight:400; }
+.worker-title { font-size:1.5rem; font-weight:700; margin-bottom:6px; text-align:center; }
+.worker-sub { font-size:0.85rem; color:var(--muted); margin-bottom:36px; text-align:center; }
+.worker-list { width:100%; max-width:360px; display:flex; flex-direction:column; gap:10px; }
+.worker-btn {
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--r);
+  padding:16px 18px; text-align:left; color:var(--text); font-size:1rem; font-weight:600;
+  cursor:pointer; display:flex; align-items:center; gap:14px; transition:border-color 0.15s;
+}
+.worker-btn:active { border-color:var(--amber); background:var(--surface); }
+.worker-avatar {
+  width:38px; height:38px; border-radius:50%;
+  background:var(--amber-bg); border:1px solid var(--amber);
+  display:flex; align-items:center; justify-content:center;
+  font-size:0.85rem; font-weight:700; color:var(--amber); flex-shrink:0;
+}
+
+/* ── App ─────────────────────────────────────────────────── */
+#app { display:none; }
+
+header {
+  background:var(--surface); border-bottom:1px solid var(--border);
+  padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+  position:sticky; top:0; z-index:10;
+}
+.header-logo { font-size:0.95rem; font-weight:800; }
+.header-logo span { color:var(--amber); font-weight:400; }
+.header-logo small { font-size:0.75rem; color:var(--muted); font-weight:400; }
+.header-worker {
+  font-size:0.78rem; color:var(--muted);
+  display:flex; align-items:center; gap:6px; cursor:pointer;
+}
+.header-worker strong { color:var(--text); }
+
+/* ── Tabs ────────────────────────────────────────────────── */
+.tab-pane { display:none; padding:16px 16px 8px; }
+.tab-pane.active { display:block; }
+.section-title {
+  font-size:0.7rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.1em; color:var(--muted); margin-bottom:16px; margin-top:2px;
+}
+
+/* ── Form ────────────────────────────────────────────────── */
+.form-group { margin-bottom:14px; }
+label {
+  display:block; font-size:0.72rem; font-weight:600;
+  text-transform:uppercase; letter-spacing:0.07em;
+  color:var(--muted); margin-bottom:6px;
+}
+input, select, textarea {
+  width:100%; background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; padding:13px 14px; font-family:inherit;
+  font-size:0.95rem; color:var(--text); outline:none;
+  -webkit-appearance:none; transition:border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus { border-color:var(--amber); }
+input[readonly] { color:var(--muted); background:var(--surface); }
+textarea { resize:vertical; min-height:72px; }
+.row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn-primary {
+  width:100%; background:var(--amber); color:#0d1117; border:none;
+  border-radius:var(--r); padding:15px; font-size:1rem; font-weight:700;
+  cursor:pointer; margin-top:8px; transition:opacity 0.15s;
+}
+.btn-primary:disabled { opacity:0.45; cursor:not-allowed; }
+.btn-outline {
+  width:100%; background:transparent; color:var(--amber);
+  border:1px solid var(--amber); border-radius:var(--r);
+  padding:12px; font-size:0.9rem; font-weight:600;
+  cursor:pointer; margin-top:4px; transition:background 0.15s;
+}
+.btn-outline:active { background:var(--amber-bg); }
+.btn-remove {
+  background:var(--red-bg); border:1px solid var(--red); color:var(--red);
+  border-radius:6px; padding:5px 12px; font-size:0.75rem; font-weight:600; cursor:pointer;
+  white-space:nowrap;
+}
+
+/* ── Lot chips ───────────────────────────────────────────── */
+#inputs-list { margin-bottom:6px; }
+.lot-chip {
+  background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+  padding:10px 12px; margin-bottom:8px;
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+}
+.lot-chip-num  { font-family:var(--mono); font-size:0.78rem; color:var(--amber); }
+.lot-chip-mat  { font-size:0.88rem; font-weight:600; margin:2px 0; }
+.lot-chip-qty  { font-size:0.78rem; color:var(--muted); }
+
+/* ── Bottom nav ──────────────────────────────────────────── */
+nav {
+  position:fixed; bottom:0; left:0; right:0;
+  background:var(--surface); border-top:1px solid var(--border);
+  display:grid; grid-template-columns:repeat(3,1fr);
+  padding-bottom:env(safe-area-inset-bottom); z-index:20;
+}
+.nav-btn {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:10px 4px; gap:3px; cursor:pointer; border:none; background:none;
+  color:var(--muted); font-size:0.62rem; font-weight:700;
+  text-transform:uppercase; letter-spacing:0.05em; transition:color 0.15s;
+}
+.nav-icon { font-size:1.3rem; }
+.nav-btn.active { color:var(--amber); }
+
+/* ── Log cards ───────────────────────────────────────────── */
+.log-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r); padding:14px; margin-bottom:10px;
+}
+.log-card-header {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;
+}
+.batch-num { font-family:var(--mono); font-size:0.85rem; color:var(--amber); font-weight:700; }
+.log-badge {
+  font-size:0.62rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.06em; padding:3px 8px; border-radius:4px;
+}
+.badge-prod { background:var(--green-bg); color:var(--green); border:1px solid var(--green); }
+.badge-recv { background:var(--blue-bg);  color:var(--blue);  border:1px solid var(--blue); }
+.log-detail { font-size:0.82rem; color:var(--muted); line-height:1.6; }
+.log-detail strong { color:var(--text); }
+.empty-state {
+  text-align:center; color:var(--muted); font-size:0.88rem;
+  padding:48px 16px; line-height:1.8;
+}
+
+/* ── Toast ───────────────────────────────────────────────── */
+#toast {
+  position:fixed; bottom:90px; left:50%;
+  transform:translateX(-50%) translateY(16px);
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:10px; padding:12px 20px; font-size:0.88rem; font-weight:600;
+  opacity:0; transition:all 0.25s; pointer-events:none;
+  white-space:nowrap; z-index:100; max-width:calc(100vw - 32px);
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+#toast.success { border-color:var(--green); color:var(--green); }
+#toast.error   { border-color:var(--red);   color:var(--red); }
+
+/* ── Lot picker ──────────────────────────────────────────── */
+#lot-picker { display:none; position:fixed; inset:0; z-index:50; }
+#lot-picker.open { display:block; }
+.picker-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.65); }
+.picker-sheet {
+  position:absolute; bottom:0; left:0; right:0;
+  background:var(--surface); border-radius:16px 16px 0 0;
+  border-top:1px solid var(--border); padding:18px 16px 32px;
+  max-height:72vh; overflow-y:auto;
+}
+.picker-handle {
+  width:40px; height:4px; background:var(--border);
+  border-radius:2px; margin:0 auto 16px;
+}
+.picker-title {
+  font-size:0.7rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.1em; color:var(--muted); margin-bottom:12px;
+}
+.picker-lot {
+  background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+  padding:12px 14px; margin-bottom:8px; cursor:pointer; transition:border-color 0.15s;
+}
+.picker-lot.selected { border-color:var(--amber); }
+.picker-lot-num { font-family:var(--mono); font-size:0.78rem; color:var(--amber); }
+.picker-lot-mat { font-size:0.9rem; font-weight:600; margin:3px 0; }
+.picker-lot-rem { font-size:0.78rem; color:var(--muted); }
+.picker-qty-wrap {
+  display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border);
+}
+.picker-qty-wrap.show { display:block; }
+</style>
+</head>
+<body>
+
+<!-- ── Worker selection ─────────────────────────────────── -->
+<div id="worker-screen">
+  <div class="logo-mark">WG <span>LLC</span></div>
+  <div class="worker-title">Warehouse</div>
+  <div class="worker-sub">Select your name to continue</div>
+  <div class="worker-list" id="worker-list">
+    <div class="empty-state">Loading...</div>
+  </div>
+</div>
+
+<!-- ── Main app ─────────────────────────────────────────── -->
+<div id="app">
+  <header>
+    <div class="header-logo">WG <span>LLC</span> <small>/ Warehouse</small></div>
+    <div class="header-worker" onclick="changeWorker()">
+      <span>👤</span><strong id="header-name">—</strong><span style="font-size:0.6rem">▼</span>
+    </div>
+  </header>
+
+  <!-- Production tab -->
+  <div class="tab-pane active" id="tab-produce">
+    <div class="section-title">Production Log</div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="p-date">
+    </div>
+    <div class="form-group">
+      <label>Batch #</label>
+      <input id="p-batch" readonly style="font-family:var(--mono)">
+    </div>
+    <div class="form-group">
+      <label>Output — Stretch Wrap</label>
+      <div class="row2">
+        <input type="number" id="p-qty" placeholder="Quantity" min="0" step="1">
+        <select id="p-unit">
+          <option value="Rolls">Rolls</option>
+          <option value="Pallets">Pallets</option>
+          <option value="Boxes">Boxes</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Raw Materials Used</label>
+      <div id="inputs-list"></div>
+      <button class="btn-outline" onclick="openLotPicker()">+ Add Raw Material Lot</button>
+    </div>
+    <div class="form-group">
+      <label>Notes <span style="font-weight:400;text-transform:none">(optional)</span></label>
+      <textarea id="p-notes" placeholder="Shift notes, issues, machine downtime..."></textarea>
+    </div>
+    <button class="btn-primary" id="p-submit" onclick="submitProduction()">Submit Production Log</button>
+  </div>
+
+  <!-- Receive material tab -->
+  <div class="tab-pane" id="tab-receive">
+    <div class="section-title">Receive Raw Material</div>
+    <div class="form-group">
+      <label>Date Received</label>
+      <input type="date" id="r-date">
+    </div>
+    <div class="form-group">
+      <label>Lot #</label>
+      <input id="r-lot" style="font-family:var(--mono)" placeholder="Auto-generated">
+    </div>
+    <div class="form-group">
+      <label>Material</label>
+      <input id="r-material" placeholder="e.g. Base Film, Tape, Core">
+    </div>
+    <div class="row2" style="margin-bottom:14px">
+      <div class="form-group" style="margin-bottom:0">
+        <label>Quantity</label>
+        <input type="number" id="r-qty" placeholder="0" min="0">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>Unit</label>
+        <input id="r-unit" placeholder="Rolls / kg">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Source</label>
+      <select id="r-source">
+        <option value="Import">Import</option>
+        <option value="Local US">Local US</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Supplier</label>
+      <input id="r-supplier" placeholder="Supplier name">
+    </div>
+    <div class="form-group">
+      <label>Notes <span style="font-weight:400;text-transform:none">(optional)</span></label>
+      <textarea id="r-notes" placeholder="PO number, condition on arrival..."></textarea>
+    </div>
+    <button class="btn-primary" id="r-submit" onclick="submitReceive()">Confirm Receipt</button>
+  </div>
+
+  <!-- Today's log tab -->
+  <div class="tab-pane" id="tab-log">
+    <div class="section-title">Today's Activity</div>
+    <div id="log-list"></div>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav>
+    <button class="nav-btn active" id="nav-produce" onclick="showTab('produce')">
+      <span class="nav-icon">📋</span>Production
+    </button>
+    <button class="nav-btn" id="nav-receive" onclick="showTab('receive')">
+      <span class="nav-icon">📦</span>Receive
+    </button>
+    <button class="nav-btn" id="nav-log" onclick="showTab('log')">
+      <span class="nav-icon">📅</span>Today
+    </button>
+  </nav>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Lot picker -->
+<div id="lot-picker">
+  <div class="picker-backdrop" onclick="closeLotPicker()"></div>
+  <div class="picker-sheet">
+    <div class="picker-handle"></div>
+    <div class="picker-title">Select Raw Material Lot</div>
+    <div id="picker-lots"></div>
+    <div class="picker-qty-wrap" id="picker-qty-wrap">
+      <div style="font-size:0.82rem;color:var(--muted);margin-bottom:10px" id="picker-selected-info"></div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Quantity Used</label>
+        <input type="number" id="picker-qty-input" placeholder="0" min="0" step="any">
+      </div>
+      <button class="btn-primary" style="margin-top:0" onclick="confirmLotAdd()">Add to Production</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbyt6jYEDSeesF1chOR1oQhRYRZx_1GTNFB79mZpJY2qF7CDu2iDow4A80S8b6Mefpd8/exec';
+
+let employees = [], rawMaterialLots = [], productions = [];
+let currentWorker = localStorage.getItem('wg_worker') || '';
+let productionInputs = [];
+let pickerSelectedLot = null;
+
+// ── Init ──────────────────────────────────────────────────
+async function init() {
+  try {
+    const [empRes, lotRes, prodRes] = await Promise.all([
+      fetch(API + '?sheet=Employees').then(r => r.json()),
+      fetch(API + '?sheet=RawMaterialLots').then(r => r.json()),
+      fetch(API + '?sheet=Production').then(r => r.json()),
+    ]);
+    employees       = empRes.data  || [];
+    rawMaterialLots = (lotRes.data || []).map(l => ({ ...l, qty: Number(l.qty)||0 }));
+    productions     = prodRes.data || [];
+  } catch(e) {
+    showToast('Failed to load data — check connection', 'error');
+  }
+  currentWorker ? startApp() : renderWorkerList();
+}
+
+// ── Worker ────────────────────────────────────────────────
+function renderWorkerList() {
+  const el = document.getElementById('worker-list');
+  const active = employees.filter(e => e.status !== 'Inactive' && e.status !== 'Left');
+  if (!active.length) {
+    el.innerHTML = '<div class="empty-state">No employees found.<br>Add employees in the main system first.</div>';
+    return;
+  }
+  el.innerHTML = active.map(e => {
+    const initials = (e.name||'?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    const safe = (e.name||'').replace(/'/g,"\\'");
+    return `<button class="worker-btn" onclick="selectWorker('${safe}')">
+      <div class="worker-avatar">${initials}</div>
+      <div>
+        <div>${e.name||'—'}</div>
+        <div style="font-size:0.75rem;color:var(--muted);font-weight:400">${e.role||''} ${e.emp_num?'· '+e.emp_num:''}</div>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+function selectWorker(name) {
+  currentWorker = name;
+  localStorage.setItem('wg_worker', name);
+  startApp();
+}
+
+function changeWorker() {
+  localStorage.removeItem('wg_worker');
+  currentWorker = '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('worker-screen').style.display = 'flex';
+  renderWorkerList();
+}
+
+function startApp() {
+  document.getElementById('worker-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('header-name').textContent = currentWorker;
+  const today = todayStr();
+  document.getElementById('p-date').value = today;
+  document.getElementById('r-date').value = today;
+  document.getElementById('p-batch').value = generateBatchNum();
+  document.getElementById('r-lot').value   = generateLotNum();
+  renderInputsList();
+  renderLog();
+}
+
+// ── Helpers ───────────────────────────────────────────────
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+}
+function generateBatchNum() {
+  const ds = todayStr().replace(/-/g,'');
+  const n  = productions.filter(p => (p.batch||'').includes(ds)).length;
+  return 'WG-' + ds + '-' + String(n+1).padStart(3,'0');
+}
+function generateLotNum() {
+  const ds = todayStr().replace(/-/g,'');
+  const n  = rawMaterialLots.filter(l => (l.lotNum||'').includes(ds)).length;
+  return 'RM-' + ds + '-' + String(n+1).padStart(3,'0');
+}
+function lotRemaining(lot) {
+  let used = 0;
+  productions.forEach(pr => {
+    try { JSON.parse(pr.inputs||'[]').forEach(i => { if (i.lotNum === lot.lotNum) used += Number(i.qty)||0; }); } catch(e) {}
+  });
+  return Math.max(0, (Number(lot.qty)||0) - used);
+}
+
+// ── Tab nav ───────────────────────────────────────────────
+function showTab(tab) {
+  ['produce','receive','log'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('nav-'+t).classList.toggle('active', t===tab);
+  });
+  if (tab === 'log') renderLog();
+}
+
+// ── Lot picker ────────────────────────────────────────────
+function openLotPicker() {
+  pickerSelectedLot = null;
+  document.getElementById('picker-qty-wrap').classList.remove('show');
+  document.getElementById('picker-qty-input').value = '';
+  const available = rawMaterialLots.filter(l =>
+    lotRemaining(l) > 0 && !productionInputs.some(i => i.lotNum === l.lotNum)
+  );
+  const el = document.getElementById('picker-lots');
+  if (!available.length) {
+    el.innerHTML = '<div class="empty-state">No lots available.<br>Add lots in the Receive tab first.</div>';
+  } else {
+    el.innerHTML = available.map(l => {
+      const rem = lotRemaining(l);
+      return `<div class="picker-lot" id="pl-${l.lotNum}" onclick="pickLot('${l.lotNum}')">
+        <div class="picker-lot-num">${l.lotNum}</div>
+        <div class="picker-lot-mat">${l.material||'—'}</div>
+        <div class="picker-lot-rem">Available: <strong style="color:var(--text)">${rem.toLocaleString()} ${l.unit||''}</strong></div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('lot-picker').classList.add('open');
+}
+
+function pickLot(lotNum) {
+  pickerSelectedLot = rawMaterialLots.find(l => l.lotNum === lotNum);
+  if (!pickerSelectedLot) return;
+  document.querySelectorAll('.picker-lot').forEach(el =>
+    el.classList.toggle('selected', el.id === 'pl-' + lotNum)
+  );
+  const rem = lotRemaining(pickerSelectedLot);
+  document.getElementById('picker-selected-info').innerHTML =
+    `<strong style="font-family:var(--mono);color:var(--amber)">${pickerSelectedLot.lotNum}</strong>
+     &nbsp;—&nbsp; ${pickerSelectedLot.material}
+     &nbsp;·&nbsp; Available: <strong style="color:var(--text)">${rem.toLocaleString()} ${pickerSelectedLot.unit||''}</strong>`;
+  document.getElementById('picker-qty-wrap').classList.add('show');
+  document.getElementById('picker-qty-input').focus();
+}
+
+function confirmLotAdd() {
+  if (!pickerSelectedLot) return;
+  const qty = parseFloat(document.getElementById('picker-qty-input').value);
+  if (!qty || qty <= 0) { showToast('Enter a valid quantity', 'error'); return; }
+  const rem = lotRemaining(pickerSelectedLot);
+  if (qty > rem) { showToast('Exceeds available: ' + rem + ' ' + (pickerSelectedLot.unit||''), 'error'); return; }
+  productionInputs.push({ lotNum: pickerSelectedLot.lotNum, material: pickerSelectedLot.material, qty, unit: pickerSelectedLot.unit||'' });
+  closeLotPicker();
+  renderInputsList();
+}
+
+function closeLotPicker() {
+  document.getElementById('lot-picker').classList.remove('open');
+  pickerSelectedLot = null;
+}
+
+function removeLotInput(idx) {
+  productionInputs.splice(idx, 1);
+  renderInputsList();
+}
+
+function renderInputsList() {
+  const el = document.getElementById('inputs-list');
+  if (!productionInputs.length) {
+    el.innerHTML = '<div style="font-size:0.82rem;color:var(--muted);padding:6px 0 8px">No raw materials added yet.</div>';
+    return;
+  }
+  el.innerHTML = productionInputs.map((inp, i) => `
+    <div class="lot-chip">
+      <div>
+        <div class="lot-chip-num">${inp.lotNum}</div>
+        <div class="lot-chip-mat">${inp.material}</div>
+        <div class="lot-chip-qty">Used: ${inp.qty.toLocaleString()} ${inp.unit}</div>
+      </div>
+      <button class="btn-remove" onclick="removeLotInput(${i})">Remove</button>
+    </div>`).join('');
+}
+
+// ── Submit production ─────────────────────────────────────
+async function submitProduction() {
+  const date  = document.getElementById('p-date').value;
+  const batch = document.getElementById('p-batch').value;
+  const qty   = Number(document.getElementById('p-qty').value);
+  const unit  = document.getElementById('p-unit').value;
+  const notes = document.getElementById('p-notes').value.trim();
+  if (!date)      { showToast('Please select a date', 'error'); return; }
+  if (!qty || qty <= 0) { showToast('Enter output quantity', 'error'); return; }
+
+  const btn = document.getElementById('p-submit');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+
+  const record = {
+    id:      uid(),
+    date,
+    batch,
+    inputs:  JSON.stringify(productionInputs),
+    outputs: JSON.stringify([{ product:'Stretch Wrap', qty, unit }]),
+    notes:   (notes ? notes + ' ' : '') + '[By: ' + currentWorker + ']',
+  };
+  const ok = await saveToSheet('Production', record);
+  if (ok) {
+    productions.push(record);
+    showToast('✓ Logged: ' + batch, 'success');
+    productionInputs = [];
+    renderInputsList();
+    document.getElementById('p-qty').value   = '';
+    document.getElementById('p-notes').value = '';
+    document.getElementById('p-batch').value = generateBatchNum();
+  }
+  btn.disabled = false; btn.textContent = 'Submit Production Log';
+}
+
+// ── Submit receive ────────────────────────────────────────
+async function submitReceive() {
+  const date     = document.getElementById('r-date').value;
+  const lotNum   = document.getElementById('r-lot').value.trim();
+  const material = document.getElementById('r-material').value.trim();
+  const qty      = Number(document.getElementById('r-qty').value);
+  const unit     = document.getElementById('r-unit').value.trim();
+  const source   = document.getElementById('r-source').value;
+  const supplier = document.getElementById('r-supplier').value.trim();
+  const notes    = document.getElementById('r-notes').value.trim();
+  if (!date)      { showToast('Please select a date', 'error'); return; }
+  if (!material)  { showToast('Enter material name', 'error'); return; }
+  if (!qty || qty <= 0) { showToast('Enter quantity received', 'error'); return; }
+  if (!supplier)  { showToast('Enter supplier name', 'error'); return; }
+
+  const btn = document.getElementById('r-submit');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  const record = { id:uid(), lotNum, material, unit, qty, source, supplier, dateReceived:date, notes };
+  const ok = await saveToSheet('RawMaterialLots', record);
+  if (ok) {
+    rawMaterialLots.push({ ...record, qty });
+    showToast('✓ Received: ' + lotNum, 'success');
+    ['r-qty','r-material','r-unit','r-supplier','r-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('r-lot').value = generateLotNum();
+  }
+  btn.disabled = false; btn.textContent = 'Confirm Receipt';
+}
+
+// ── Today's log ───────────────────────────────────────────
+function renderLog() {
+  const el    = document.getElementById('log-list');
+  const today = todayStr();
+  const prods = productions.filter(p => String(p.date).startsWith(today));
+  const lots  = rawMaterialLots.filter(l => String(l.dateReceived).startsWith(today));
+
+  if (!prods.length && !lots.length) {
+    el.innerHTML = '<div class="empty-state">No activity recorded today yet.</div>';
+    return;
+  }
+  let html = '';
+  prods.forEach(p => {
+    let outStr = '—';
+    try { const o = JSON.parse(p.outputs||'[]'); outStr = o.map(x => x.qty.toLocaleString()+' '+x.unit+' '+x.product).join(', '); } catch(e) {}
+    let inputCount = 0;
+    try { inputCount = JSON.parse(p.inputs||'[]').length; } catch(e) {}
+    html += `<div class="log-card">
+      <div class="log-card-header">
+        <span class="batch-num">${p.batch||'—'}</span>
+        <span class="log-badge badge-prod">Production</span>
+      </div>
+      <div class="log-detail">
+        <strong>${outStr}</strong><br>
+        ${inputCount} raw material lot${inputCount!==1?'s':''} used
+        ${p.notes?'<br><span>'+p.notes+'</span>':''}
+      </div>
+    </div>`;
+  });
+  lots.forEach(l => {
+    html += `<div class="log-card">
+      <div class="log-card-header">
+        <span class="batch-num">${l.lotNum||'—'}</span>
+        <span class="log-badge badge-recv">Received</span>
+      </div>
+      <div class="log-detail">
+        <strong>${l.material||'—'}</strong> — ${Number(l.qty).toLocaleString()} ${l.unit||''}<br>
+        ${l.supplier||''} ${l.source?'· '+l.source:''}
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ── API ───────────────────────────────────────────────────
+async function saveToSheet(sheet, record) {
+  try {
+    const res = await fetch(API, {
+      method:'POST',
+      body: JSON.stringify({ action:'save', sheet, record }),
+    }).then(r => r.json());
+    if (!res.ok) { showToast('Save failed: ' + (res.error||'unknown'), 'error'); return false; }
+    return true;
+  } catch(e) {
+    showToast('Network error — check connection', 'error');
+    return false;
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────
+let _tt;
+function showToast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(_tt);
+  _tt = setTimeout(() => { el.className = ''; }, 3000);
+}
+
+init();
+</script>
+</body>
+</html>
