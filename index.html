@@ -1472,14 +1472,12 @@ function openCargoModal(s) {
   });
   const cta = document.getElementById('c-containers-ta');
   if (cta) cta.value = s ? (s.containers||'').replace(/,\s*/g,'\n') : '';
-  if (s) {
-    DOC_STEPS.forEach(d => {
-      const cb = document.getElementById('doc-cb-'+d.key);
-      if (cb) cb.checked = isTrue(s[d.key]);
-      if (d.ref)  { const ri = document.getElementById('doc-ref-'+d.key);  if (ri) ri.value = s[d.ref]||''; }
-      if (d.date) { const di = document.getElementById('doc-date-'+d.key); if (di) di.value = s[d.date]||''; }
-    });
-  }
+  DOC_STEPS.forEach(d => {
+    const cb = document.getElementById('doc-cb-'+d.key);
+    if (cb) cb.checked = s ? isTrue(s[d.key]) : false;
+    if (d.ref)  { const ri = document.getElementById('doc-ref-'+d.key);  if (ri) ri.value = s ? (s[d.ref]||'') : ''; }
+    if (d.date) { const di = document.getElementById('doc-date-'+d.key); if (di) di.value = s ? (s[d.date]||'') : ''; }
+  });
   document.getElementById('cargoModal').classList.add('open');
 }
 function openCargoEdit(id) { openCargoModal(cargo.find(x => x.id === id)); }
