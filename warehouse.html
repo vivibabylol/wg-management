@@ -138,7 +138,7 @@ textarea { resize:vertical; min-height:72px; }
 nav {
   position:fixed; bottom:0; left:0; right:0;
   background:var(--surface); border-top:1px solid var(--border);
-  display:grid; grid-template-columns:repeat(3,1fr);
+  display:grid; grid-template-columns:repeat(5,1fr);
   padding-bottom:env(safe-area-inset-bottom); z-index:20;
 }
 .nav-btn {
@@ -215,6 +215,51 @@ nav {
   display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border);
 }
 .picker-qty-wrap.show { display:block; }
+
+/* ── Trace cards ─────────────────────────────────────────── */
+.trace-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r); padding:16px; margin-bottom:12px;
+}
+.trace-batch {
+  font-family:var(--mono); font-size:1rem; color:var(--amber);
+  font-weight:700; margin-bottom:4px;
+}
+.trace-meta { font-size:0.78rem; color:var(--muted); margin-bottom:12px; }
+.trace-section-label {
+  font-size:0.65rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.1em; color:var(--muted); margin-bottom:8px;
+}
+.trace-output {
+  background:var(--green-bg); border:1px solid var(--green);
+  border-radius:8px; padding:10px 14px; margin-bottom:10px;
+  font-size:0.88rem;
+}
+.trace-output strong { color:var(--green); }
+.trace-input-row {
+  border-left:2px solid var(--amber); padding:8px 12px; margin-bottom:6px;
+}
+.trace-lot-num { font-family:var(--mono); font-size:0.78rem; color:var(--amber); }
+.trace-lot-detail { font-size:0.82rem; color:var(--text); margin:2px 0; }
+.trace-lot-supplier { font-size:0.75rem; color:var(--muted); }
+
+/* ── Inventory ───────────────────────────────────────────── */
+.inv-section-title {
+  font-size:0.68rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:0.1em; color:var(--muted);
+  padding:10px 0 6px; margin-top:8px;
+  border-bottom:1px solid var(--border); margin-bottom:10px;
+}
+.inv-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 14px; background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; margin-bottom:8px;
+}
+.inv-name { font-size:0.9rem; font-weight:600; }
+.inv-lot  { font-family:var(--mono); font-size:0.7rem; color:var(--muted); margin-top:2px; }
+.inv-qty  { font-size:1rem; font-weight:700; text-align:right; }
+.inv-unit { font-size:0.72rem; color:var(--muted); }
+.inv-low  { color:var(--red); }
 </style>
 </head>
 <body>
@@ -321,6 +366,22 @@ nav {
     <div id="log-list"></div>
   </div>
 
+  <!-- Traceability tab -->
+  <div class="tab-pane" id="tab-trace">
+    <div class="section-title">Product Traceability</div>
+    <div class="form-group">
+      <label>Search by Batch # or Date</label>
+      <input id="trace-search" placeholder="e.g. WG-20260330-001 or 2026-03-30" oninput="renderTrace()">
+    </div>
+    <div id="trace-results"></div>
+  </div>
+
+  <!-- Inventory tab -->
+  <div class="tab-pane" id="tab-inventory">
+    <div class="section-title">Current Inventory</div>
+    <div id="inv-list"></div>
+  </div>
+
   <!-- Bottom nav -->
   <nav>
     <button class="nav-btn active" id="nav-produce" onclick="showTab('produce')">
@@ -331,6 +392,12 @@ nav {
     </button>
     <button class="nav-btn" id="nav-log" onclick="showTab('log')">
       <span class="nav-icon">📅</span>Today
+    </button>
+    <button class="nav-btn" id="nav-trace" onclick="showTab('trace')">
+      <span class="nav-icon">🔍</span>Trace
+    </button>
+    <button class="nav-btn" id="nav-inventory" onclick="showTab('inventory')">
+      <span class="nav-icon">📊</span>Stock
     </button>
   </nav>
 </div>
@@ -457,11 +524,13 @@ function lotRemaining(lot) {
 
 // ── Tab nav ───────────────────────────────────────────────
 function showTab(tab) {
-  ['produce','receive','log'].forEach(t => {
+  ['produce','receive','log','trace','inventory'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
     document.getElementById('nav-'+t).classList.toggle('active', t===tab);
   });
-  if (tab === 'log') renderLog();
+  if (tab === 'log')       renderLog();
+  if (tab === 'trace')     renderTrace();
+  if (tab === 'inventory') renderInventory();
 }
 
 // ── Lot picker ────────────────────────────────────────────
@@ -671,6 +740,131 @@ function showToast(msg, type='success') {
   el.className = 'show ' + type;
   clearTimeout(_tt);
   _tt = setTimeout(() => { el.className = ''; }, 3000);
+}
+
+// ── Traceability ──────────────────────────────────────────
+function renderTrace() {
+  const el    = document.getElementById('trace-results');
+  const query = (document.getElementById('trace-search')?.value || '').trim().toLowerCase();
+
+  if (!query) {
+    // Show today's batches by default
+    const today   = todayStr();
+    const recent  = productions.filter(p => String(p.date).startsWith(today));
+    if (!recent.length) {
+      el.innerHTML = '<div class="empty-state">Enter a batch number or date to search.<br>e.g. WG-20260330-001 or 2026-03-30</div>';
+      return;
+    }
+    el.innerHTML = recent.map(p => buildTraceCard(p)).join('');
+    return;
+  }
+
+  const matches = productions.filter(p =>
+    (p.batch||'').toLowerCase().includes(query) ||
+    String(p.date).includes(query)
+  );
+
+  if (!matches.length) {
+    el.innerHTML = '<div class="empty-state">No records found for "' + query + '"</div>';
+    return;
+  }
+  el.innerHTML = matches.map(p => buildTraceCard(p)).join('');
+}
+
+function buildTraceCard(p) {
+  let outputHtml = '';
+  try {
+    const outputs = JSON.parse(p.outputs || '[]');
+    outputHtml = outputs.map(o =>
+      `<div class="trace-output"><strong>${o.qty.toLocaleString()} ${o.unit}</strong> — ${o.product}</div>`
+    ).join('');
+  } catch(e) {}
+
+  let inputsHtml = '';
+  try {
+    const inputs = JSON.parse(p.inputs || '[]');
+    if (inputs.length) {
+      inputsHtml = '<div class="trace-section-label">Raw Materials Used</div>';
+      inputsHtml += inputs.map(inp => {
+        const lot = rawMaterialLots.find(l => l.lotNum === inp.lotNum);
+        const supplier = lot ? (lot.supplier || '—') : '—';
+        const received = lot ? (lot.dateReceived || '—') : '—';
+        const source   = lot ? (lot.source || '') : '';
+        return `<div class="trace-input-row">
+          <div class="trace-lot-num">${inp.lotNum}</div>
+          <div class="trace-lot-detail">${inp.material} — ${Number(inp.qty).toLocaleString()} ${inp.unit}</div>
+          <div class="trace-lot-supplier">Supplier: ${supplier} ${source ? '· '+source : ''} · Received: ${received}</div>
+        </div>`;
+      }).join('');
+    } else {
+      inputsHtml = '<div style="font-size:0.82rem;color:var(--muted)">No raw material lots linked.</div>';
+    }
+  } catch(e) {}
+
+  const notes = (p.notes||'').replace(/\[By:.*?\]/,'').trim();
+
+  return `<div class="trace-card">
+    <div class="trace-batch">${p.batch||'—'}</div>
+    <div class="trace-meta">Date: ${p.date||'—'} ${notes ? '· '+notes : ''}</div>
+    <div class="trace-section-label">Output</div>
+    ${outputHtml}
+    ${inputsHtml}
+  </div>`;
+}
+
+// ── Inventory ─────────────────────────────────────────────
+function renderInventory() {
+  const el = document.getElementById('inv-list');
+  let html = '';
+
+  // ── Raw Materials ──
+  html += '<div class="inv-section-title">Raw Materials</div>';
+  const materials = [...new Set(rawMaterialLots.map(l => l.material).filter(Boolean))].sort();
+
+  if (!materials.length) {
+    html += '<div style="font-size:0.85rem;color:var(--muted);padding:8px 0">No raw material lots recorded yet.</div>';
+  } else {
+    materials.forEach(mat => {
+      const lots = rawMaterialLots.filter(l => l.material === mat);
+      const totalRem = lots.reduce((s, l) => s + lotRemaining(l), 0);
+      const unit = lots[0]?.unit || '';
+      const isLow = totalRem < 50;
+      const activeLots = lots.filter(l => lotRemaining(l) > 0);
+      html += `<div class="inv-row">
+        <div>
+          <div class="inv-name">${mat}</div>
+          <div class="inv-lot">${activeLots.length} active lot${activeLots.length!==1?'s':''}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="inv-qty ${isLow?'inv-low':''}">${totalRem.toLocaleString()}</div>
+          <div class="inv-unit">${unit}</div>
+        </div>
+      </div>`;
+    });
+  }
+
+  // ── Finished Goods ──
+  html += '<div class="inv-section-title" style="margin-top:16px">Finished Goods — Stretch Wrap</div>';
+  let produced = 0;
+  productions.forEach(pr => {
+    try {
+      JSON.parse(pr.outputs||'[]').forEach(o => {
+        if ((o.product||'').toLowerCase().includes('wrap')) produced += Number(o.qty)||0;
+      });
+    } catch(e) {}
+  });
+  html += `<div class="inv-row">
+    <div>
+      <div class="inv-name">Stretch Wrap</div>
+      <div class="inv-lot">Total produced (all time)</div>
+    </div>
+    <div style="text-align:right">
+      <div class="inv-qty">${produced.toLocaleString()}</div>
+      <div class="inv-unit">Rolls</div>
+    </div>
+  </div>`;
+
+  el.innerHTML = html;
 }
 
 init();
