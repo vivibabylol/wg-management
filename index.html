@@ -917,23 +917,11 @@ select option { background: var(--surface2); }
             </div>
           </div>
         </div>
-        <!-- Packing List & Commercial Invoice grouped -->
-        <div style="padding:8px 0;border-bottom:1px solid var(--border)">
-          <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:8px">Packing List &amp; Commercial Invoice</div>
-          <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;margin-bottom:8px">
-            <input type="checkbox" id="doc-cb-doc_packingList" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
-            <div><label for="doc-cb-doc_packingList" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Packing List Provided</label>
-              <div style="display:flex;gap:8px;margin-top:6px">
-                <input id="doc-ref-doc_packingList" placeholder="PL Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
-              </div>
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start">
-            <input type="checkbox" id="doc-cb-doc_commercialInv" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
-            <div><label for="doc-cb-doc_commercialInv" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Commercial Invoice Provided</label>
-              <div style="display:flex;gap:8px;margin-top:6px">
-                <input id="doc-ref-doc_commercialInv" placeholder="CI Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
-              </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="doc-cb-doc_packingList" style="margin-top:3px;accent-color:var(--green);width:16px;height:16px;cursor:pointer">
+          <div><label for="doc-cb-doc_packingList" style="font-size:0.85rem;font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Packing List / Commercial Invoice</label>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <input id="doc-ref-doc_packingList" placeholder="Ref #" style="flex:1;min-width:120px;font-size:0.78rem;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);outline:none">
             </div>
           </div>
         </div>
@@ -1331,8 +1319,7 @@ const DOC_STEPS = [
   { key:'doc_debitNote',       label:'Debit Note \u6536\u5230',           ref:'ref_debitNote',     date:'date_debitNote' },
   { key:'doc_arrivalNotice',   label:'Arrival Notice \u6536\u5230',       ref:'ref_arrivalNotice', date:'date_arrivalNotice' },
   { key:'doc_carrierFeePaid',  label:'Carrier Fee \u5df2\u4ed8',          ref:'',                  date:'date_carrierFeePaid' },
-  { key:'doc_packingList',     label:'Packing List \u5df2\u63d0\u4f9b',   ref:'ref_packingList',   date:'' },
-  { key:'doc_commercialInv',   label:'Commercial Invoice \u5df2\u63d0\u4f9b', ref:'ref_commercialInv', date:'' },
+  { key:'doc_packingList',     label:'Packing List / Commercial Invoice', ref:'ref_packingList',   date:'' },
   { key:'doc_entrySummary',    label:'Entry Summary \u6536\u5230',        ref:'ref_entrySummary',  date:'date_entrySummary' },
   { key:'doc_customsPaid',     label:'Customs Paid',                       ref:'',                  date:'date_customsPaid' },
   { key:'doc_finalAddress',    label:'\u6700\u7d42\u5730\u5740\u5df2\u63d0\u4f9b',               ref:'',                  date:'' },
@@ -1516,6 +1503,9 @@ async function saveCargo() {
     if (d.ref)  { const ri = document.getElementById('doc-ref-'+d.key);  data[d.ref]  = ri ? ri.value : ''; }
     if (d.date) { const di = document.getElementById('doc-date-'+d.key); data[d.date] = di ? di.value : ''; }
   });
+  // Packing List and Commercial Invoice are the same document — keep both columns in sync
+  data.doc_commercialInv = data.doc_packingList;
+  data.ref_commercialInv = data.ref_packingList;
   const record = editingCargo ? {...editingCargo,...data} : {id:uid(),...data};
   closeModal('cargoModal');
   const ok = await saveToSheet('Shipments', record);
