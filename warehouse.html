@@ -320,48 +320,15 @@ nav {
   <!-- Receive material tab -->
   <div class="tab-pane" id="tab-receive">
     <div class="section-title">Receive Raw Material</div>
+
+    <!-- Shared fields -->
     <div class="form-group">
       <label>Date Received</label>
       <input type="date" id="r-date">
     </div>
     <div class="form-group">
-      <label>Lot #</label>
-      <input id="r-lot" style="font-family:var(--mono)" placeholder="Auto-generated">
-    </div>
-    <div class="form-group">
-      <label>Material</label>
-      <select id="r-material" onchange="onMaterialChange()">
-        <option value="">— Select Material —</option>
-        <option value="雙面膠">雙面膠</option>
-        <option value="單面膠">單面膠</option>
-        <option value="RFID">RFID</option>
-        <option value="大標籤">大標籤</option>
-        <option value="小標籤">小標籤</option>
-        <option value="滑石粉">滑石粉</option>
-        <option value="100kg貼紙">100kg貼紙</option>
-        <option value="LEFT貼紙">LEFT貼紙</option>
-        <option value="合格證">合格證</option>
-        <option value="成品膜管芯">成品膜管芯</option>
-        <option value="單面捲墊">單面捲墊</option>
-        <option value="雙面捲墊">雙面捲墊</option>
-        <option value="黏膜">黏膜</option>
-        <option value="不黏膜">不黏膜</option>
-        <option value="Other">Other...</option>
-      </select>
-    </div>
-    <div class="form-group" id="r-other-wrap" style="display:none">
-      <label>Specify Material</label>
-      <input id="r-material-other" placeholder="Enter material name">
-    </div>
-    <div class="row2" style="margin-bottom:14px">
-      <div class="form-group" style="margin-bottom:0">
-        <label>Quantity</label>
-        <input type="number" id="r-qty" placeholder="0" min="0">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label>Unit</label>
-        <input id="r-unit" placeholder="Rolls / kg / Pcs">
-      </div>
+      <label>Supplier</label>
+      <input id="r-supplier" placeholder="Supplier name">
     </div>
     <div class="form-group">
       <label>Source</label>
@@ -371,14 +338,60 @@ nav {
       </select>
     </div>
     <div class="form-group">
-      <label>Supplier</label>
-      <input id="r-supplier" placeholder="Supplier name">
-    </div>
-    <div class="form-group">
       <label>Notes <span style="font-weight:400;text-transform:none">(optional)</span></label>
       <textarea id="r-notes" placeholder="PO number, condition on arrival..."></textarea>
     </div>
-    <button class="btn-primary" id="r-submit" onclick="submitReceive()">Confirm Receipt</button>
+
+    <!-- Items list -->
+    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:10px">Items to Receive</div>
+    <div id="r-items-list"></div>
+
+    <!-- Add item form -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px">
+      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--amber);margin-bottom:10px">Add Item</div>
+      <div class="form-group">
+        <label>Material</label>
+        <select id="r-material" onchange="onMaterialChange()">
+          <option value="">— Select —</option>
+          <option value="雙面膠">雙面膠</option>
+          <option value="單面膠">單面膠</option>
+          <option value="RFID">RFID</option>
+          <option value="大標籤">大標籤</option>
+          <option value="小標籤">小標籤</option>
+          <option value="滑石粉">滑石粉</option>
+          <option value="100kg貼紙">100kg貼紙</option>
+          <option value="LEFT貼紙">LEFT貼紙</option>
+          <option value="合格證">合格證</option>
+          <option value="成品膜管芯">成品膜管芯</option>
+          <option value="單面捲墊">單面捲墊</option>
+          <option value="雙面捲墊">雙面捲墊</option>
+          <option value="黏膜">黏膜</option>
+          <option value="不黏膜">不黏膜</option>
+          <option value="Other">Other...</option>
+        </select>
+      </div>
+      <div class="form-group" id="r-other-wrap" style="display:none">
+        <label>Specify Material</label>
+        <input id="r-material-other" placeholder="Enter material name">
+      </div>
+      <div class="form-group">
+        <label>Lot #</label>
+        <input id="r-lot" style="font-family:var(--mono)" placeholder="Auto-generated">
+      </div>
+      <div class="row2">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Quantity</label>
+          <input type="number" id="r-qty" placeholder="0" min="0">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Unit</label>
+          <input id="r-unit" placeholder="Rolls / kg / Pcs">
+        </div>
+      </div>
+      <button class="btn-outline" style="margin-top:12px" onclick="addReceiveItem()">+ Add to List</button>
+    </div>
+
+    <button class="btn-primary" id="r-submit" onclick="submitReceive()" style="display:none">Confirm All Receipt</button>
   </div>
 
   <!-- Today's log tab -->
@@ -514,6 +527,7 @@ function startApp() {
   document.getElementById('p-batch').value = generateBatchNum();
   document.getElementById('r-lot').value   = generateLotNum();
   renderInputsList();
+  renderReceiveItems();
   renderLog();
 }
 
@@ -679,39 +693,92 @@ function onMaterialChange() {
   if (MATERIAL_UNITS[val]) document.getElementById('r-unit').value = MATERIAL_UNITS[val];
 }
 
-// ── Submit receive ────────────────────────────────────────
-async function submitReceive() {
-  const date     = document.getElementById('r-date').value;
-  const lotNum   = document.getElementById('r-lot').value.trim();
+// ── Receive items (multi) ─────────────────────────────────
+let receiveItems = [];
+
+function addReceiveItem() {
   const matSel   = document.getElementById('r-material').value;
   const material = matSel === 'Other'
     ? document.getElementById('r-material-other').value.trim()
     : matSel;
+  const lotNum   = document.getElementById('r-lot').value.trim();
   const qty      = Number(document.getElementById('r-qty').value);
   const unit     = document.getElementById('r-unit').value.trim();
+
+  if (!material) { showToast('Select a material', 'error'); return; }
+  if (!qty || qty <= 0) { showToast('Enter quantity', 'error'); return; }
+
+  receiveItems.push({ material, lotNum, qty, unit });
+  renderReceiveItems();
+
+  // Reset item fields, generate next lot#
+  document.getElementById('r-material').value = '';
+  document.getElementById('r-material-other').value = '';
+  document.getElementById('r-other-wrap').style.display = 'none';
+  document.getElementById('r-qty').value = '';
+  document.getElementById('r-unit').value = '';
+  document.getElementById('r-lot').value = generateLotNum();
+}
+
+function removeReceiveItem(idx) {
+  receiveItems.splice(idx, 1);
+  renderReceiveItems();
+}
+
+function renderReceiveItems() {
+  const el  = document.getElementById('r-items-list');
+  const btn = document.getElementById('r-submit');
+  if (!receiveItems.length) {
+    el.innerHTML = '<div style="font-size:0.82rem;color:var(--muted);padding:4px 0 10px">No items added yet.</div>';
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = 'block';
+  el.innerHTML = receiveItems.map((item, i) => `
+    <div class="lot-chip" style="border-color:var(--amber)">
+      <div>
+        <div class="lot-chip-num">${item.lotNum || '—'}</div>
+        <div class="lot-chip-mat">${item.material}</div>
+        <div class="lot-chip-qty">${item.qty.toLocaleString()} ${item.unit}</div>
+      </div>
+      <button class="btn-remove" onclick="removeReceiveItem(${i})">Remove</button>
+    </div>`).join('');
+}
+
+async function submitReceive() {
+  const date     = document.getElementById('r-date').value;
   const source   = document.getElementById('r-source').value;
   const supplier = document.getElementById('r-supplier').value.trim();
   const notes    = document.getElementById('r-notes').value.trim();
-  if (!date)      { showToast('Please select a date', 'error'); return; }
-  if (!material)  { showToast('Enter material name', 'error'); return; }
-  if (!qty || qty <= 0) { showToast('Enter quantity received', 'error'); return; }
-  if (!supplier)  { showToast('Enter supplier name', 'error'); return; }
+
+  if (!date)              { showToast('Please select a date', 'error'); return; }
+  if (!supplier)          { showToast('Enter supplier name', 'error'); return; }
+  if (!receiveItems.length) { showToast('Add at least one item', 'error'); return; }
 
   const btn = document.getElementById('r-submit');
   btn.disabled = true; btn.textContent = 'Saving...';
 
-  const record = { id:uid(), lotNum, material, unit, qty, source, supplier, dateReceived:date, notes };
-  const ok = await saveToSheet('RawMaterialLots', record);
-  if (ok) {
-    rawMaterialLots.push({ ...record, qty });
-    showToast('✓ Received: ' + lotNum, 'success');
-    ['r-qty','r-unit','r-supplier','r-notes'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('r-material').value = '';
-    document.getElementById('r-material-other').value = '';
-    document.getElementById('r-other-wrap').style.display = 'none';
-    document.getElementById('r-lot').value = generateLotNum();
+  let allOk = true;
+  for (const item of receiveItems) {
+    const record = {
+      id: uid(), lotNum: item.lotNum, material: item.material,
+      unit: item.unit, qty: item.qty, source, supplier, dateReceived: date, notes,
+    };
+    const ok = await saveToSheet('RawMaterialLots', record);
+    if (ok) rawMaterialLots.push({ ...record, qty: item.qty });
+    else { allOk = false; }
   }
-  btn.disabled = false; btn.textContent = 'Confirm Receipt';
+
+  if (allOk) {
+    showToast('✓ ' + receiveItems.length + ' item' + (receiveItems.length > 1 ? 's' : '') + ' received', 'success');
+    receiveItems = [];
+    renderReceiveItems();
+    ['r-supplier','r-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('r-lot').value = generateLotNum();
+  } else {
+    showToast('Some items failed to save', 'error');
+  }
+  btn.disabled = false; btn.textContent = 'Confirm All Receipt';
 }
 
 // ── Today's log ───────────────────────────────────────────
