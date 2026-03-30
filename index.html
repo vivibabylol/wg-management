@@ -505,7 +505,16 @@ select option { background: var(--surface2); }
 <div class="page" id="page-cargo">
   <div class="page-header">
     <div class="page-title">Shipment Management <span>Tracker</span></div>
-    <button class="btn-add" onclick="openCargoModal()">+ New Shipment</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="cargo-sort" onchange="renderCargo()" style="font-size:0.78rem;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);outline:none;cursor:pointer">
+        <option value="status">Sort: Status</option>
+        <option value="eta">Sort: ETA</option>
+        <option value="customer">Sort: Customer</option>
+        <option value="docs">Sort: Documents</option>
+        <option value="bol">Sort: BOL #</option>
+      </select>
+      <button class="btn-add" onclick="openCargoModal()">+ New Shipment</button>
+    </div>
   </div>
   <div class="stats-row" id="cargo-stats"></div>
   <div class="cards-list" id="cargo-list"></div>
@@ -1374,7 +1383,22 @@ function renderCargo() {
   renderCargoStats();
   const el = document.getElementById('cargo-list');
   if (!cargo.length) { el.innerHTML = emptyState('🚢','No shipments yet','Click + New Shipment to start tracking'); return; }
-  const sorted = [...cargo].sort((a,b) => (SHIP_STATUS[a.status]?.step??0)-(SHIP_STATUS[b.status]?.step??0));
+  const sortBy = document.getElementById('cargo-sort')?.value || 'status';
+  const sorted = [...cargo].sort((a,b) => {
+    if (sortBy === 'eta') {
+      const da = a.eta ? new Date(a.eta) : new Date('9999');
+      const db = b.eta ? new Date(b.eta) : new Date('9999');
+      return da - db;
+    }
+    if (sortBy === 'customer') return (a.customer||'').localeCompare(b.customer||'');
+    if (sortBy === 'docs') {
+      const pa = DOC_STEPS.filter(d=>isTrue(a[d.key])).length / DOC_STEPS.length;
+      const pb = DOC_STEPS.filter(d=>isTrue(b[d.key])).length / DOC_STEPS.length;
+      return pa - pb;
+    }
+    if (sortBy === 'bol') return (a.bolNum||'').localeCompare(b.bolNum||'');
+    return (SHIP_STATUS[a.status]?.step??0)-(SHIP_STATUS[b.status]?.step??0);
+  });
   let html = '';
   sorted.forEach(s => {
     const st      = SHIP_STATUS[s.status]||{cls:'badge-muted'};
