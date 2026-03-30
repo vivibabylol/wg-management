@@ -7,22 +7,26 @@
 <style>
 * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
 :root {
-  --bg:       #0d1117;
-  --surface:  #161b22;
-  --surface2: #1c2333;
-  --border:   #30363d;
-  --text:     #e6edf3;
-  --muted:    #8b949e;
-  --amber:    #d29922;
-  --amber-bg: rgba(210,153,34,0.12);
-  --green:    #3fb950;
-  --green-bg: rgba(63,185,80,0.12);
-  --red:      #f85149;
-  --red-bg:   rgba(248,81,73,0.10);
-  --blue:     #58a6ff;
-  --blue-bg:  rgba(88,166,255,0.10);
+  --bg:       #f0f4f8;
+  --surface:  #ffffff;
+  --surface2: #f7fafc;
+  --border:   #e2e8f0;
+  --border2:  #cbd5e0;
+  --text:     #1a202c;
+  --muted:    #718096;
+  --navy:     #1e3a5f;
+  --amber:    #b7791f;
+  --amber-bg: #fefce8;
+  --amber-border: #d97706;
+  --green:    #276749;
+  --green-bg: #f0fff4;
+  --red:      #c53030;
+  --red-bg:   #fff5f5;
+  --blue:     #2b6cb0;
+  --blue-bg:  #ebf8ff;
   --mono:     'SF Mono','Courier New',monospace;
-  --r:        10px;
+  --r:        12px;
+  --shadow:   0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
 }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
@@ -41,10 +45,15 @@ body {
   align-items: center;
   justify-content: center;
   padding: 32px 24px;
+  background: var(--bg);
 }
-.logo-mark { font-size:1.1rem; font-weight:800; color:var(--text); margin-bottom:6px; }
+.worker-header-bar {
+  position: fixed; top:0; left:0; right:0;
+  background: var(--navy); height: 6px;
+}
+.logo-mark { font-size:1.2rem; font-weight:800; color:var(--navy); margin-bottom:6px; }
 .logo-mark span { color:var(--amber); font-weight:400; }
-.worker-title { font-size:1.5rem; font-weight:700; margin-bottom:6px; text-align:center; }
+.worker-title { font-size:1.5rem; font-weight:700; margin-bottom:6px; text-align:center; color:var(--text); }
 .worker-sub { font-size:0.85rem; color:var(--muted); margin-bottom:36px; text-align:center; }
 .worker-list { width:100%; max-width:360px; display:flex; flex-direction:column; gap:10px; }
 .worker-btn {
@@ -52,7 +61,7 @@ body {
   padding:16px 18px; text-align:left; color:var(--text); font-size:1rem; font-weight:600;
   cursor:pointer; display:flex; align-items:center; gap:14px; transition:border-color 0.15s;
 }
-.worker-btn:active { border-color:var(--amber); background:var(--surface); }
+.worker-btn:active { border-color:var(--navy); background:var(--surface); }
 .worker-avatar {
   width:38px; height:38px; border-radius:50%;
   background:var(--amber-bg); border:1px solid var(--amber);
@@ -64,18 +73,18 @@ body {
 #app { display:none; }
 
 header {
-  background:var(--surface); border-bottom:1px solid var(--border);
+  background:var(--navy); border-bottom:none;
   padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
   position:sticky; top:0; z-index:10;
 }
-.header-logo { font-size:0.95rem; font-weight:800; }
-.header-logo span { color:var(--amber); font-weight:400; }
-.header-logo small { font-size:0.75rem; color:var(--muted); font-weight:400; }
+.header-logo { font-size:0.95rem; font-weight:800; color:#fff; }
+.header-logo span { color:#f6c954; font-weight:400; }
+.header-logo small { font-size:0.75rem; color:rgba(255,255,255,0.55); font-weight:400; }
 .header-worker {
-  font-size:0.78rem; color:var(--muted);
+  font-size:0.78rem; color:rgba(255,255,255,0.6);
   display:flex; align-items:center; gap:6px; cursor:pointer;
 }
-.header-worker strong { color:var(--text); }
+.header-worker strong { color:#fff; }
 
 /* ── Tabs ────────────────────────────────────────────────── */
 .tab-pane { display:none; padding:16px 16px 8px; }
@@ -105,7 +114,7 @@ textarea { resize:vertical; min-height:72px; }
 
 /* ── Buttons ─────────────────────────────────────────────── */
 .btn-primary {
-  width:100%; background:var(--amber); color:#0d1117; border:none;
+  width:100%; background:var(--navy); color:#fff; border:none;
   border-radius:var(--r); padding:15px; font-size:1rem; font-weight:700;
   cursor:pointer; margin-top:8px; transition:opacity 0.15s;
 }
@@ -266,6 +275,7 @@ nav {
 
 <!-- ── Worker selection ─────────────────────────────────── -->
 <div id="worker-screen">
+  <div class="worker-header-bar"></div>
   <div class="logo-mark">WG <span>LLC</span></div>
   <div class="worker-title">Warehouse</div>
   <div class="worker-sub">Select your name to continue</div>
