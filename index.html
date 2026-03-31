@@ -584,7 +584,8 @@ select option { background: var(--surface2); }
   <div style="display:flex;gap:8px;margin-bottom:16px">
     <button id="emp-btn-roster" onclick="showEmpView('roster')">Employees</button>
     <button id="emp-btn-leave" onclick="showEmpView('leave')">Leave Log</button>
-    <button id="emp-btn-yearend" onclick="runYearEndRollover()" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:8px;padding:7px 14px;font-family:var(--sans);font-size:0.78rem;cursor:pointer" title="Run on Dec 31 each year">Year-End Rollover</button>
+    <button onclick="openCashOutPreview()" style="margin-left:auto;background:none;border:1px solid var(--amber);color:var(--amber);border-radius:8px;padding:7px 14px;font-family:var(--sans);font-size:0.78rem;cursor:pointer" title="Preview cash-out amounts before year-end">Cash-Out Preview</button>
+    <button id="emp-btn-yearend" onclick="runYearEndRollover()" style="background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:8px;padding:7px 14px;font-family:var(--sans);font-size:0.78rem;cursor:pointer" title="Run on Dec 31 each year">Year-End Rollover</button>
   </div>
   <div id="emp-roster-view"><div class="cards-list" id="emp-list"></div></div>
   <div id="emp-leave-view" style="display:none"><div class="cards-list" id="leave-list"></div></div>
@@ -777,8 +778,9 @@ select option { background: var(--surface2); }
             <option value="Terminated">Terminated</option>
           </select>
         </div>
-        <div class="form-group full"><label>Full Name</label><input id="em-name" placeholder="Jane Smith"></div>
-        <div class="form-group"><label>Role / Title</label><input id="em-role" placeholder="Warehouse Associate"></div>
+        <div class="form-group"><label>Full Name</label><input id="em-name" placeholder="Jane Smith"></div>
+        <div class="form-group"><label>Preferred Name <span style="font-weight:400;text-transform:none">(optional)</span></label><input id="em-preferred-name" placeholder="Jane"></div>
+        <div class="form-group full"><label>Role / Title</label><input id="em-role" placeholder="Warehouse Associate"></div>
         <div class="form-group"><label>Pay Type</label>
           <select id="em-pay-type" onchange="onPayTypeChange()">
             <option value="Hourly">Hourly</option>
@@ -843,7 +845,10 @@ select option { background: var(--surface2); }
         <div class="form-group"><label>Days <span style="font-weight:400;text-transform:none">(auto-filled, editable)</span></label>
           <input type="number" id="lv-days" placeholder="1" min="0.5" step="0.5" oninput="updatePtoWarning()">
         </div>
-        <div class="form-group"><label>Approved By</label><input id="lv-approvedby" placeholder="Manager name"></div>
+        <div class="form-group"><label>Approved / Denied By</label>
+          <input id="lv-approvedby" placeholder="Select or type name" list="lv-approvedby-list" autocomplete="off">
+          <datalist id="lv-approvedby-list"></datalist>
+        </div>
         <div class="form-group full"><label>Notes</label><textarea id="lv-notes" placeholder="Reason, details..."></textarea></div>
       </div>
       <div id="lv-warning" style="display:none;margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--amber-dim);color:var(--amber);font-size:0.82rem"></div>
@@ -1102,6 +1107,43 @@ select option { background: var(--surface2); }
   </div>
 </div>
 
+<!-- PTO Balance Edit Modal -->
+<div class="modal-overlay" id="ptoBalanceModal" onclick="closeIfOutside(event,'ptoBalanceModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">Edit PTO Balance — <span id="ptobal-empname" style="color:var(--text-muted);font-weight:400"></span></div>
+      <button class="modal-close" onclick="closeModal('ptoBalanceModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Year</label><input type="number" id="ptobal-year" min="2020" max="2099" oninput="updatePtoBalPreview()"></div>
+        <div class="form-group"><label>Rollover In <span style="font-weight:400;text-transform:none">(days carried from prior year)</span></label><input type="number" id="ptobal-rollover" min="0" step="0.5" placeholder="0" oninput="updatePtoBalPreview()"></div>
+      </div>
+      <div style="margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--surface2);font-size:0.8rem;color:var(--text-muted);line-height:1.6" id="ptobal-preview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('ptoBalanceModal')">Cancel</button>
+      <button class="btn-save" onclick="savePtoBalance()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cash-Out Preview Modal -->
+<div class="modal-overlay" id="cashOutModal" onclick="closeIfOutside(event,'cashOutModal')">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">Year-End Cash-Out Preview</div>
+      <button class="modal-close" onclick="closeModal('cashOutModal')">✕</button>
+    </div>
+    <div class="modal-body" id="cashout-body"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('cashOutModal')">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- Task Modal -->
 <div class="modal-overlay" id="taskModal" onclick="closeIfOutside(event,'taskModal')">
   <div class="modal">
@@ -1181,7 +1223,7 @@ async function loadAll() {
       CARGO_DATE_FIELDS.forEach(f => { s[f] = normalizeDate(s[f]); });
       return s;
     });
-    invoices   = d.Invoices || [];
+    invoices   = (d.Invoices || []).map(i => ({ ...i, date: normalizeDate(i.date), paidDate: normalizeDate(i.paidDate) }));
     deliveries = (d.Deliveries || []).map(del => {
       if (del.bolNum !== undefined) del.bolNum = String(del.bolNum).trim();
       if (!del.source) del.source = 'Imported';
@@ -1257,6 +1299,47 @@ async function deleteFromSheet(sheet, id) {
 
 // legacy save() shim — not used anymore but keeps references safe
 function save() {}
+
+// ── Apply a saved/deleted record to the local array without re-fetching all data ──
+function _upsert(arr, rec) { const i = arr.findIndex(x => x.id === rec.id); if (i >= 0) arr[i] = rec; else arr.push(rec); }
+function _removeById(arr, id) { const i = arr.findIndex(x => x.id === id); if (i >= 0) arr.splice(i, 1); }
+const _CARGO_DATE_FIELDS = ['etd','eta','etaFinal','date_debitNote','date_arrivalNotice','date_carrierFeePaid','date_entrySummary','date_customsPaid','date_inlandBOL','date_forwarderInv','date_forwarderPaid','date_customerPaid'];
+const _STATUS_ZH = {'活躍':'Active','活动':'Active','暫停':'Paused','潛在客戶':'Prospect','非活躍':'Inactive'};
+
+function applyLocalSave(sheet, record) {
+  if (sheet === 'Shipments') {
+    const r = {...record}; _CARGO_DATE_FIELDS.forEach(f => { r[f] = normalizeDate(r[f]); }); _upsert(cargo, r);
+  } else if (sheet === 'Invoices') {
+    _upsert(invoices, {...record, date: normalizeDate(record.date), paidDate: normalizeDate(record.paidDate)});
+  } else if (sheet === 'Deliveries') {
+    const r = {...record}; if (r.bolNum !== undefined) r.bolNum = String(r.bolNum).trim(); if (!r.source) r.source = 'Imported'; r.delivDate = normalizeDate(r.delivDate); _upsert(deliveries, r);
+  } else if (sheet === 'Tasks') {
+    _upsert(tasks, {...record, done: record.done === true || record.done === 'TRUE' || record.done === 'true'});
+  } else if (sheet === 'Customers') {
+    _upsert(customers, {...record, status: _STATUS_ZH[record.status] || record.status});
+  } else if (sheet === 'Production') {
+    _upsert(productions, {...record, date: normalizeDate(record.date)});
+  } else if (sheet === 'RawMaterialLots') {
+    _upsert(rawMaterialLots, {...record, dateReceived: normalizeDate(record.dateReceived), qty: Number(record.qty)||0});
+  } else if (sheet === 'Employees') {
+    _upsert(employees, {...record, start_date: normalizeDate(record.start_date), hourly_rate: Number(record.hourly_rate)||0, annual_salary: Number(record.annual_salary)||0});
+  } else if (sheet === 'LeaveRequests') {
+    _upsert(leaveRequests, {...record, start_date: normalizeDate(record.start_date), end_date: normalizeDate(record.end_date), days: Number(record.days)||0});
+  } else if (sheet === 'PTOBalances') {
+    _upsert(ptoBalances, {...record, year: Number(record.year)||0, pto_rollover_in: Number(record.pto_rollover_in)||0, pto_cashout_amount: Number(record.pto_cashout_amount)||0});
+  }
+}
+function applyLocalDelete(sheet, id) {
+  if (sheet === 'Shipments') _removeById(cargo, id);
+  else if (sheet === 'Invoices') _removeById(invoices, id);
+  else if (sheet === 'Deliveries') _removeById(deliveries, id);
+  else if (sheet === 'Tasks') _removeById(tasks, id);
+  else if (sheet === 'Customers') _removeById(customers, id);
+  else if (sheet === 'Production') _removeById(productions, id);
+  else if (sheet === 'RawMaterialLots') _removeById(rawMaterialLots, id);
+  else if (sheet === 'Employees') _removeById(employees, id);
+  else if (sheet === 'LeaveRequests') _removeById(leaveRequests, id);
+}
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
 
@@ -1554,14 +1637,14 @@ async function saveCargo() {
   const record = editingCargo ? {...editingCargo,...data} : {id:uid(),...data};
   closeModal('cargoModal');
   const ok = await saveToSheet('Shipments', record);
-  if (ok) await loadAll();
+  if (ok) { applyLocalSave('Shipments', record); renderAll(); }
 }
 
 async function deleteCargo() {
   if (!editingCargo || !confirm('Delete this shipment?')) return;
   closeModal('cargoModal');
   const ok = await deleteFromSheet('Shipments', editingCargo.id);
-  if (ok) await loadAll();
+  if (ok) { applyLocalDelete('Shipments', editingCargo.id); renderAll(); }
 }
 
 
@@ -1608,13 +1691,13 @@ async function saveInvoice() {
   const record = editingInvoice ? { ...editingInvoice, ...data } : { id: uid(), ...data };
   closeModal('invoiceModal');
   const ok = await saveToSheet('Invoices', record);
-  if (ok) await loadAll();
+  if (ok) { applyLocalSave('Invoices', record); renderAll(); }
 }
 async function deleteInvoice() {
   if (!editingInvoice || !confirm('Delete this invoice?')) return;
   closeModal('invoiceModal');
   const ok = await deleteFromSheet('Invoices', editingInvoice.id);
-  if (ok) await loadAll();
+  if (ok) { applyLocalDelete('Invoices', editingInvoice.id); renderAll(); }
 }
 
 function onBolSelect() {
@@ -1713,13 +1796,13 @@ async function saveDelivery() {
   const record = editingDelivery ? { ...editingDelivery, ...data } : { id: uid(), ...data };
   closeModal('deliveryModal');
   const ok = await saveToSheet('Deliveries', record);
-  if (ok) await loadAll();
+  if (ok) { applyLocalSave('Deliveries', record); renderAll(); }
 }
 async function deleteDelivery() {
   if (!editingDelivery || !confirm('Delete this delivery?')) return;
   closeModal('deliveryModal');
   const ok = await deleteFromSheet('Deliveries', editingDelivery.id);
-  if (ok) await loadAll();
+  if (ok) { applyLocalDelete('Deliveries', editingDelivery.id); renderAll(); }
 }
 
 // ══════════════════════════════
@@ -1988,7 +2071,7 @@ async function saveTask() {
   };
   closeModal('taskModal');
   const ok = await saveToSheet('Tasks', record);
-  if (ok) await loadAll();
+  if (ok) { applyLocalSave('Tasks', record); renderAll(); }
 }
 
 // ==============================
@@ -2448,14 +2531,14 @@ async function saveCustomer() {
   const record = editingCustomer ? {...editingCustomer,...data} : {id:uid(),...data};
   closeModal("customerModal");
   const ok = await saveToSheet("Customers", record);
-  if (ok) await loadAll();
+  if (ok) { applyLocalSave('Customers', record); renderAll(); }
 }
 
 async function deleteCustomer() {
   if (!editingCustomer || !confirm('Delete this customer?')) return;
   closeModal("customerModal");
   const ok = await deleteFromSheet("Customers", editingCustomer.id);
-  if (ok) await loadAll();
+  if (ok) { applyLocalDelete('Customers', editingCustomer.id); renderAll(); }
 }
 
 
@@ -3236,14 +3319,14 @@ async function saveRawMaterialLot() {
   };
   closeModal('rawMaterialLotModal');
   const ok = await saveToSheet('RawMaterialLots', record);
-  if (ok) await loadAll();
+  if (ok) { applyLocalSave('RawMaterialLots', record); renderAll(); }
 }
 
 async function deleteRawMaterialLot() {
   if (!editingRawMaterialLot || !confirm('Delete this raw material lot?')) return;
   closeModal('rawMaterialLotModal');
   const ok = await deleteFromSheet('RawMaterialLots', editingRawMaterialLot.id);
-  if (ok) await loadAll();
+  if (ok) { applyLocalDelete('RawMaterialLots', editingRawMaterialLot.id); renderAll(); }
 }
 
 // ==============================
@@ -3398,14 +3481,14 @@ async function saveProduction() {
   };
   closeModal('productionModal');
   const ok = await saveToSheet('Production', record);
-  if (ok) await loadAll();
+  if (ok) { applyLocalSave('Production', record); renderAll(); }
 }
 
 async function deleteProduction() {
   if (!editingProduction || !confirm('Delete this production record?')) return;
   closeModal('productionModal');
   const ok = await deleteFromSheet('Production', editingProduction.id);
-  if (ok) await loadAll();
+  if (ok) { applyLocalDelete('Production', editingProduction.id); renderAll(); }
 }
 
 // ══════════════════════════════
@@ -3553,7 +3636,7 @@ function renderEmpRoster() {
     let h = `<div class="card" onclick="openEmployeeModal('${e.id}')" style="border-left:3px solid #f687b3">`;
     h += `<div class="card-top"><div>`;
     h += `<div class="card-id">${e.emp_num ? '<span style="font-family:var(--mono)">' + e.emp_num + '</span> &middot; ' : ''}${e.role || '—'}${ten ? ' &middot; ' + ten : ''}</div>`;
-    h += `<div class="card-title">${e.name || '—'}</div>`;
+    h += `<div class="card-title">${e.name || '—'}${e.preferred_name ? ' <span style="font-size:0.8em;color:var(--text-muted);font-weight:400">(' + e.preferred_name + ')</span>' : ''}</div>`;
     if (payLabel) h += `<div style="margin-top:3px;display:inline-flex;align-items:center;gap:5px"><span style="font-size:0.72rem;background:${e.pay_type==='Salary'?'var(--purple-dim)':'var(--teal-dim)'};color:${e.pay_type==='Salary'?'var(--purple)':'var(--teal)'};padding:1px 7px;border-radius:4px;font-weight:600">${e.pay_type||'Hourly'}</span><span style="font-family:var(--mono);font-size:0.78rem;color:var(--text-muted)">${payLabel}</span></div>`;
     h += `</div><span class="badge ${EMP_STATUS_CLS[e.status] || 'badge-muted'}">${e.status || 'Active'}</span></div>`;
 
@@ -3592,7 +3675,8 @@ function renderEmpRoster() {
       h += `</div>`;
     }
 
-    h += `<div style="margin-top:10px;text-align:right">`;
+    h += `<div style="margin-top:10px;display:flex;justify-content:flex-end;gap:8px">`;
+    h += `<button onclick="event.stopPropagation();openPtoBalanceModal('${e.id}')" style="background:none;color:var(--text-muted);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:0.75rem;font-family:var(--sans);font-weight:600;cursor:pointer">Edit Balance</button>`;
     h += `<button onclick="event.stopPropagation();openLeaveModal(null,'${e.id}')" style="background:var(--teal);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:0.75rem;font-family:var(--sans);font-weight:600;cursor:pointer">+ Log Leave</button>`;
     h += `</div>`;
     h += `</div>`;
@@ -3636,7 +3720,11 @@ function renderLeaveLog() {
     html += `</div><span class="badge ${LEAVE_STATUS_CLS[r.status] || 'badge-muted'}">${r.status || 'Pending'}</span></div>`;
     html += `<div class="card-grid">`;
     html += `<div class="card-field"><div class="card-field-lbl">Days</div><div class="card-field-val">${r.days}</div></div>`;
-    if (r.approved_by) html += `<div class="card-field"><div class="card-field-lbl">Approved By</div><div class="card-field-val">${r.approved_by}</div></div>`;
+    if (r.status === 'Approved' || r.status === 'Denied' || r.approved_by) {
+      const byColor = r.status === 'Approved' ? 'var(--green)' : r.status === 'Denied' ? 'var(--red)' : 'var(--text)';
+      const byLabel = r.status === 'Denied' ? 'Denied By' : 'Approved By';
+      html += `<div class="card-field"><div class="card-field-lbl">${byLabel}</div><div class="card-field-val" style="color:${byColor}">${r.approved_by || '—'}</div></div>`;
+    }
     if (r.notes) html += `<div class="card-field" style="grid-column:1/-1"><div class="card-field-lbl">Notes</div><div class="card-field-val" style="font-family:var(--sans)">${r.notes}</div></div>`;
     html += `</div></div>`;
   });
@@ -3675,9 +3763,10 @@ function openEmployeeModal(id) {
   editingEmployee = rec || null;
   document.getElementById('empModalTitle').textContent = rec ? 'Edit Employee' : 'New Employee';
   document.getElementById('empDeleteBtn').style.display = rec ? 'block' : 'none';
-  document.getElementById('em-empnum').value   = rec ? (rec.emp_num || '') : '';
-  document.getElementById('em-name').value     = rec ? (rec.name || '') : '';
-  document.getElementById('em-role').value     = rec ? (rec.role || '') : '';
+  document.getElementById('em-empnum').value          = rec ? (rec.emp_num || '') : '';
+  document.getElementById('em-name').value            = rec ? (rec.name || '') : '';
+  document.getElementById('em-preferred-name').value  = rec ? (rec.preferred_name || '') : '';
+  document.getElementById('em-role').value            = rec ? (rec.role || '') : '';
   document.getElementById('em-phone').value    = rec ? (rec.phone || '') : '';
   document.getElementById('em-email').value    = rec ? (rec.email || '') : '';
   document.getElementById('em-start').value    = rec ? (rec.start_date || '') : '';
@@ -3699,9 +3788,10 @@ async function saveEmployee() {
   const annualSalary = Number(document.getElementById('em-salary').value) || 0;
   const record = {
     id:            editingEmployee ? editingEmployee.id : uid(),
-    emp_num:       document.getElementById('em-empnum').value.trim(),
-    name:          titleCase(name),
-    role:          document.getElementById('em-role').value.trim(),
+    emp_num:        document.getElementById('em-empnum').value.trim(),
+    name:           titleCase(name),
+    preferred_name: titleCase(document.getElementById('em-preferred-name').value.trim()),
+    role:           document.getElementById('em-role').value.trim(),
     pay_type:      payType,
     hourly_rate:   hourlyRate,
     annual_salary: annualSalary,
@@ -3713,14 +3803,14 @@ async function saveEmployee() {
     notes:         document.getElementById('em-notes').value.trim(),
   };
   const ok = await saveToSheet('Employees', record);
-  if (ok) { closeModal('employeeModal'); await loadAll(); }
+  if (ok) { closeModal('employeeModal'); applyLocalSave('Employees', record); renderAll(); }
 }
 
 async function deleteEmployee() {
   if (!editingEmployee || !confirm('Delete this employee? Leave records will not be deleted.')) return;
   closeModal('employeeModal');
   const ok = await deleteFromSheet('Employees', editingEmployee.id);
-  if (ok) await loadAll();
+  if (ok) { applyLocalDelete('Employees', editingEmployee.id); renderAll(); }
 }
 
 // ── Leave Modal ──
@@ -3774,6 +3864,9 @@ function openLeaveModal(id, preEmpId) {
   document.getElementById('lv-days').value      = rec ? (rec.days || '') : '';
   document.getElementById('lv-approvedby').value = rec ? (rec.approved_by || '') : '';
   document.getElementById('lv-notes').value     = rec ? (rec.notes || '') : '';
+  // populate manager datalist from active employees
+  const dl = document.getElementById('lv-approvedby-list');
+  if (dl) dl.innerHTML = employees.filter(e => e.status === 'Active').map(e => `<option value="${e.name}">`).join('');
   document.getElementById('lv-warning').style.display = 'none';
   document.getElementById('leaveModal').classList.add('open');
 }
@@ -3783,6 +3876,12 @@ async function saveLeave() {
   if (!empId) { alert('Please select an employee.'); return; }
   const startDate = document.getElementById('lv-start').value;
   if (!startDate) { alert('Please enter a start date.'); return; }
+  const status     = document.getElementById('lv-status').value;
+  const approvedBy = document.getElementById('lv-approvedby').value.trim();
+  if ((status === 'Approved' || status === 'Denied') && !approvedBy) {
+    alert('Please enter the name of the manager who ' + status.toLowerCase() + ' this request.');
+    return;
+  }
   const endDate = document.getElementById('lv-end').value || startDate;
   const record = {
     id:          editingLeave ? editingLeave.id : uid(),
@@ -3791,20 +3890,138 @@ async function saveLeave() {
     start_date:  startDate,
     end_date:    endDate,
     days:        Number(document.getElementById('lv-days').value) || 1,
-    approved_by: document.getElementById('lv-approvedby').value.trim(),
-    status:      document.getElementById('lv-status').value,
+    approved_by: approvedBy,
+    status:      status,
     notes:       document.getElementById('lv-notes').value.trim(),
   };
   closeModal('leaveModal');
   const ok = await saveToSheet('LeaveRequests', record);
-  if (ok) await loadAll();
+  if (ok) { applyLocalSave('LeaveRequests', record); renderAll(); }
 }
 
 async function deleteLeave() {
   if (!editingLeave || !confirm('Delete this leave record?')) return;
   closeModal('leaveModal');
   const ok = await deleteFromSheet('LeaveRequests', editingLeave.id);
-  if (ok) await loadAll();
+  if (ok) { applyLocalDelete('LeaveRequests', editingLeave.id); renderAll(); }
+}
+
+// ── PTO Balance Editor ──
+let _ptoBalEmpId = null;
+
+function openPtoBalanceModal(empId) {
+  _ptoBalEmpId = empId;
+  const emp  = employees.find(e => e.id === empId);
+  const year = new Date().getFullYear();
+  const bal  = ptoBalances.find(b => b.employee_id === empId && Number(b.year) === year);
+  document.getElementById('ptobal-empname').textContent = emp ? emp.name : '';
+  document.getElementById('ptobal-year').value    = year;
+  document.getElementById('ptobal-rollover').value = bal ? bal.pto_rollover_in : '';
+  updatePtoBalPreview();
+  document.getElementById('ptoBalanceModal').classList.add('open');
+}
+
+function updatePtoBalPreview() {
+  const el   = document.getElementById('ptobal-preview');
+  if (!el || !_ptoBalEmpId) return;
+  const emp  = employees.find(e => e.id === _ptoBalEmpId);
+  if (!emp) return;
+  const year     = Number(document.getElementById('ptobal-year').value) || new Date().getFullYear();
+  const rollover = Number(document.getElementById('ptobal-rollover').value) || 0;
+  const allot    = ptoAllotment(emp, year);
+  const ptoUsed  = leaveRequests
+    .filter(r => r.employee_id === emp.id && r.leave_type === 'PTO' && r.status === 'Approved'
+      && r.start_date && new Date(r.start_date + 'T12:00:00').getFullYear() === year)
+    .reduce((s, r) => s + r.days, 0);
+  const usedFromRoll  = Math.min(ptoUsed, rollover);
+  const usedFromCurr  = Math.max(0, ptoUsed - rollover);
+  const rollRemain    = Math.max(0, rollover - usedFromRoll);
+  const currRemain    = Math.max(0, allot - usedFromCurr);
+  const total         = rollRemain + currRemain;
+  el.innerHTML =
+    `Allotment ${year}: <strong>${allot} days</strong> &nbsp;|&nbsp; ` +
+    `Rollover in: <strong>${rollover} days</strong><br>` +
+    `PTO used (logged): <strong>${ptoUsed} days</strong><br>` +
+    `Remaining: <strong style="color:var(--green)">${total} days</strong> ` +
+    `(${rollRemain} rollover + ${currRemain} current year)`;
+}
+
+async function savePtoBalance() {
+  if (!_ptoBalEmpId) return;
+  const year     = Number(document.getElementById('ptobal-year').value);
+  const rollover = Number(document.getElementById('ptobal-rollover').value) || 0;
+  if (!year) { alert('Please enter a year.'); return; }
+  const existing = ptoBalances.find(b => b.employee_id === _ptoBalEmpId && Number(b.year) === year);
+  const record   = {
+    id:                 existing ? existing.id : uid(),
+    employee_id:        _ptoBalEmpId,
+    year:               year,
+    pto_rollover_in:    rollover,
+    pto_cashout_amount: existing ? existing.pto_cashout_amount : 0,
+  };
+  closeModal('ptoBalanceModal');
+  const ok = await saveToSheet('PTOBalances', record);
+  if (ok) { applyLocalSave('PTOBalances', record); renderAll(); }
+}
+
+// ── Cash-Out Preview ──
+function openCashOutPreview() {
+  const year   = new Date().getFullYear();
+  const active = employees.filter(e => e.status === 'Active' && e.start_date);
+  let totalCashout = 0;
+
+  let rows = '';
+  for (const emp of active) {
+    const hireYear = new Date(emp.start_date + 'T12:00:00').getFullYear();
+    const yos      = year - hireYear;
+    const bal      = ptoBalance(emp, year);
+
+    let cashout = 0, nextRollover = 0, note = '';
+    if (yos <= 1) {
+      nextRollover = bal.currYrRemaining;
+      note = 'No cashout — carry forward';
+    } else if (yos === 2) {
+      cashout      = bal.rolloverRemaining * 8 * (emp.hourly_rate || 0) * 0.50;
+      nextRollover = 0;
+      note = 'Rollover capped — reset to 0';
+    } else {
+      if (bal.rolloverRemaining > 0) cashout = bal.rolloverRemaining * 8 * (emp.hourly_rate || 0) * 0.50;
+      nextRollover = bal.currYrRemaining;
+      note = cashout > 0 ? 'Old rollover cashed out' : '';
+    }
+    totalCashout += cashout;
+
+    const cashColor = cashout > 0 ? 'color:var(--amber)' : 'color:var(--text-muted)';
+    rows += `<tr>
+      <td style="padding:8px 10px;border-bottom:1px solid var(--border)">${emp.name}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center">${yos}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center">${bal.rolloverRemaining}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center">${bal.currYrRemaining}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center">${nextRollover}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;font-family:var(--mono);${cashColor}">${cashout > 0 ? '$' + cashout.toFixed(2) : '—'}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:0.75rem;color:var(--text-muted)">${note}</td>
+    </tr>`;
+  }
+
+  document.getElementById('cashout-body').innerHTML = `
+    <div style="margin-bottom:12px;padding:10px 14px;border-radius:8px;background:var(--amber-dim);color:var(--amber);font-size:0.82rem">
+      As of Dec 31, ${year} — Total estimated cash-out: <strong>$${totalCashout.toFixed(2)}</strong>
+    </div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:0.8rem">
+      <thead><tr style="color:var(--text-muted);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.07em">
+        <th style="padding:6px 10px;text-align:left;border-bottom:2px solid var(--border)">Employee</th>
+        <th style="padding:6px 10px;text-align:center;border-bottom:2px solid var(--border)">YOS</th>
+        <th style="padding:6px 10px;text-align:center;border-bottom:2px solid var(--border)">Rollover Remain</th>
+        <th style="padding:6px 10px;text-align:center;border-bottom:2px solid var(--border)">Curr Remain</th>
+        <th style="padding:6px 10px;text-align:center;border-bottom:2px solid var(--border)">Next Rollover</th>
+        <th style="padding:6px 10px;text-align:right;border-bottom:2px solid var(--border)">Cash-Out</th>
+        <th style="padding:6px 10px;text-align:left;border-bottom:2px solid var(--border)">Note</th>
+      </tr></thead>
+      <tbody>${rows || '<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--text-muted)">No active employees with start date</td></tr>'}</tbody>
+    </table>
+    </div>`;
+  document.getElementById('cashOutModal').classList.add('open');
 }
 
 // ── Year-End Rollover ──
@@ -3823,13 +4040,23 @@ async function runYearEndRollover() {
     const yos      = year - hireYear;
     const bal      = ptoBalance(emp, year);
 
-    // curr_yr_remaining always rolls to next year
-    const nextRollover = bal.currYrRemaining;
-
-    // Old rollover (from 2+ years ago) — cash out at 50% if any remains
+    // Year-end rollover rules:
+    // yos 0–1: roll curr_yr_remaining, no cashout
+    // yos == 2: cash out old rollover at 50%, next_year_rollover = 0 (2-year cap enforced)
+    // yos >= 3: cash out any remaining rollover (normally 0 after yos==2 reset), roll curr yr
+    let nextRollover = 0;
     let cashout = 0;
-    if (yos >= 2 && bal.rolloverRemaining > 0) {
-      cashout = bal.rolloverRemaining * 8 * (emp.hourly_rate || 0) * 0.50;
+
+    if (yos <= 1) {
+      nextRollover = bal.currYrRemaining;
+    } else if (yos === 2) {
+      cashout      = bal.rolloverRemaining * 8 * (emp.hourly_rate || 0) * 0.50;
+      nextRollover = 0;
+    } else {
+      if (bal.rolloverRemaining > 0) {
+        cashout = bal.rolloverRemaining * 8 * (emp.hourly_rate || 0) * 0.50;
+      }
+      nextRollover = bal.currYrRemaining;
     }
 
     const existing = ptoBalances.find(b => b.employee_id === emp.id && Number(b.year) === year + 1);

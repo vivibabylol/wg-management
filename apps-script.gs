@@ -29,7 +29,7 @@ const SHEET_HEADERS = {
   Customers:  ['id','company','contact','type','phone','email','addr','city','zip','terms','status','notes'],
   Settings:   ['id','key','value'],
   RawMaterialLots: ['id','lotNum','material','unit','qty','source','supplier','dateReceived','notes'],
-  Employees:       ['id','emp_num','name','role','pay_type','hourly_rate','annual_salary','phone','email','start_date','status','notes','pto_exempt'],
+  Employees:       ['id','emp_num','name','preferred_name','role','pay_type','hourly_rate','annual_salary','phone','email','start_date','status','notes','pto_exempt'],
   LeaveRequests:   ['id','employee_id','leave_type','start_date','end_date','days','approved_by','status','notes','token','emp_name','emp_num','emp_email'],
   PTOBalances:     ['id','employee_id','year','pto_rollover_in','pto_cashout_amount'],
   Inventory_Adj:   ['id','date','material','qty','reason','by'],
@@ -150,9 +150,12 @@ function handleLeaveAction(e) {
       return pageResult('done', 'This request has already been <strong>' + currentStatus + '</strong>.');
     }
 
-    // Update status in sheet
-    const newStatus = action === 'approve' ? 'Approved' : 'Denied';
+    // Update status and approved_by in sheet
+    const newStatus      = action === 'approve' ? 'Approved' : 'Denied';
+    const approvedByIdx  = headers.indexOf('approved_by');
+    const managerEmail   = Session.getActiveUser().getEmail();
     ws.getRange(rowIdx + 2, statusIdx + 1).setValue(newStatus);
+    if (approvedByIdx !== -1) ws.getRange(rowIdx + 2, approvedByIdx + 1).setValue(managerEmail);
 
     // Build record object
     const record = {};
