@@ -1603,7 +1603,7 @@ function renderCargo() {
       if (s.eta)        html += '<div class="card-field"><div class="card-field-lbl">ETA</div><div class="card-field-val">'+fmtDate(s.eta)+'</div></div>';
       if (s.etaFinal)   html += '<div class="card-field"><div class="card-field-lbl">Final Delivery</div><div class="card-field-val">'+fmtDate(s.etaFinal)+'</div></div>';
       if (s.sellPrice)  html += '<div class="card-field"><div class="card-field-lbl">Sell Price</div><div class="card-field-val" style="color:var(--teal)">'+fmt$(s.sellPrice)+'</div></div>';
-      if (s.carrierFee) html += '<div class="card-field"><div class="card-field-lbl">Carrier Fee</div><div class="card-field-val" style="color:var(--amber)">'+fmt$(s.carrierFee)+'</div></div>';
+      if (Number(s.carrierFee) > 0) html += '<div class="card-field"><div class="card-field-lbl">Carrier Fee</div><div class="card-field-val" style="color:var(--amber)">'+fmt$(s.carrierFee)+'</div></div>';
       html += '<div class="card-field"><div class="card-field-lbl">Profit</div><div class="card-field-val" style="color:'+(profit>=0?'var(--green)':'var(--red)')+'">'+fmt$(profit)+'</div></div>';
     html += '</div>'; // [6] close card-grid
 
@@ -1789,7 +1789,7 @@ function openDeliveryModal(d) {
         unique.map(co => '<option value="'+co+'"'+(d.business===co?' selected':'')+'>'+co+'</option>').join('');
     }
   }
-  ['addr','city','zip','contact','phone','status','delivDate','inlandFreight','source','wraps','parts','notes'].forEach(k => {
+  ['addr','city','zip','contact','phone','status','delivDate','source','wraps','parts','notes','inlandFreight'].forEach(k => {
     const el = document.getElementById('d-'+k);
     if (el) el.value = d ? (d[k]||'') : (k==='status'?'Pending':'');
   });
@@ -1803,7 +1803,7 @@ function openDeliveryEdit(id) { openDeliveryModal(deliveries.find(x => x.id === 
 
 async function saveDelivery() {
   const data = {};
-  ['dist','business','addr','city','zip','contact','phone','status','delivDate','inlandFreight','source','wraps','parts','notes'].forEach(k => {
+  ['dist','business','addr','city','zip','contact','phone','status','delivDate','source','wraps','parts','notes','inlandFreight'].forEach(k => {
     data[k] = document.getElementById('d-'+k)?.value || '';
   });
   // BOL and container from their special selects
@@ -2000,7 +2000,7 @@ function renderDeliveries() {
       if (d.parts) html += '<div class="card-field"><div class="card-field-lbl">Parts</div><div class="card-field-val">' + d.parts + ' pcs</div></div>';
     }
     if (d.delivDate)     html += '<div class="card-field"><div class="card-field-lbl">Delivery Date</div><div class="card-field-val">' + fmtDate(d.delivDate) + '</div></div>';
-    if (d.inlandFreight) html += '<div class="card-field"><div class="card-field-lbl">Inland Freight</div><div class="card-field-val" style="color:var(--amber)">' + fmt$(d.inlandFreight) + '</div></div>';
+    if (Number(d.inlandFreight) > 0) html += '<div class="card-field"><div class="card-field-lbl">Inland Freight</div><div class="card-field-val" style="color:var(--amber)">' + fmt$(d.inlandFreight) + '</div></div>';
     html += '</div>';
     html += '<div style="display:flex;gap:8px;margin-top:10px">';
     html += '<button onclick="toggleDelivered(\'' + d.id + '\')" class="delivery-check ' + (d.status==='Delivered'?'delivered':'') + '" style="flex:0" title="Mark Delivered">' + (d.status==='Delivered'?'✓ Delivered':'Mark Delivered') + '</button>';
@@ -2557,6 +2557,7 @@ function renderCustomers() {
           } else if (d.wraps) {
             html += "<div style=\"font-size:0.72rem;color:var(--text-muted);margin-top:2px\">Wraps: " + Number(d.wraps).toLocaleString() + "</div>";
           }
+          if (Number(d.inlandFreight) > 0) html += "<div style=\"font-size:0.72rem;color:var(--amber);margin-top:2px\">Inland: " + fmt$(d.inlandFreight) + "</div>";
           html += "</div>";
           html += "<span style=\"font-size:0.72rem;color:" + statusC + ";white-space:nowrap\">" + (d.status||"—") + "</span>";
           html += "</div>";
