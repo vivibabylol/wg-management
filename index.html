@@ -718,17 +718,6 @@ select option { background: var(--surface2); }
     </div>
     <div class="modal-body">
       <div class="form-grid" style="margin-bottom:14px">
-        <div class="form-group full">
-          <label>Container</label>
-          <select id="dp-ordinal" oninput="updateDispatchPreview()">
-            <option value="1st">1st</option>
-            <option value="2nd">2nd</option>
-            <option value="3rd">3rd</option>
-            <option value="4th">4th</option>
-            <option value="5th">5th</option>
-            <option value="6th">6th</option>
-          </select>
-        </div>
         <div class="form-group full"><label>Ship To Name</label><input id="dp-name" oninput="updateDispatchPreview()"></div>
         <div class="form-group full"><label>Address</label><input id="dp-addr" oninput="updateDispatchPreview()"></div>
         <div class="form-group"><label>City, State</label><input id="dp-city" oninput="updateDispatchPreview()"></div>
@@ -2436,23 +2425,21 @@ function openDispatchModal(custId) {
   document.getElementById('dp-zip').value     = cu.zip  || '';
   document.getElementById('dp-contact').value = cu.contact || '';
   document.getElementById('dp-phone').value   = cu.phone ? fmtPhone(cu.phone) : '';
-  document.getElementById('dp-ordinal').value = '1st';
   document.getElementById('dp-copy-btn').textContent = 'Copy';
   updateDispatchPreview();
   document.getElementById('dispatchModal').classList.add('open');
 }
 
 function updateDispatchPreview() {
-  const ordinal = document.getElementById('dp-ordinal').value;
   const name    = document.getElementById('dp-name').value.trim();
   const addr    = document.getElementById('dp-addr').value.trim();
   const city    = document.getElementById('dp-city').value.trim();
   const zip     = document.getElementById('dp-zip').value.trim();
   const contact = document.getElementById('dp-contact').value.trim();
   const phone   = document.getElementById('dp-phone').value.trim();
-  const addrLine = [addr, city, zip].filter(Boolean).join(' ');
+  const addrLine    = [addr, city, zip].filter(Boolean).join(' ');
   const contactLine = [contact, phone].filter(Boolean).join(' ');
-  let text = `The ${ordinal} container goes to:\n${name}`;
+  let text = name;
   if (addrLine) text += `\n${addrLine}`;
   if (contactLine) text += `\nContact: ${contactLine}`;
   document.getElementById('dp-preview').textContent = text;
