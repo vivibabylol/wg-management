@@ -749,12 +749,7 @@ select option { background: var(--surface2); }
         <div class="form-group full"><label>Company Name</label><input id="cu-company" placeholder="AG Pro Companies"></div>
         <div class="form-group"><label>Contact</label><input id="cu-contact" placeholder="John Smith"></div>
         <div class="form-group"><label>Customer Type</label>
-          <select id="cu-type">
-            <option value="AG Pro">AG Pro</option>
-            <option value="Tom">Tom</option>
-            <option value="Distributor">Distributor</option>
-            <option value="Other">Other</option>
-          </select></div>
+          <select id="cu-type"></select></div>
         <div class="form-group"><label>Phone</label><input type="tel" id="cu-phone" placeholder="(404) 555-0000"></div>
         <div class="form-group"><label>Email</label><input type="email" id="cu-email" placeholder="email@example.com"></div>
         <div class="form-group full"><label>Address</label><input id="cu-addr" placeholder="903 N Tennille Ave"></div>
@@ -2578,6 +2573,7 @@ function openCustomerModal(cu) {
   editingCustomer = cu || null;
   document.getElementById("customerModalTitle").textContent = cu ? "Edit Customer" : "New Customer";
   document.getElementById("customerDeleteBtn").style.display = cu ? "block" : "none";
+  populateSelect('cu-type', getLists().customerTypes, cu ? cu.type : 'AG Pro', '');
   const defs = {company:"",contact:"",type:"AG Pro",phone:"",email:"",addr:"",city:"",zip:"",terms:"Wire",status:"Active",notes:""};
   Object.keys(defs).forEach(k => {
     const el = document.getElementById("cu-"+k);
@@ -2629,9 +2625,10 @@ const DEFAULT_PRODUCTS = [
 ];
 
 const DEFAULT_LISTS = {
-  carriers:  ['Zen Con', 'RTW', 'Evergreen', 'COSCO', 'ONE'],
-  ports:     ['SAV', 'LAX', 'SEA', 'HOU', 'TXG', 'TWTXG', 'XINGANG'],
-  sizes:     ["40'HQ", "40'RD", "20'GP"],
+  carriers:      ['Zen Con', 'RTW', 'Evergreen', 'COSCO', 'ONE'],
+  ports:         ['SAV', 'LAX', 'SEA', 'HOU', 'TXG', 'TWTXG', 'XINGANG'],
+  sizes:         ["40'HQ", "40'RD", "20'GP"],
+  customerTypes: ['AG Pro', 'Tom', 'Distributor', 'Other'],
 };
 
 function getProducts() {
@@ -2648,8 +2645,12 @@ function productUnit(name) { const p = getProducts().find(x=>x.name===name); ret
 
 function getLists() {
   try {
+    const base = JSON.parse(JSON.stringify(DEFAULT_LISTS));
     const saved = localStorage.getItem('wg_lists');
-    return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_LISTS));
+    if (!saved) return base;
+    const parsed = JSON.parse(saved);
+    Object.keys(base).forEach(k => { if (!parsed[k]) parsed[k] = base[k]; });
+    return parsed;
   } catch { return JSON.parse(JSON.stringify(DEFAULT_LISTS)); }
 }
 function saveLists(lists) {
@@ -2664,9 +2665,10 @@ function saveLists(lists) {
 function renderSettings() {
   const lists = getLists();
   const CONFIGS = [
-    { key: 'carriers',  label: 'Carriers',        desc: 'Shipping carrier options for shipments' },
-    { key: 'ports',     label: 'Ports',           desc: 'Port options for POL and POD' },
-    { key: 'sizes',     label: 'Container Sizes', desc: 'Container size options' },
+    { key: 'carriers',      label: 'Carriers',        desc: 'Shipping carrier options for shipments' },
+    { key: 'ports',         label: 'Ports',           desc: 'Port options for POL and POD' },
+    { key: 'sizes',         label: 'Container Sizes', desc: 'Container size options' },
+    { key: 'customerTypes', label: 'Customer Types',  desc: 'Customer type / distributor labels' },
   ];
   const el = document.getElementById('settings-content');
   if (!el) return;
