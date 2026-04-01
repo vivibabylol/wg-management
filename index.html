@@ -708,6 +708,46 @@ select option { background: var(--surface2); }
 
 </main>
 
+<!-- Dispatch Modal -->
+<div class="modal-overlay" id="dispatchModal" onclick="closeIfOutside(event,'dispatchModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">Copy Dispatch Info</div>
+      <button class="modal-close" onclick="closeModal('dispatchModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:14px">
+        <div class="form-group full">
+          <label>Container</label>
+          <select id="dp-ordinal" oninput="updateDispatchPreview()">
+            <option value="1st">1st</option>
+            <option value="2nd">2nd</option>
+            <option value="3rd">3rd</option>
+            <option value="4th">4th</option>
+            <option value="5th">5th</option>
+            <option value="6th">6th</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>Ship To Name</label><input id="dp-name" oninput="updateDispatchPreview()"></div>
+        <div class="form-group full"><label>Address</label><input id="dp-addr" oninput="updateDispatchPreview()"></div>
+        <div class="form-group"><label>City, State</label><input id="dp-city" oninput="updateDispatchPreview()"></div>
+        <div class="form-group"><label>ZIP</label><input id="dp-zip" oninput="updateDispatchPreview()"></div>
+        <div class="form-group"><label>Contact Person</label><input id="dp-contact" oninput="updateDispatchPreview()"></div>
+        <div class="form-group"><label>Phone</label><input id="dp-phone" oninput="updateDispatchPreview()"></div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px">
+        <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Preview</div>
+        <pre id="dp-preview" style="font-family:var(--sans);font-size:0.88rem;line-height:1.7;white-space:pre-wrap;margin:0;color:var(--text)"></pre>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('dispatchModal')">Cancel</button>
+      <button class="btn-save" id="dp-copy-btn" onclick="copyDispatch()">Copy</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="customerModal" onclick="closeIfOutside(event,'customerModal')">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -2386,6 +2426,50 @@ function toggleCustDetail(id) {
   el.style.display = isOpen ? 'none' : 'block';
 }
 
+// ── Dispatch Copy ──
+function openDispatchModal(custId) {
+  const cu = customers.find(c => c.id === custId);
+  if (!cu) return;
+  document.getElementById('dp-name').value    = cu.company || cu.contact || '';
+  document.getElementById('dp-addr').value    = cu.addr || '';
+  document.getElementById('dp-city').value    = cu.city || '';
+  document.getElementById('dp-zip').value     = cu.zip  || '';
+  document.getElementById('dp-contact').value = cu.contact || '';
+  document.getElementById('dp-phone').value   = cu.phone ? fmtPhone(cu.phone) : '';
+  document.getElementById('dp-ordinal').value = '1st';
+  document.getElementById('dp-copy-btn').textContent = 'Copy';
+  updateDispatchPreview();
+  document.getElementById('dispatchModal').classList.add('open');
+}
+
+function updateDispatchPreview() {
+  const ordinal = document.getElementById('dp-ordinal').value;
+  const name    = document.getElementById('dp-name').value.trim();
+  const addr    = document.getElementById('dp-addr').value.trim();
+  const city    = document.getElementById('dp-city').value.trim();
+  const zip     = document.getElementById('dp-zip').value.trim();
+  const contact = document.getElementById('dp-contact').value.trim();
+  const phone   = document.getElementById('dp-phone').value.trim();
+  const addrLine = [addr, city, zip].filter(Boolean).join(' ');
+  const contactLine = [contact, phone].filter(Boolean).join(' ');
+  let text = `The ${ordinal} container goes to:\n${name}`;
+  if (addrLine) text += `\n${addrLine}`;
+  if (contactLine) text += `\nContact: ${contactLine}`;
+  document.getElementById('dp-preview').textContent = text;
+}
+
+async function copyDispatch() {
+  const text = document.getElementById('dp-preview').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = document.getElementById('dp-copy-btn');
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+  } catch(e) {
+    alert('Copy failed — please select the text manually.');
+  }
+}
+
 function renderCustomers() {
   renderCustomerStats();
   renderDistributorSummary();
@@ -2493,6 +2577,9 @@ function renderCustomers() {
       }
 
       if (cu.notes) html += "<div style=\"font-size:0.75rem;color:var(--text-muted);margin-top:8px;line-height:1.4\">" + cu.notes + "</div>";
+      html += "<div style=\"margin-top:10px;text-align:right\">";
+      html += "<button onclick=\"event.stopPropagation();openDispatchModal('" + cu.id + "')\" style=\"background:var(--blue);color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:0.78rem;font-family:var(--sans);font-weight:600;cursor:pointer\">&#x2398; Copy Dispatch</button>";
+      html += "</div>";
       html += "</div>";
     });
   });
