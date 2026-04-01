@@ -1247,7 +1247,6 @@ async function loadAll() {
   try {
     const res = await fetch(`${API}?sheet=ALL`).then(r => r.json());
     const d = res.data || {};
-    const CARGO_DATE_FIELDS = ['etd','eta','etaFinal','date_debitNote','date_arrivalNotice','date_carrierFeePaid','date_entrySummary','date_customsPaid','date_inlandBOL','date_forwarderInv','date_forwarderPaid','date_customerPaid'];
     cargo = (d.Shipments || []).map(s => {
       CARGO_DATE_FIELDS.forEach(f => { s[f] = normalizeDate(s[f]); });
       return s;
@@ -1260,7 +1259,6 @@ async function loadAll() {
       return del;
     });
     tasks           = d.Tasks || [];
-    const STATUS_ZH = {'活躍':'Active','活动':'Active','暫停':'Paused','潛在客戶':'Prospect','非活躍':'Inactive'};
     customers       = (d.Customers || []).map(c => ({ ...c, status: STATUS_ZH[c.status] || c.status }));
     productions     = (d.Production || []).map(p => ({ ...p, date: normalizeDate(p.date) }));
     rawMaterialLots = (d.RawMaterialLots || []).map(l => ({ ...l, dateReceived: normalizeDate(l.dateReceived), qty: Number(l.qty)||0 }));
@@ -1332,12 +1330,12 @@ function save() {}
 // ── Apply a saved/deleted record to the local array without re-fetching all data ──
 function _upsert(arr, rec) { const i = arr.findIndex(x => x.id === rec.id); if (i >= 0) arr[i] = rec; else arr.push(rec); }
 function _removeById(arr, id) { const i = arr.findIndex(x => x.id === id); if (i >= 0) arr.splice(i, 1); }
-const _CARGO_DATE_FIELDS = ['etd','eta','etaFinal','date_debitNote','date_arrivalNotice','date_carrierFeePaid','date_entrySummary','date_customsPaid','date_inlandBOL','date_forwarderInv','date_forwarderPaid','date_customerPaid'];
-const _STATUS_ZH = {'活躍':'Active','活动':'Active','暫停':'Paused','潛在客戶':'Prospect','非活躍':'Inactive'};
+const CARGO_DATE_FIELDS = ['etd','eta','etaFinal','date_debitNote','date_arrivalNotice','date_carrierFeePaid','date_entrySummary','date_customsPaid','date_inlandBOL','date_forwarderInv','date_forwarderPaid','date_customerPaid'];
+const STATUS_ZH = {'活躍':'Active','活动':'Active','暫停':'Paused','潛在客戶':'Prospect','非活躍':'Inactive'};
 
 function applyLocalSave(sheet, record) {
   if (sheet === 'Shipments') {
-    const r = {...record}; _CARGO_DATE_FIELDS.forEach(f => { r[f] = normalizeDate(r[f]); }); _upsert(cargo, r);
+    const r = {...record}; CARGO_DATE_FIELDS.forEach(f => { r[f] = normalizeDate(r[f]); }); _upsert(cargo, r);
   } else if (sheet === 'Invoices') {
     _upsert(invoices, {...record, date: normalizeDate(record.date), paidDate: normalizeDate(record.paidDate)});
   } else if (sheet === 'Deliveries') {
@@ -1345,7 +1343,7 @@ function applyLocalSave(sheet, record) {
   } else if (sheet === 'Tasks') {
     _upsert(tasks, {...record, done: record.done === true || record.done === 'TRUE' || record.done === 'true'});
   } else if (sheet === 'Customers') {
-    _upsert(customers, {...record, status: _STATUS_ZH[record.status] || record.status});
+    _upsert(customers, {...record, status: STATUS_ZH[record.status] || record.status});
   } else if (sheet === 'Production') {
     _upsert(productions, {...record, date: normalizeDate(record.date)});
   } else if (sheet === 'RawMaterialLots') {
@@ -1368,6 +1366,7 @@ function applyLocalDelete(sheet, id) {
   else if (sheet === 'RawMaterialLots') _removeById(rawMaterialLots, id);
   else if (sheet === 'Employees') _removeById(employees, id);
   else if (sheet === 'LeaveRequests') _removeById(leaveRequests, id);
+  else if (sheet === 'PTOBalances') _removeById(ptoBalances, id);
 }
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
@@ -3627,10 +3626,10 @@ function ptoAllotment(emp, year) {
 
 // Returns full PTO balance breakdown for an employee in a given year.
 // FIFO: rollover days consumed before current-year days.
-function ptoBalance(emp, year) {
+function ptoBalance(emp, year, rolloverOverride) {
   const allotment  = ptoAllotment(emp, year);
   const balRec     = ptoBalances.find(b => b.employee_id === emp.id && Number(b.year) === year);
-  const rolloverIn = balRec ? balRec.pto_rollover_in : 0;
+  const rolloverIn = rolloverOverride !== undefined ? rolloverOverride : (balRec ? balRec.pto_rollover_in : 0);
 
   const ptoUsed = leaveRequests
     .filter(r => r.employee_id === emp.id && r.leave_type === 'PTO' && r.status === 'Approved'
@@ -3938,7 +3937,6 @@ function openLeaveModal(id, preEmpId) {
   document.getElementById('lv-days').value      = rec ? (rec.days || '') : '';
   document.getElementById('lv-approvedby').value = rec ? (rec.approved_by || '') : '';
   document.getElementById('lv-notes').value     = rec ? (rec.notes || '') : '';
-  // populate manager datalist from active employees
   const dl = document.getElementById('lv-approvedby-list');
   if (dl) dl.innerHTML = employees.filter(e => e.status === 'Active').map(e => `<option value="${e.name}">`).join('');
   document.getElementById('lv-warning').style.display = 'none';
@@ -3996,28 +3994,19 @@ function openPtoBalanceModal(empId) {
 }
 
 function updatePtoBalPreview() {
-  const el   = document.getElementById('ptobal-preview');
+  const el = document.getElementById('ptobal-preview');
   if (!el || !_ptoBalEmpId) return;
-  const emp  = employees.find(e => e.id === _ptoBalEmpId);
+  const emp = employees.find(e => e.id === _ptoBalEmpId);
   if (!emp) return;
   const year     = Number(document.getElementById('ptobal-year').value) || new Date().getFullYear();
   const rollover = Number(document.getElementById('ptobal-rollover').value) || 0;
-  const allot    = ptoAllotment(emp, year);
-  const ptoUsed  = leaveRequests
-    .filter(r => r.employee_id === emp.id && r.leave_type === 'PTO' && r.status === 'Approved'
-      && r.start_date && new Date(r.start_date + 'T12:00:00').getFullYear() === year)
-    .reduce((s, r) => s + r.days, 0);
-  const usedFromRoll  = Math.min(ptoUsed, rollover);
-  const usedFromCurr  = Math.max(0, ptoUsed - rollover);
-  const rollRemain    = Math.max(0, rollover - usedFromRoll);
-  const currRemain    = Math.max(0, allot - usedFromCurr);
-  const total         = rollRemain + currRemain;
+  const bal      = ptoBalance(emp, year, rollover);
   el.innerHTML =
-    `Allotment ${year}: <strong>${allot} days</strong> &nbsp;|&nbsp; ` +
+    `Allotment ${year}: <strong>${bal.allotment} days</strong> &nbsp;|&nbsp; ` +
     `Rollover in: <strong>${rollover} days</strong><br>` +
-    `PTO used (logged): <strong>${ptoUsed} days</strong><br>` +
-    `Remaining: <strong style="color:var(--green)">${total} days</strong> ` +
-    `(${rollRemain} rollover + ${currRemain} current year)`;
+    `PTO used (logged): <strong>${bal.ptoUsed} days</strong><br>` +
+    `Remaining: <strong style="color:var(--green)">${bal.totalRemaining} days</strong> ` +
+    `(${bal.rolloverRemaining} rollover + ${bal.currYrRemaining} current year)`;
 }
 
 async function savePtoBalance() {
@@ -4038,6 +4027,22 @@ async function savePtoBalance() {
   if (ok) { applyLocalSave('PTOBalances', record); renderAll(); }
 }
 
+// Shared year-end PTO calculation — used by preview and actual rollover
+function computePtoRollover(emp, bal, year) {
+  const yos = year - new Date(emp.start_date + 'T12:00:00').getFullYear();
+  let nextRollover = 0, cashout = 0;
+  if (yos <= 1) {
+    nextRollover = bal.currYrRemaining;
+  } else if (yos === 2) {
+    cashout      = bal.rolloverRemaining * 8 * (emp.hourly_rate || 0) * 0.50;
+    nextRollover = 0;
+  } else {
+    if (bal.rolloverRemaining > 0) cashout = bal.rolloverRemaining * 8 * (emp.hourly_rate || 0) * 0.50;
+    nextRollover = bal.currYrRemaining;
+  }
+  return { yos, nextRollover, cashout };
+}
+
 // ── Cash-Out Preview ──
 function openCashOutPreview() {
   const year   = new Date().getFullYear();
@@ -4046,23 +4051,9 @@ function openCashOutPreview() {
 
   let rows = '';
   for (const emp of active) {
-    const hireYear = new Date(emp.start_date + 'T12:00:00').getFullYear();
-    const yos      = year - hireYear;
-    const bal      = ptoBalance(emp, year);
-
-    let cashout = 0, nextRollover = 0, note = '';
-    if (yos <= 1) {
-      nextRollover = bal.currYrRemaining;
-      note = 'No cashout — carry forward';
-    } else if (yos === 2) {
-      cashout      = bal.rolloverRemaining * 8 * (emp.hourly_rate || 0) * 0.50;
-      nextRollover = 0;
-      note = 'Rollover capped — reset to 0';
-    } else {
-      if (bal.rolloverRemaining > 0) cashout = bal.rolloverRemaining * 8 * (emp.hourly_rate || 0) * 0.50;
-      nextRollover = bal.currYrRemaining;
-      note = cashout > 0 ? 'Old rollover cashed out' : '';
-    }
+    const bal                        = ptoBalance(emp, year);
+    const { yos, nextRollover, cashout } = computePtoRollover(emp, bal, year);
+    const note = yos <= 1 ? 'No cashout — carry forward' : yos === 2 ? 'Rollover capped — reset to 0' : cashout > 0 ? 'Old rollover cashed out' : '';
     totalCashout += cashout;
 
     const cashColor = cashout > 0 ? 'color:var(--amber)' : 'color:var(--text-muted)';
@@ -4110,28 +4101,8 @@ async function runYearEndRollover() {
   let processed = 0;
 
   for (const emp of active) {
-    const hireYear = new Date(emp.start_date + 'T12:00:00').getFullYear();
-    const yos      = year - hireYear;
-    const bal      = ptoBalance(emp, year);
-
-    // Year-end rollover rules:
-    // yos 0–1: roll curr_yr_remaining, no cashout
-    // yos == 2: cash out old rollover at 50%, next_year_rollover = 0 (2-year cap enforced)
-    // yos >= 3: cash out any remaining rollover (normally 0 after yos==2 reset), roll curr yr
-    let nextRollover = 0;
-    let cashout = 0;
-
-    if (yos <= 1) {
-      nextRollover = bal.currYrRemaining;
-    } else if (yos === 2) {
-      cashout      = bal.rolloverRemaining * 8 * (emp.hourly_rate || 0) * 0.50;
-      nextRollover = 0;
-    } else {
-      if (bal.rolloverRemaining > 0) {
-        cashout = bal.rolloverRemaining * 8 * (emp.hourly_rate || 0) * 0.50;
-      }
-      nextRollover = bal.currYrRemaining;
-    }
+    const bal                            = ptoBalance(emp, year);
+    const { nextRollover, cashout } = computePtoRollover(emp, bal, year);
 
     const existing = ptoBalances.find(b => b.employee_id === emp.id && Number(b.year) === year + 1);
     const record = {
