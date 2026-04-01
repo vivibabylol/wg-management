@@ -13,7 +13,7 @@ const MANAGERS = ['viv.collins28@gmail.com', 'lxs891230@gmail.com'];
 const SHEET_HEADERS = {
   Shipments:  ['id','bolNum','carrier','customer','status','pol','pod','etd','eta','etaFinal',
                 'disc','qty','sellPrice','mfgCost','freight','trucking','customs','isf','courier',
-                'chassis','bankCharge','containers','dest','notes',
+                'chassis','bankCharge','carrierFee','containers','dest','notes',
                 'doc_debitNote','doc_arrivalNotice','doc_carrierFeePaid','doc_packingList',
                 'doc_commercialInv','doc_entrySummary','doc_finalAddress','doc_inlandBOL',
                 'doc_customerNotified','doc_forwarderInv','doc_forwarderPaid','doc_customerPaid',
@@ -23,7 +23,7 @@ const SHEET_HEADERS = {
                 'date_forwarderInv','date_forwarderPaid','date_customerPaid',
                 'doc_customsPaid','date_customsPaid'],
   Invoices:   ['id','num','date','billTo','item','qty','unit','unitPrice','status','paid','paidDate','containers','notes'],
-  Deliveries: ['id','dist','business','addr','city','zip','contact','phone','status','delivDate','source','wraps','parts','bolNum','containerNum','delivItems','notes'],
+  Deliveries: ['id','dist','business','addr','city','zip','contact','phone','status','delivDate','inlandFreight','source','wraps','parts','bolNum','containerNum','delivItems','notes'],
   Production: ['id','date','batch','inputs','outputs','notes'],
   Tasks:      ['id','text','week','priority','notes','done'],
   Customers:  ['id','company','contact','type','phone','email','addr','city','zip','terms','status','notes'],
