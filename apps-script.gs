@@ -283,3 +283,8 @@ function deleteRecord(name, id) {
   if (idx !== -1) ws.deleteRow(idx + 2);
   return { id };
 }
+
+// ── Keep-warm (run every 10 min via time-based trigger) ──
+function keepWarm() {
+  // Keeps the script instance warm to avoid cold start delays.
+}
