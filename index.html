@@ -524,7 +524,17 @@ select option { background: var(--surface2); }
 <div class="page" id="page-delivery">
   <div class="page-header">
     <div class="page-title">Delivery Management <span>Delivery Tracking</span></div>
-    <button class="btn-add" onclick="openDeliveryModal()">+ New Delivery</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="delivery-sort" onchange="renderDeliveries()" style="font-size:0.78rem;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);outline:none;cursor:pointer">
+        <option value="status">Sort: Status</option>
+        <option value="delivDate">Sort: Delivery Date</option>
+        <option value="business">Sort: Company</option>
+        <option value="city">Sort: City</option>
+        <option value="inlandFreight">Sort: Inland Freight</option>
+      </select>
+      <button id="delivery-sort-dir" onclick="toggleDeliverySortDir()" title="Reverse order" style="font-size:0.78rem;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer">↑↓</button>
+      <button class="btn-add" onclick="openDeliveryModal()">+ New Delivery</button>
+    </div>
   </div>
   <div class="stats-row" id="delivery-stats"></div>
   <div class="cards-list" id="delivery-list"></div>
@@ -1207,6 +1217,7 @@ const API = 'https://script.google.com/macros/s/AKfycbyt6jYEDSeesF1chOR1oQhRYRZx
 
 let cargo            = [];
 let _cargoSortReverse = false;
+let _deliverySortReverse = false;
 let invoices         = [];
 let deliveries       = [];
 let tasks            = [];
@@ -1499,6 +1510,13 @@ function toggleCargoSortDir() {
   const btn = document.getElementById('cargo-sort-dir');
   if (btn) btn.textContent = _cargoSortReverse ? '↓↑' : '↑↓';
   renderCargo();
+}
+
+function toggleDeliverySortDir() {
+  _deliverySortReverse = !_deliverySortReverse;
+  const btn = document.getElementById('delivery-sort-dir');
+  if (btn) btn.textContent = _deliverySortReverse ? '↓↑' : '↑↓';
+  renderDeliveries();
 }
 
 function renderCargo() {
@@ -1931,10 +1949,20 @@ function renderDeliveries() {
   const el = document.getElementById('delivery-list');
   if (!el) return;
   if (!deliveries.length) { el.innerHTML = emptyState('🚛','No deliveries yet','Click + New Delivery to get started'); return; }
+  const delivSortBy = document.getElementById('delivery-sort')?.value || 'status';
   const sorted = [...deliveries].sort((a,b) => {
+    if (delivSortBy === 'delivDate') {
+      const da = a.delivDate ? new Date(a.delivDate) : new Date('9999');
+      const db = b.delivDate ? new Date(b.delivDate) : new Date('9999');
+      return da - db;
+    }
+    if (delivSortBy === 'business') return (a.business||a.dist||'').localeCompare(b.business||b.dist||'');
+    if (delivSortBy === 'city')     return (a.city||'').localeCompare(b.city||'');
+    if (delivSortBy === 'inlandFreight') return (Number(b.inlandFreight)||0)-(Number(a.inlandFreight)||0);
     const o = {'Pending':0,'Scheduled':1,'Delivered':2};
     return (o[a.status]||0)-(o[b.status]||0);
   });
+  if (_deliverySortReverse) sorted.reverse();
   let html = '';
   sorted.forEach(d => {
     const shipRefD = d.bolNum ? cargo.find(s => String(s.bolNum||'').trim() === String(d.bolNum||'').trim()) : null;
