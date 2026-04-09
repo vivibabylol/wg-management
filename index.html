@@ -531,6 +531,7 @@ select option { background: var(--surface2); }
         <option value="business">Sort: Company</option>
         <option value="city">Sort: City</option>
         <option value="inlandFreight">Sort: Inland Freight</option>
+        <option value="bolNum">Sort: BOL #</option>
       </select>
       <button id="delivery-sort-dir" onclick="toggleDeliverySortDir()" title="Reverse order" style="font-size:0.78rem;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer">↑↓</button>
       <button class="btn-add" onclick="openDeliveryModal()">+ New Delivery</button>
@@ -1199,6 +1200,8 @@ select option { background: var(--surface2); }
             <option value="Urgent">Urgent</option>
           </select>
         </div>
+        <div class="form-group"><label>Created Date</label><input type="date" id="t-createdDate"></div>
+        <div class="form-group"><label>Due Date</label><input type="date" id="t-dueDate"></div>
         <div class="form-group full"><label>Notes</label><textarea id="t-notes" placeholder="DetailsDescription…"></textarea></div>
       </div>
     </div>
@@ -1959,6 +1962,7 @@ function renderDeliveries() {
     if (delivSortBy === 'business') return (a.business||a.dist||'').localeCompare(b.business||b.dist||'');
     if (delivSortBy === 'city')     return (a.city||'').localeCompare(b.city||'');
     if (delivSortBy === 'inlandFreight') return (Number(b.inlandFreight)||0)-(Number(a.inlandFreight)||0);
+    if (delivSortBy === 'bolNum')        return (a.bolNum||'').localeCompare(b.bolNum||'');
     const o = {'Pending':0,'Scheduled':1,'Delivered':2};
     return (o[a.status]||0)-(o[b.status]||0);
   });
@@ -2086,9 +2090,20 @@ function renderTasks() {
       const pc = {'Normal':'var(--text-muted)','Important':'var(--amber)','Urgent':'var(--red)'};
       html += '<div class="task-item ' + (t.done?'done':'') + '">';
       html += '<div class="task-check ' + (t.done?'checked':'') + '" onclick="toggleTask(\'' + t.id + '\')"></div>';
+      const today = new Date().toISOString().split('T')[0];
+      const isOverdue = t.dueDate && !t.done && t.dueDate < today;
+      const isDueToday = t.dueDate && !t.done && t.dueDate === today;
       html += '<div class="task-content"><div class="task-text">' + t.text + '</div>';
       if (t.notes) html += '<div class="task-meta">' + t.notes + '</div>';
-      html += '<div class="task-meta" style="color:' + (pc[t.priority]||'var(--text-muted)') + '">● ' + (t.priority||'Normal') + '</div>';
+      html += '<div class="task-meta" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:3px">';
+      html += '<span style="color:' + (pc[t.priority]||'var(--text-muted)') + '">● ' + (t.priority||'Normal') + '</span>';
+      if (t.createdDate) html += '<span style="color:var(--text-dim)">Created: ' + fmtDate(t.createdDate) + '</span>';
+      if (t.dueDate) {
+        const dueColor = isOverdue ? 'var(--red)' : isDueToday ? 'var(--amber)' : 'var(--text-muted)';
+        const dueLabel = isOverdue ? '⚠ Due: ' : isDueToday ? '⏰ Due: ' : 'Due: ';
+        html += '<span style="color:' + dueColor + ';font-weight:' + (isOverdue||isDueToday?'600':'400') + '">' + dueLabel + fmtDate(t.dueDate) + '</span>';
+      }
+      html += '</div>';
       html += '</div><button class="task-del" onclick="deleteTask(\'' + t.id + '\')">✕</button></div>';
     });
   });
@@ -2113,6 +2128,8 @@ function openTaskModal() {
   document.getElementById('t-text').value = '';
   document.getElementById('t-week').value = getWeekMonday(new Date());
   document.getElementById('t-priority').value = 'Normal';
+  document.getElementById('t-createdDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('t-dueDate').value = '';
   document.getElementById('t-notes').value = '';
   document.getElementById('taskModal').classList.add('open');
 }
@@ -2124,6 +2141,8 @@ async function saveTask() {
     id: uid(), text,
     week: document.getElementById('t-week').value || getWeekMonday(new Date()),
     priority: document.getElementById('t-priority').value,
+    createdDate: document.getElementById('t-createdDate').value || new Date().toISOString().split('T')[0],
+    dueDate: document.getElementById('t-dueDate').value || '',
     notes: document.getElementById('t-notes').value.trim(),
     done: false,
   };

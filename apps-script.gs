@@ -26,7 +26,7 @@ const SHEET_HEADERS = {
   Invoices:   ['id','num','date','billTo','item','qty','unit','unitPrice','status','paid','paidDate','containers','notes'],
   Deliveries: ['id','dist','business','addr','city','zip','contact','phone','status','delivDate','source','wraps','parts','bolNum','containerNum','delivItems','notes','inlandFreight'],
   Production: ['id','date','batch','inputs','outputs','notes'],
-  Tasks:      ['id','text','week','priority','notes','done'],
+  Tasks:      ['id','text','week','priority','notes','done','createdDate','dueDate'],
   Customers:  ['id','company','contact','type','phone','email','addr','city','zip','terms','status','notes'],
   Settings:   ['id','key','value'],
   RawMaterialLots: ['id','lotNum','material','unit','qty','source','supplier','dateReceived','notes'],
