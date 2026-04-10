@@ -1498,14 +1498,39 @@ function renderCargoStats() {
   const active = cargo.filter(s => s.status !== 'Completed').length;
   const atPort = cargo.filter(s => ['Arrived - Pending Customs','Customs Clearance'].includes(s.status)).length;
   const done   = cargo.filter(s => s.status === 'Completed').length;
-  const ctrs   = cargo.reduce((s,sh) => s + (sh.containers||'').split(',').map(x=>x.trim()).filter(Boolean).length, 0);
+
+  // Per-container averages (only shipments with containers entered)
+  let totalCtrs = 0, totalCustoms = 0, totalFreight = 0, totalCarrierFee = 0;
+  cargo.forEach(s => {
+    const n = (s.containers||'').split(',').map(x=>x.trim()).filter(Boolean).length;
+    if (!n) return;
+    totalCtrs      += n;
+    totalCustoms   += (Number(s.customs)||0);
+    totalFreight   += (Number(s.freight)||0);
+    totalCarrierFee+= (Number(s.carrierFee)||0);
+  });
+  const avgCustoms    = totalCtrs > 0 ? totalCustoms    / totalCtrs : 0;
+  const avgFreight    = totalCtrs > 0 ? totalFreight    / totalCtrs : 0;
+  const avgCarrierFee = totalCtrs > 0 ? totalCarrierFee / totalCtrs : 0;
+
+  // Average port-to-delivery days (etaFinal - eta, completed shipments only)
+  const transitTimes = cargo.filter(s => s.eta && s.etaFinal).map(s => {
+    const diff = (new Date(s.etaFinal) - new Date(s.eta)) / 86400000;
+    return diff >= 0 ? diff : null;
+  }).filter(x => x !== null);
+  const avgTransit = transitTimes.length > 0 ? Math.round(transitTimes.reduce((a,b)=>a+b,0) / transitTimes.length) : null;
+
   const el = document.getElementById('cargo-stats');
   if (!el) return;
   el.innerHTML =
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + cargo.length + '</div><div class="stat-card-lbl">Total Shipments</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + ctrs + '</div><div class="stat-card-lbl">Total Containers</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + totalCtrs + '</div><div class="stat-card-lbl">Total Containers</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + atPort + '</div><div class="stat-card-lbl">At Port / Customs</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + done + '</div><div class="stat-card-lbl">Completed</div></div>';
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + done + '</div><div class="stat-card-lbl">Completed</div></div>' +
+    (totalCtrs > 0 ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--red);font-size:1rem">' + fmt$(avgCustoms) + '</div><div class="stat-card-lbl">Avg Customs / CTR</div></div>' : '') +
+    (totalCtrs > 0 ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue);font-size:1rem">' + fmt$(avgFreight) + '</div><div class="stat-card-lbl">Avg Ocean Freight / CTR</div></div>' : '') +
+    (avgCarrierFee > 0 ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber);font-size:1rem">' + fmt$(avgCarrierFee) + '</div><div class="stat-card-lbl">Avg Carrier Fee / CTR</div></div>' : '') +
+    (avgTransit !== null ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + avgTransit + 'd</div><div class="stat-card-lbl">Avg Port → Delivery</div></div>' : '');
 }
 
 function toggleCargoSortDir() {
@@ -1627,6 +1652,24 @@ function renderCargo() {
       if (Number(s.carrierFee) > 0) html += '<div class="card-field"><div class="card-field-lbl">Carrier Fee</div><div class="card-field-val" style="color:var(--amber)">'+fmt$(s.carrierFee)+'</div></div>';
       html += '<div class="card-field"><div class="card-field-lbl">Profit</div><div class="card-field-val" style="color:'+(profit>=0?'var(--green)':'var(--red)')+'">'+fmt$(profit)+'</div></div>';
     html += '</div>'; // [6] close card-grid
+
+    // ── Per-container cost breakdown ──
+    if (ctrs.length > 0) {
+      const n = ctrs.length;
+      const cCustoms    = Number(s.customs)||0;
+      const cFreight    = Number(s.freight)||0;
+      const cCarrierFee = Number(s.carrierFee)||0;
+      const portDays    = (s.eta && s.etaFinal) ? Math.round((new Date(s.etaFinal)-new Date(s.eta))/86400000) : null;
+      if (cCustoms > 0 || cFreight > 0 || cCarrierFee > 0 || portDays !== null) {
+        html += '<div style="margin-top:8px;padding:6px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);display:flex;flex-wrap:wrap;gap:12px">';
+        html += '<span style="font-size:0.68rem;color:var(--text-dim);width:100%;letter-spacing:0.06em;text-transform:uppercase">Per Container ('+n+' CTR)</span>';
+        if (cCustoms    > 0) html += '<span style="font-size:0.78rem"><span style="color:var(--text-muted)">Customs </span><span style="color:var(--red);font-weight:600">'+fmt$(cCustoms/n)+'</span></span>';
+        if (cFreight    > 0) html += '<span style="font-size:0.78rem"><span style="color:var(--text-muted)">Ocean </span><span style="color:var(--blue);font-weight:600">'+fmt$(cFreight/n)+'</span></span>';
+        if (cCarrierFee > 0) html += '<span style="font-size:0.78rem"><span style="color:var(--text-muted)">Carrier </span><span style="color:var(--amber);font-weight:600">'+fmt$(cCarrierFee/n)+'</span></span>';
+        if (portDays !== null) html += '<span style="font-size:0.78rem"><span style="color:var(--text-muted)">Port→Delivery </span><span style="color:var(--purple);font-weight:600">'+portDays+'d</span></span>';
+        html += '</div>';
+      }
+    }
 
     if (s.dest) html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:8px">📍 '+s.dest+'</div>';
 
@@ -1928,6 +1971,16 @@ function renderDeliveryStats() {
   const done         = deliveries.filter(d => d.status === 'Delivered').length;
   const totalWraps   = deliveries.filter(d => d.status !== 'Delivered').reduce((s,d) => s+(Number(d.wraps)||0), 0);
   const totalInland  = deliveries.reduce((s,d) => s+(Number(d.inlandFreight)||0), 0);
+
+  // Avg inland freight per container (only deliveries with both inlandFreight and containers)
+  let inlandCtrs = 0, inlandSum = 0;
+  deliveries.forEach(d => {
+    const fee = Number(d.inlandFreight)||0;
+    const n   = (d.containerNum||'').split(',').map(x=>x.trim()).filter(Boolean).length;
+    if (fee > 0 && n > 0) { inlandSum += fee; inlandCtrs += n; }
+  });
+  const avgInland = inlandCtrs > 0 ? inlandSum / inlandCtrs : 0;
+
   const el = document.getElementById('delivery-stats');
   if (!el) return;
   el.innerHTML =
@@ -1935,7 +1988,8 @@ function renderDeliveryStats() {
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + scheduled + '</div><div class="stat-card-lbl">Scheduled</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + done + '</div><div class="stat-card-lbl">Completed</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + totalWraps + '</div><div class="stat-card-lbl">Wraps Pending</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--orange)">' + fmt$(totalInland) + '</div><div class="stat-card-lbl">Total Inland Freight</div></div>';
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--orange)">' + fmt$(totalInland) + '</div><div class="stat-card-lbl">Total Inland Freight</div></div>' +
+    (avgInland > 0 ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--orange);font-size:1rem">' + fmt$(avgInland) + '</div><div class="stat-card-lbl">Avg Inland / CTR</div></div>' : '');
 }
 
 function toggleDelivDetail(id) {
@@ -2034,6 +2088,11 @@ function renderDeliveries() {
     if (d.delivDate)     html += '<div class="card-field"><div class="card-field-lbl">Delivery Date</div><div class="card-field-val">' + fmtDate(d.delivDate) + '</div></div>';
     if (Number(d.inlandFreight) > 0) html += '<div class="card-field"><div class="card-field-lbl">Inland Freight</div><div class="card-field-val" style="color:var(--amber)">' + fmt$(d.inlandFreight) + '</div></div>';
     html += '</div>';
+    // Per-container inland freight
+    if (Number(d.inlandFreight) > 0) {
+      const dCtrs = (d.containerNum||'').split(',').map(x=>x.trim()).filter(Boolean).length;
+      if (dCtrs > 1) html += '<div style="margin-top:6px;padding:5px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);font-size:0.78rem"><span style="color:var(--text-muted)">Inland / CTR ('+dCtrs+') </span><span style="color:var(--orange);font-weight:600">' + fmt$(Number(d.inlandFreight)/dCtrs) + '</span></div>';
+    }
     html += '<div style="display:flex;gap:8px;margin-top:10px">';
     html += '<button onclick="toggleDelivered(\'' + d.id + '\')" class="delivery-check ' + (d.status==='Delivered'?'delivered':'') + '" style="flex:0" title="Mark Delivered">' + (d.status==='Delivered'?'✓ Delivered':'Mark Delivered') + '</button>';
     html += '<button onclick="openDeliveryEdit(\'' + d.id + '\')" style="flex:1;background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:0.8rem;color:var(--text-muted);font-family:var(--sans);cursor:pointer">Edit</button>';
