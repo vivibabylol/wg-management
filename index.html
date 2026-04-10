@@ -1650,7 +1650,8 @@ function renderCargo() {
       if (s.etaFinal)   html += '<div class="card-field"><div class="card-field-lbl">Final Delivery</div><div class="card-field-val">'+fmtDate(s.etaFinal)+'</div></div>';
       if (s.sellPrice)  html += '<div class="card-field"><div class="card-field-lbl">Sell Price</div><div class="card-field-val" style="color:var(--teal)">'+fmt$(s.sellPrice)+'</div></div>';
       if (Number(s.carrierFee) > 0) html += '<div class="card-field"><div class="card-field-lbl">Carrier Fee</div><div class="card-field-val" style="color:var(--amber)">'+fmt$(s.carrierFee)+'</div></div>';
-      html += '<div class="card-field"><div class="card-field-lbl">Profit</div><div class="card-field-val" style="color:'+(profit>=0?'var(--green)':'var(--red)')+'">'+fmt$(profit)+'</div></div>';
+      const profitPerRoll = (s.disc && s.disc.toLowerCase().includes('cotton') && Number(s.qty) > 0) ? profit / Number(s.qty) : null;
+      html += '<div class="card-field"><div class="card-field-lbl">Profit</div><div class="card-field-val" style="color:'+(profit>=0?'var(--green)':'var(--red)')+'">'+fmt$(profit)+(profitPerRoll!==null?' <span style="font-size:0.78rem;opacity:0.8">('+fmt$(profitPerRoll)+'/roll)</span>':'')+'</div></div>';
     html += '</div>'; // [6] close card-grid
 
     // ── Per-container cost breakdown ──
