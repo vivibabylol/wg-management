@@ -518,6 +518,7 @@ select option { background: var(--surface2); }
     </div>
   </div>
   <div class="stats-row" id="cargo-stats"></div>
+  <div class="stats-row" id="cargo-avg-stats" style="margin-top:0"></div>
   <div class="cards-list" id="cargo-list"></div>
 </div>
 
@@ -938,7 +939,6 @@ select option { background: var(--surface2); }
         <div class="form-group"><label>Courier + Handling (USD)</label><input type="number" id="c-courier" placeholder="0"></div>
         <div class="form-group"><label>Chassis + Tarp (USD)</label><input type="number" id="c-chassis" placeholder="0"></div>
         <div class="form-group"><label>Bank Charge (USD)</label><input type="number" id="c-bankCharge" placeholder="0"></div>
-        <div class="form-group"><label>Carrier Fee (USD)</label><input type="number" id="c-carrierFee" placeholder="0"></div>
         <div class="form-group full"><label>Destination</label><input id="c-dest" placeholder="903 N Tennille Ave, Donaldsonville GA 39845"></div>
         <div class="form-group full"><label>Notes</label><textarea id="c-notes" placeholder="Special Notes…"></textarea></div>
       </div>
@@ -1521,13 +1521,15 @@ function renderCargoStats() {
   }).filter(x => x !== null);
   const avgTransit = transitTimes.length > 0 ? Math.round(transitTimes.reduce((a,b)=>a+b,0) / transitTimes.length) : null;
 
-  const el = document.getElementById('cargo-stats');
+  const el    = document.getElementById('cargo-stats');
+  const elAvg = document.getElementById('cargo-avg-stats');
   if (!el) return;
   el.innerHTML =
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue)">' + cargo.length + '</div><div class="stat-card-lbl">Total Shipments</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + totalCtrs + '</div><div class="stat-card-lbl">Total Containers</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + atPort + '</div><div class="stat-card-lbl">At Port / Customs</div></div>' +
-    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + done + '</div><div class="stat-card-lbl">Completed</div></div>' +
+    '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + done + '</div><div class="stat-card-lbl">Completed</div></div>';
+  if (elAvg) elAvg.innerHTML =
     (resCustoms  ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--red);font-size:1rem">'   + fmt$(resCustoms.avg)  + '</div><div class="stat-card-lbl">Avg Customs / CTR</div></div>' : '') +
     (resFreight  ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue);font-size:1rem">'  + fmt$(resFreight.avg)  + '</div><div class="stat-card-lbl">Avg Ocean Freight / CTR</div></div>' : '') +
     (resTrucking ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--orange);font-size:1rem">'+ fmt$(resTrucking.avg) + '</div><div class="stat-card-lbl">Avg Trucking / CTR</div></div>' : '') +
@@ -1578,8 +1580,7 @@ function renderCargo() {
     const etaDays = daysFromNow(s.eta);
     const profit  = (Number(s.sellPrice)||0)-(Number(s.mfgCost)||0)-(Number(s.freight)||0)
                    -(Number(s.trucking)||0)-(Number(s.customs)||0)-(Number(s.isf)||0)
-                   -(Number(s.courier)||0)-(Number(s.chassis)||0)-(Number(s.bankCharge)||0)
-                   -(Number(s.carrierFee)||0);
+                   -(Number(s.courier)||0)-(Number(s.chassis)||0)-(Number(s.bankCharge)||0);
     const nextDoc = DOC_STEPS.find(d=>!isTrue(s[d.key]));
 
     let etaTag = '';
@@ -1650,7 +1651,6 @@ function renderCargo() {
       if (s.eta)        html += '<div class="card-field"><div class="card-field-lbl">ETA</div><div class="card-field-val">'+fmtDate(s.eta)+'</div></div>';
       if (s.etaFinal)   html += '<div class="card-field"><div class="card-field-lbl">Final Delivery</div><div class="card-field-val">'+fmtDate(s.etaFinal)+'</div></div>';
       if (s.sellPrice)  html += '<div class="card-field"><div class="card-field-lbl">Sell Price</div><div class="card-field-val" style="color:var(--teal)">'+fmt$(s.sellPrice)+'</div></div>';
-      if (Number(s.carrierFee) > 0) html += '<div class="card-field"><div class="card-field-lbl">Carrier Fee</div><div class="card-field-val" style="color:var(--amber)">'+fmt$(s.carrierFee)+'</div></div>';
       const profitPerRoll = (s.disc && s.disc.toLowerCase().includes('cotton') && Number(s.qty) > 0) ? profit / Number(s.qty) : null;
       html += '<div class="card-field"><div class="card-field-lbl">Profit</div><div class="card-field-val" style="color:'+(profit>=0?'var(--green)':'var(--red)')+'">'+fmt$(profit)+(profitPerRoll!==null?' <span style="font-size:0.78rem;opacity:0.8">('+fmt$(profitPerRoll)+'/roll)</span>':'')+'</div></div>';
     html += '</div>'; // [6] close card-grid
@@ -1658,16 +1658,16 @@ function renderCargo() {
     // ── Per-container cost breakdown ──
     if (ctrs.length > 0) {
       const n = ctrs.length;
-      const cCustoms    = Number(s.customs)||0;
-      const cFreight    = Number(s.freight)||0;
-      const cCarrierFee = Number(s.carrierFee)||0;
-      const portDays    = (s.eta && s.etaFinal) ? Math.round((new Date(s.etaFinal)-new Date(s.eta))/86400000) : null;
-      if (cCustoms > 0 || cFreight > 0 || cCarrierFee > 0 || portDays !== null) {
+      const cCustoms  = Number(s.customs)||0;
+      const cFreight  = Number(s.freight)||0;
+      const cTrucking = Number(s.trucking)||0;
+      const portDays  = (s.eta && s.etaFinal) ? Math.round((new Date(s.etaFinal)-new Date(s.eta))/86400000) : null;
+      if (cCustoms > 0 || cFreight > 0 || cTrucking > 0 || portDays !== null) {
         html += '<div style="margin-top:8px;padding:6px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);display:flex;flex-wrap:wrap;gap:12px">';
         html += '<span style="font-size:0.68rem;color:var(--text-dim);width:100%;letter-spacing:0.06em;text-transform:uppercase">Per Container ('+n+' CTR)</span>';
-        if (cCustoms    > 0) html += '<span style="font-size:0.78rem"><span style="color:var(--text-muted)">Customs </span><span style="color:var(--red);font-weight:600">'+fmt$(cCustoms/n)+'</span></span>';
-        if (cFreight    > 0) html += '<span style="font-size:0.78rem"><span style="color:var(--text-muted)">Ocean </span><span style="color:var(--blue);font-weight:600">'+fmt$(cFreight/n)+'</span></span>';
-        if (cCarrierFee > 0) html += '<span style="font-size:0.78rem"><span style="color:var(--text-muted)">Carrier </span><span style="color:var(--amber);font-weight:600">'+fmt$(cCarrierFee/n)+'</span></span>';
+        if (cCustoms  > 0) html += '<span style="font-size:0.78rem"><span style="color:var(--text-muted)">Customs </span><span style="color:var(--red);font-weight:600">'+fmt$(cCustoms/n)+'</span></span>';
+        if (cFreight  > 0) html += '<span style="font-size:0.78rem"><span style="color:var(--text-muted)">Ocean </span><span style="color:var(--blue);font-weight:600">'+fmt$(cFreight/n)+'</span></span>';
+        if (cTrucking > 0) html += '<span style="font-size:0.78rem"><span style="color:var(--text-muted)">Trucking </span><span style="color:var(--orange);font-weight:600">'+fmt$(cTrucking/n)+'</span></span>';
         if (portDays !== null) html += '<span style="font-size:0.78rem"><span style="color:var(--text-muted)">Port→Delivery </span><span style="color:var(--purple);font-weight:600">'+portDays+'d</span></span>';
         html += '</div>';
       }
@@ -1689,7 +1689,7 @@ function openCargoModal(s) {
   const docSec = document.getElementById('cargoDocSection');
   if (docSec) docSec.style.display = s ? 'block' : 'none';
   populateCargoDropdowns(s);
-  ['bolNum','status','etd','eta','etaFinal','disc','qty','sellPrice','mfgCost','freight','trucking','customs','isf','courier','chassis','bankCharge','carrierFee','dest','notes'].forEach(k => {
+  ['bolNum','status','etd','eta','etaFinal','disc','qty','sellPrice','mfgCost','freight','trucking','customs','isf','courier','chassis','bankCharge','dest','notes'].forEach(k => {
     const el = document.getElementById('c-'+k);
     if (el) el.value = s ? (s[k]||'') : (k==='status'?'Pending Departure':'');
   });
@@ -1707,7 +1707,7 @@ function openCargoEdit(id) { openCargoModal(cargo.find(x => x.id === id)); }
 
 async function saveCargo() {
   const data = {};
-  ['bolNum','status','etd','eta','etaFinal','disc','qty','sellPrice','mfgCost','freight','trucking','customs','isf','courier','chassis','bankCharge','carrierFee','dest','notes'].forEach(k => {
+  ['bolNum','status','etd','eta','etaFinal','disc','qty','sellPrice','mfgCost','freight','trucking','customs','isf','courier','chassis','bankCharge','dest','notes'].forEach(k => {
     const el = document.getElementById('c-'+k);
     data[k] = el ? el.value : '';
   });
@@ -2665,7 +2665,11 @@ function renderCustomers() {
           } else if (d.wraps) {
             html += "<div style=\"font-size:0.72rem;color:var(--text-muted);margin-top:2px\">Wraps: " + Number(d.wraps).toLocaleString() + "</div>";
           }
-          if (Number(d.inlandFreight) > 0) html += "<div style=\"font-size:0.72rem;color:var(--amber);margin-top:2px\">Inland: " + fmt$(d.inlandFreight) + "</div>";
+          if (Number(d.inlandFreight) > 0) {
+            const dCtrN = (d.containerNum||'').split(',').map(x=>x.trim()).filter(Boolean).length;
+            const perCtr = dCtrN > 0 ? ' <span style="opacity:0.75">('+fmt$(Number(d.inlandFreight)/dCtrN)+'/CTR)</span>' : '';
+            html += "<div style=\"font-size:0.72rem;color:var(--amber);margin-top:2px\">Inland: " + fmt$(d.inlandFreight) + perCtr + "</div>";
+          }
           html += "</div>";
           html += "<span style=\"font-size:0.72rem;color:" + statusC + ";white-space:nowrap\">" + (d.status||"—") + "</span>";
           html += "</div>";
