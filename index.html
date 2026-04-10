@@ -1499,21 +1499,22 @@ function renderCargoStats() {
   const atPort = cargo.filter(s => ['Arrived - Pending Customs','Customs Clearance'].includes(s.status)).length;
   const done   = cargo.filter(s => s.status === 'Completed').length;
 
-  // Per-container averages (only shipments with containers entered)
-  let totalCtrs = 0, totalCustoms = 0, totalFreight = 0, totalCarrierFee = 0;
-  cargo.forEach(s => {
-    const n = (s.containers||'').split(',').map(x=>x.trim()).filter(Boolean).length;
-    if (!n) return;
-    totalCtrs      += n;
-    totalCustoms   += (Number(s.customs)||0);
-    totalFreight   += (Number(s.freight)||0);
-    totalCarrierFee+= (Number(s.carrierFee)||0);
-  });
-  const avgCustoms    = totalCtrs > 0 ? totalCustoms    / totalCtrs : 0;
-  const avgFreight    = totalCtrs > 0 ? totalFreight    / totalCtrs : 0;
-  const avgCarrierFee = totalCtrs > 0 ? totalCarrierFee / totalCtrs : 0;
+  // Per-container averages — each field uses only shipments that have BOTH containers AND that field filled in
+  function avgPerCtr(field) {
+    let sum = 0, ctrs = 0;
+    cargo.forEach(s => {
+      const val = Number(s[field])||0;
+      const n   = (s.containers||'').split(',').map(x=>x.trim()).filter(Boolean).length;
+      if (val > 0 && n > 0) { sum += val; ctrs += n; }
+    });
+    return ctrs > 0 ? { avg: sum / ctrs, ctrs } : null;
+  }
+  const totalCtrs    = cargo.reduce((s,sh) => s + (sh.containers||'').split(',').map(x=>x.trim()).filter(Boolean).length, 0);
+  const resCustoms   = avgPerCtr('customs');
+  const resFreight   = avgPerCtr('freight');
+  const resTrucking  = avgPerCtr('trucking');
 
-  // Average port-to-delivery days (etaFinal - eta, completed shipments only)
+  // Average port-to-delivery days (etaFinal - eta, only shipments with both dates)
   const transitTimes = cargo.filter(s => s.eta && s.etaFinal).map(s => {
     const diff = (new Date(s.etaFinal) - new Date(s.eta)) / 86400000;
     return diff >= 0 ? diff : null;
@@ -1527,9 +1528,9 @@ function renderCargoStats() {
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--teal)">' + totalCtrs + '</div><div class="stat-card-lbl">Total Containers</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber)">' + atPort + '</div><div class="stat-card-lbl">At Port / Customs</div></div>' +
     '<div class="stat-card"><div class="stat-card-val" style="color:var(--green)">' + done + '</div><div class="stat-card-lbl">Completed</div></div>' +
-    (totalCtrs > 0 ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--red);font-size:1rem">' + fmt$(avgCustoms) + '</div><div class="stat-card-lbl">Avg Customs / CTR</div></div>' : '') +
-    (totalCtrs > 0 ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue);font-size:1rem">' + fmt$(avgFreight) + '</div><div class="stat-card-lbl">Avg Ocean Freight / CTR</div></div>' : '') +
-    (avgCarrierFee > 0 ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--amber);font-size:1rem">' + fmt$(avgCarrierFee) + '</div><div class="stat-card-lbl">Avg Carrier Fee / CTR</div></div>' : '') +
+    (resCustoms  ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--red);font-size:1rem">'   + fmt$(resCustoms.avg)  + '</div><div class="stat-card-lbl">Avg Customs / CTR</div></div>' : '') +
+    (resFreight  ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--blue);font-size:1rem">'  + fmt$(resFreight.avg)  + '</div><div class="stat-card-lbl">Avg Ocean Freight / CTR</div></div>' : '') +
+    (resTrucking ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--orange);font-size:1rem">'+ fmt$(resTrucking.avg) + '</div><div class="stat-card-lbl">Avg Trucking / CTR</div></div>' : '') +
     (avgTransit !== null ? '<div class="stat-card"><div class="stat-card-val" style="color:var(--purple)">' + avgTransit + 'd</div><div class="stat-card-lbl">Avg Port → Delivery</div></div>' : '');
 }
 
